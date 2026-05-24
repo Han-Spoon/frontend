@@ -325,7 +325,7 @@ export function MyPageScreen({
           <div
             className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50 mx-5"
             style={{
-              left: 'calc(50% - 175px)',
+              margin: '0 auto',
               width: '350px',
             }}
           >

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
-import type { Language, MenuAnalysis } from '../App';
+import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 
 interface AnalyzingScreenProps {
   language: Language;
+  image: PendingMenuImage | null;
   onComplete: (menus: MenuAnalysis[]) => void;
   onCancel: () => void;
 }
 
-export function AnalyzingScreen({ language, onComplete, onCancel }: AnalyzingScreenProps) {
+export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
   const [step, setStep] = useState(0);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualInput, setManualInput] = useState('');
@@ -16,9 +17,10 @@ export function AnalyzingScreen({ language, onComplete, onCancel }: AnalyzingScr
   const t = (ko: string, en: string) => (language === 'ko' ? ko : en);
 
   const steps = [
-    t('텍스트를 읽고 있어요', 'Scanning text'),
+    t('메뉴판 이미지를 읽고 있어요', 'Scanning menu image'),
     t('메뉴를 찾고 있어요', 'Finding menus'),
     t('식단 정보를 확인하고 있어요', 'Checking diet info'),
+    t('알레르기와 식단 조건을 비교하고 있어요', 'Comparing allergies and diet conditions'),
   ];
 
   useEffect(() => {
@@ -118,10 +120,10 @@ export function AnalyzingScreen({ language, onComplete, onCancel }: AnalyzingScr
           />
 
           <button
-            onClick={() => setShowManualInput(false)}
+            onClick={onCancel}
             className="mt-4 w-full h-12 bg-white border border-neutral-300 rounded-xl text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
           >
-            {t('다시 촬영하기', 'Retake')}
+            {t('다시 시도하기', 'Retry')}
           </button>
         </div>
 
@@ -146,9 +148,13 @@ export function AnalyzingScreen({ language, onComplete, onCancel }: AnalyzingScr
 
       <div className="flex-1 flex flex-col items-center justify-center px-5">
         <div className="w-full max-w-xs aspect-[4/3] bg-neutral-100 rounded-2xl mb-8 overflow-hidden">
-          <div className="w-full h-full flex items-center justify-center text-neutral-400">
-            <span className="text-6xl">📋</span>
-          </div>
+          {image ? (
+            <img src={image.previewUrl} alt={t('분석 중인 메뉴판', 'Menu being analyzed')} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center text-neutral-400">
+              <span className="text-6xl">📋</span>
+            </div>
+          )}
         </div>
 
         <div className="w-full max-w-xs">

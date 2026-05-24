@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
@@ -35,6 +35,17 @@ export interface MenuAnalysis {
   isSpicy: boolean;
 }
 
+export interface PendingMenuImage {
+  file: File | null;
+  previewUrl: string;
+  source: 'camera' | 'upload';
+  storage?: {
+    provider: 'postgresql' | 'blob';
+    key?: string;
+    url?: string;
+  };
+}
+
 export interface HistoryItem {
   id: string;
   title: string;
@@ -59,7 +70,16 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('ko');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<MenuAnalysis[]>([]);
+  const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
+
+  useEffect(() => {
+    return () => {
+      if (analysisImage?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(analysisImage.previewUrl);
+      }
+    };
+  }, [analysisImage]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -100,9 +120,13 @@ export default function App() {
             element={
               <HomeScreen
                 language={language}
-                onScan={() => navigate('/analyzing')}
+                onScan={(image) => {
+                  setAnalysisImage(image);
+                  navigate('/analyzing');
+                }}
                 onHistory={(item) => {
                   setCurrentAnalysis(item.menus);
+                  setAnalysisImage(null);
                   navigate('/results');
                 }}
                 onMyPage={() => navigate('/mypage')}
@@ -115,8 +139,10 @@ export default function App() {
             element={
               <AnalyzingScreen
                 language={language}
+                image={analysisImage}
                 onComplete={(menus) => {
                   setCurrentAnalysis(menus);
+                  setAnalysisImage(null);
                   setAnalysisHistory((prev) => [
                     {
                       id: String(Date.now()),
@@ -130,7 +156,10 @@ export default function App() {
                   ]);
                   navigate('/results');
                 }}
-                onCancel={() => navigate('/home')}
+                onCancel={() => {
+                  setAnalysisImage(null);
+                  navigate('/home');
+                }}
               />
             }
           />
