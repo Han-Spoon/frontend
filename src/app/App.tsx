@@ -7,7 +7,14 @@ import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
 
-export type Language = 'ko' | 'en';
+export type Language = 'ko' | 'en' | 'ar';
+
+export interface UserAllergy {
+  allergy_name_ko: string;
+  allergy_name_en?: string;
+  allergy_name_ar?: string;
+  allergy_name?: string;
+}
 
 export interface UserProfile {
   isFirstTime: boolean;
@@ -16,7 +23,7 @@ export interface UserProfile {
   hasReligion: boolean;
   religionType?: string;
   hasAllergies: boolean;
-  allergies: string[];
+  allergies: Array<string | UserAllergy>;
   noSpicy: boolean;
   noAlcohol: boolean;
 }
@@ -26,13 +33,19 @@ export interface MenuAnalysis {
   image?: string;
   menuName: string;
   menuNameEn: string;
+  menuNameAr?: string;
   description: string;
   descriptionEn?: string;
+  descriptionAr?: string;
   price?: string;
   riskLevel: 'safe' | 'caution' | 'danger';
   riskReasons: string[];
   riskReasonsEn?: string[];
+  riskReasonsAr?: string[];
   isSpicy: boolean;
+  is_spicy?: boolean;
+  isAlcohol?: boolean;
+  is_alcohol?: boolean;
 }
 
 export interface PendingMenuImage {
@@ -56,7 +69,9 @@ export interface HistoryItem {
 }
 
 const formatHistoryTitle = (language: Language, date: Date) => {
-  return new Intl.DateTimeFormat(language === 'ko' ? 'ko-KR' : 'en-US', {
+  const locale = language === 'ko' ? 'ko-KR' : language === 'ar' ? 'ar' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
