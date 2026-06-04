@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
@@ -7,7 +7,14 @@ import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
 
-export type Language = 'ko' | 'en';
+export type Language = 'ko' | 'en' | 'ar';
+
+export interface UserAllergy {
+  allergy_name_ko: string;
+  allergy_name_en?: string;
+  allergy_name_ar?: string;
+  allergy_name?: string;
+}
 
 export interface UserProfile {
   isFirstTime: boolean;
@@ -16,7 +23,7 @@ export interface UserProfile {
   hasReligion: boolean;
   religionType?: string;
   hasAllergies: boolean;
-  allergies: string[];
+  allergies: Array<string | UserAllergy>;
   noSpicy: boolean;
   noAlcohol: boolean;
 }
@@ -26,13 +33,30 @@ export interface MenuAnalysis {
   image?: string;
   menuName: string;
   menuNameEn: string;
+  menuNameAr?: string;
   description: string;
   descriptionEn?: string;
+  descriptionAr?: string;
   price?: string;
   riskLevel: 'safe' | 'caution' | 'danger';
   riskReasons: string[];
   riskReasonsEn?: string[];
+  riskReasonsAr?: string[];
   isSpicy: boolean;
+  is_spicy?: boolean;
+  isAlcohol?: boolean;
+  is_alcohol?: boolean;
+}
+
+export interface PendingMenuImage {
+  file: File | null;
+  previewUrl: string;
+  source: 'camera' | 'upload';
+  storage?: {
+    provider: 'postgresql' | 'blob';
+    key?: string;
+    url?: string;
+  };
 }
 
 export interface HistoryItem {
@@ -45,7 +69,9 @@ export interface HistoryItem {
 }
 
 const formatHistoryTitle = (language: Language, date: Date) => {
-  return new Intl.DateTimeFormat(language === 'ko' ? 'ko-KR' : 'en-US', {
+  const locale = language === 'ko' ? 'ko-KR' : language === 'ar' ? 'ar' : 'en-US';
+
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -59,7 +85,16 @@ export default function App() {
   const [language, setLanguage] = useState<Language>('ko');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<MenuAnalysis[]>([]);
+  const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
+
+  useEffect(() => {
+    return () => {
+      if (analysisImage?.previewUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(analysisImage.previewUrl);
+      }
+    };
+  }, [analysisImage]);
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -100,9 +135,13 @@ export default function App() {
             element={
               <HomeScreen
                 language={language}
-                onScan={() => navigate('/analyzing')}
+                onScan={(image) => {
+                  setAnalysisImage(image);
+                  navigate('/analyzing');
+                }}
                 onHistory={(item) => {
                   setCurrentAnalysis(item.menus);
+                  setAnalysisImage(null);
                   navigate('/results');
                 }}
                 onMyPage={() => navigate('/mypage')}
@@ -115,8 +154,10 @@ export default function App() {
             element={
               <AnalyzingScreen
                 language={language}
+                image={analysisImage}
                 onComplete={(menus) => {
                   setCurrentAnalysis(menus);
+                  setAnalysisImage(null);
                   setAnalysisHistory((prev) => [
                     {
                       id: String(Date.now()),
@@ -130,7 +171,10 @@ export default function App() {
                   ]);
                   navigate('/results');
                 }}
-                onCancel={() => navigate('/home')}
+                onCancel={() => {
+                  setAnalysisImage(null);
+                  navigate('/home');
+                }}
               />
             }
           />

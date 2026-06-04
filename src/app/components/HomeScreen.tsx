@@ -1,25 +1,305 @@
-import { Camera, ImageIcon, User } from 'lucide-react';
-import type { Language } from '../App';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { AlertTriangle, Camera, ImageIcon, RotateCcw, User } from 'lucide-react';
+import type { Language, PendingMenuImage } from '../App';
 import logo from '../../icons/logo.png';
 
 interface HomeScreenProps {
   language: Language;
-  onScan: (image: string) => void;
+  onScan: (image: PendingMenuImage) => void;
   onHistory: (item: any) => void;
   onMyPage: () => void;
   history: any[];
 }
 
+const MAX_FILE_SIZE_MB = 10;
+const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const BLOB_CONTAINER_SAS_URL = import.meta.env.VITE_MENU_BLOB_SAS_URL;
+
+const getFileExtension = (file: File) => {
+  const extension = file.name.split('.').pop()?.toLowerCase();
+
+  if (extension && /^[a-z0-9]+$/.test(extension)) {
+    return extension;
+  }
+
+  if (file.type === 'image/png') return 'png';
+  if (file.type === 'image/webp') return 'webp';
+  return 'jpg';
+};
+
+const createBlobFileName = (file: File) => {
+  const extension = getFileExtension(file);
+  const randomPart = crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return `menu-${randomPart}.${extension}`;
+};
+
+const buildBlobUploadUrl = (containerSasUrl: string, fileName: string) => {
+  const [baseUrl, sasToken = ''] = containerSasUrl.split('?');
+  const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+  const encodedFileName = encodeURIComponent(fileName);
+
+  return {
+    uploadUrl: `${normalizedBaseUrl}/${encodedFileName}${sasToken ? `?${sasToken}` : ''}`,
+    blobUrl: `${normalizedBaseUrl}/${encodedFileName}`,
+  };
+};
+
+const uploadFileToBlob = async (file: File) => {
+  if (!BLOB_CONTAINER_SAS_URL) {
+    return null;
+  }
+
+  const fileName = createBlobFileName(file);
+  const { uploadUrl, blobUrl } = buildBlobUploadUrl(BLOB_CONTAINER_SAS_URL, fileName);
+  const response = await fetch(uploadUrl, {
+    method: 'PUT',
+    headers: {
+      'x-ms-blob-type': 'BlockBlob',
+      'Content-Type': file.type,
+    },
+    body: file,
+  });
+
+  if (!response.ok) {
+    throw new Error(`Blob upload failed: ${response.status}`);
+  }
+
+  return {
+    key: fileName,
+    url: blobUrl,
+  };
+};
+
 export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: HomeScreenProps) {
-  const t = (ko: string, en: string) => (language === 'ko' ? ko : en);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [selectedImage, setSelectedImage] = useState<PendingMenuImage | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [cameraDenied, setCameraDenied] = useState(false);
+  const [isStartingCamera, setIsStartingCamera] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const objectUrlRef = useRef<string | null>(null);
+  const cameraStreamRef = useRef<MediaStream | null>(null);
+
+  const t = (ko: string, en: string, ar: string) => (
+    language === 'ko' ? ko : language === 'ar' ? ar : en
+  );
+
+  const stopCamera = () => {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    cameraStreamRef.current = null;
+    setCameraStream(null);
+  };
+
+  const clearObjectUrl = () => {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+      objectUrlRef.current = null;
+    }
+  };
+
+  const setPreview = (image: PendingMenuImage, revokePrevious = true) => {
+    if (revokePrevious) {
+      clearObjectUrl();
+    }
+    setSelectedImage(image);
+    setErrorMessage(null);
+  };
+
+  const startCamera = async () => {
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setCameraDenied(true);
+      setErrorMessage(t(
+        '이 브라우저에서는 카메라를 바로 열 수 없어요. 사진을 선택해서 분석해 주세요.',
+        'This browser cannot open the camera here. Please choose a photo instead.',
+        'لا يمكن لهذا المتصفح فتح الكاميرا هنا. يرجى اختيار صورة بدلا من ذلك.'
+      ));
+      return;
+    }
+
+    try {
+      setIsStartingCamera(true);
+      setCameraDenied(false);
+      setErrorMessage(null);
+      setSelectedImage(null);
+      clearObjectUrl();
+      stopCamera();
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 960 },
+        },
+        audio: false,
+      });
+
+      cameraStreamRef.current = stream;
+      setCameraStream(stream);
+    } catch (error) {
+      setCameraDenied(true);
+      setErrorMessage(t(
+        '카메라 권한이 거부되어 촬영할 수 없어요. 브라우저 설정에서 카메라 권한을 허용하거나, 아래에서 메뉴판 사진을 선택해 주세요.',
+        'Camera permission was denied. Allow camera access in your browser settings, or choose a menu photo below.',
+        'تم رفض إذن الكاميرا. اسمح بالوصول إلى الكاميرا من إعدادات المتصفح أو اختر صورة قائمة الطعام أدناه.'
+      ));
+    } finally {
+      setIsStartingCamera(false);
+    }
+  };
 
   const handleCameraClick = () => {
-    onScan('camera-image');
+    void startCamera();
   };
 
   const handleGalleryClick = () => {
-    onScan('gallery-image');
+    fileInputRef.current?.click();
   };
+
+  const validateImageFile = (file: File) => {
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+      return t(
+        '사진 파일만 업로드할 수 있어요. JPG, PNG, WEBP 형식만 지원하며 GIF, 영상, 문서는 사용할 수 없습니다.',
+        'Only photo files are supported. Use JPG, PNG, or WEBP. GIFs, videos, and documents are not allowed.',
+        'يمكن رفع ملفات الصور فقط. استخدم JPG أو PNG أو WEBP. لا يمكن استخدام GIF أو الفيديوهات أو المستندات.'
+      );
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      return t(
+        `이미지는 ${MAX_FILE_SIZE_MB}MB 이하만 업로드할 수 있어요.`,
+        `Images must be ${MAX_FILE_SIZE_MB}MB or smaller.`,
+        `يجب أن يكون حجم الصورة ${MAX_FILE_SIZE_MB}MB أو أقل.`
+      );
+    }
+
+    return null;
+  };
+
+  const handleFileChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    const validationError = validateImageFile(file);
+    if (validationError) {
+      setErrorMessage(validationError);
+      return;
+    }
+
+    stopCamera();
+    clearObjectUrl();
+    const objectUrl = URL.createObjectURL(file);
+    objectUrlRef.current = objectUrl;
+    setPreview({
+      file,
+      previewUrl: objectUrl,
+      source: 'upload',
+    }, false);
+  };
+
+  const capturePhoto = () => {
+    const video = videoRef.current;
+    if (!video || !video.videoWidth || !video.videoHeight) {
+      setErrorMessage(t(
+        '카메라 화면을 아직 준비 중이에요. 잠시 후 다시 촬영해 주세요.',
+        'The camera is still getting ready. Please try again in a moment.',
+        'لا تزال الكاميرا قيد التجهيز. يرجى المحاولة مرة أخرى بعد قليل.'
+      ));
+      return;
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const context = canvas.getContext('2d');
+    if (!context) {
+      setErrorMessage(t(
+        '사진을 만들 수 없어요. 사진 선택으로 다시 시도해 주세요.',
+        'Could not capture a photo. Please try choosing a photo instead.',
+        'تعذر التقاط الصورة. يرجى المحاولة عبر اختيار صورة بدلا من ذلك.'
+      ));
+      return;
+    }
+
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        setErrorMessage(t(
+          '사진을 만들 수 없어요. 사진 선택으로 다시 시도해 주세요.',
+          'Could not capture a photo. Please try choosing a photo instead.',
+          'تعذر التقاط الصورة. يرجى المحاولة عبر اختيار صورة بدلا من ذلك.'
+        ));
+        return;
+      }
+
+      stopCamera();
+      clearObjectUrl();
+      const file = new File([blob], `board-${Date.now()}.jpg`, { type: 'image/jpeg' });
+      const objectUrl = URL.createObjectURL(file);
+      objectUrlRef.current = objectUrl;
+      setPreview({
+        file,
+        previewUrl: objectUrl,
+        source: 'camera',
+      }, false);
+    }, 'image/jpeg', 0.9);
+  };
+
+  const handleRetake = () => {
+    void startCamera();
+  };
+
+  const handleAnalyze = async () => {
+    if (!selectedImage) return;
+
+    try {
+      setIsUploading(true);
+      setErrorMessage(null);
+
+      const blobStorage = selectedImage.file ? await uploadFileToBlob(selectedImage.file) : null;
+      const imageForAnalysis: PendingMenuImage = blobStorage
+        ? {
+            ...selectedImage,
+            storage: {
+              provider: 'blob',
+              key: blobStorage.key,
+              url: blobStorage.url,
+            },
+          }
+        : selectedImage;
+
+      console.log(imageForAnalysis);
+
+      stopCamera();
+      if (objectUrlRef.current === selectedImage.previewUrl) {
+        objectUrlRef.current = null;
+      }
+      onScan(imageForAnalysis);
+    } catch (error) {
+      setErrorMessage(t(
+        '이미지 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.',
+        'Image upload failed. Please try again in a moment.',
+        'فشل رفع الصورة. يرجى المحاولة مرة أخرى بعد قليل.'
+      ));
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (videoRef.current && cameraStream) {
+      videoRef.current.srcObject = cameraStream;
+    }
+  }, [cameraStream]);
+
+  useEffect(() => () => {
+    cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
+    clearObjectUrl();
+  }, []);
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -28,7 +308,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
           <span className="text-xl">
             <img src={logo} alt="한스푼 로고" className="w-6 h-6 object-contain" />
           </span>
-          <span className="font-semibold">{t('한 스푼', 'Han Spoon')}</span>
+          <span className="font-semibold">{t('한 스푼', 'Han Spoon', 'هان سبون')}</span>
         </div>
         <button
           onClick={onMyPage}
@@ -40,31 +320,140 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
 
       <div className="flex-1 overflow-y-auto px-5 py-8">
         <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">{t('메뉴판을 찍으면', 'Scan a menu')}</h2>
-          <p className="text-sm text-neutral-600">{t('먹을 수 있는 메뉴를 알려드려요', 'We tell you what is safe to eat')}</p>
+          <h2 className="text-xl font-semibold mb-2">{t('메뉴판을 찍으면', 'Scan a menu', 'امسح قائمة الطعام')}</h2>
+          <p className="text-sm text-neutral-600">{t('먹을 수 있는 메뉴를 알려드려요', 'We tell you what is safe to eat', 'سنخبرك بما يمكنك تناوله بأمان')}</p>
+          <p className="text-xs text-neutral-500 mt-2">
+            {t(
+              '*메뉴판을 사각형 틀에 맞춰 정면에서 찍어주세요.',
+              '*Fit the menu inside the rectangle and take the photo straight on.',
+              'ضع القائمة داخل الإطار المستطيل والتقط الصورة من الأمام.'
+            )}
+          </p>
         </div>
 
-        <button
-          onClick={handleCameraClick}
-          className="w-full h-48 bg-neutral-50 border-2 border-dashed border-neutral-300 rounded-2xl flex flex-col items-center justify-center gap-3 mb-4 hover:bg-neutral-100 hover:border-neutral-400 transition-colors"
-        >
-          <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
-            <Camera className="w-7 h-7 text-neutral-700" />
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+
+        <div className="mb-4">
+          {selectedImage ? (
+            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+              <img src={selectedImage.previewUrl} alt={t('선택한 메뉴판 미리보기', 'Selected menu preview', 'معاينة قائمة الطعام المحددة')} className="w-full h-64 object-cover" />
+            </div>
+          ) : cameraStream ? (
+            <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-black">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-64 object-cover"
+              />
+              <div className="pointer-events-none absolute inset-0 bg-black/10" />
+              <div className="pointer-events-none absolute inset-6 rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.18)]">
+                <div className="absolute -top-0.5 -left-0.5 h-8 w-8 rounded-tl-xl border-t-4 border-l-4 border-white" />
+                <div className="absolute -top-0.5 -right-0.5 h-8 w-8 rounded-tr-xl border-t-4 border-r-4 border-white" />
+                <div className="absolute -bottom-0.5 -left-0.5 h-8 w-8 rounded-bl-xl border-b-4 border-l-4 border-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 h-8 w-8 rounded-br-xl border-b-4 border-r-4 border-white" />
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={handleCameraClick}
+              disabled={isStartingCamera}
+              className="w-full h-48 bg-neutral-50 border-2 border-dashed border-neutral-300 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-neutral-100 hover:border-neutral-400 transition-colors disabled:opacity-60"
+            >
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
+                <Camera className="w-7 h-7 text-neutral-700" />
+              </div>
+              <span className="text-base font-medium text-neutral-900">
+                {isStartingCamera ? t('카메라 여는 중', 'Opening camera', 'جار فتح الكاميرا') : t('메뉴판 촬영하기', 'Take a menu photo', 'التقط صورة للقائمة')}
+              </span>
+            </button>
+          )}
+        </div>
+
+        {cameraStream && !selectedImage && (
+          <button
+            onClick={capturePhoto}
+            className="w-full h-12 bg-neutral-900 text-white rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-800 transition-colors"
+          >
+            <Camera className="w-5 h-5" />
+            <span className="text-sm font-medium">{t('촬영하기', 'Capture photo', 'التقاط صورة')}</span>
+          </button>
+        )}
+
+        {selectedImage && (
+          <div className="mb-3">
+            <button
+              onClick={handleRetake}
+              className="w-full h-12 bg-white border border-neutral-300 rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-50 transition-colors"
+            >
+              <RotateCcw className="w-4 h-4 text-neutral-600" />
+              <span className="text-sm text-neutral-700">{t('다시 촬영', 'Retake', 'إعادة الالتقاط')}</span>
+            </button>
           </div>
-          <span className="text-base font-medium text-neutral-900">{t('메뉴판 스캔하기', 'Scan the menu')}</span>
-        </button>
+        )}
 
         <button
           onClick={handleGalleryClick}
-          className="w-full h-12 bg-white border border-neutral-300 rounded-xl flex items-center justify-center gap-2 mb-8 hover:bg-neutral-50 transition-colors"
+          className="w-full h-12 bg-white border border-neutral-300 rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-50 transition-colors"
         >
           <ImageIcon className="w-5 h-5 text-neutral-600" />
-          <span className="text-sm text-neutral-700">{t('사진에서 선택하기', 'Choose from photos')}</span>
+          <span className="text-sm text-neutral-700">{t('사진에서 선택하기', 'Choose from photos', 'اختر من الصور')}</span>
         </button>
+
+        <p className="text-xs text-neutral-500 mb-4">
+          {t(
+            `JPG, PNG, WEBP 사진만 가능 · 최대 ${MAX_FILE_SIZE_MB}MB · GIF/영상/문서는 불가`,
+            `JPG, PNG, WEBP photos only · Max ${MAX_FILE_SIZE_MB}MB · No GIFs, videos, or documents`,
+            `صور JPG وPNG وWEBP فقط · الحد الأقصى ${MAX_FILE_SIZE_MB}MB · لا GIF أو فيديوهات أو مستندات`
+          )}
+        </p>
+
+        {cameraDenied && (
+          <div className="mb-3 rounded-xl border border-amber-200 bg-amber-50 p-3">
+            <div className="flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-700 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-900 leading-relaxed">
+                {t(
+                  '카메라 권한이 없으면 촬영 기능은 사용할 수 없어요. 브라우저 설정에서 카메라를 허용하거나, 메뉴판 사진을 선택해 분석을 계속할 수 있습니다.',
+                  'Without camera permission, capture is unavailable. Allow camera access in browser settings, or choose a menu photo to continue.',
+                  'بدون إذن الكاميرا، لا يمكن استخدام التصوير. اسمح بالكاميرا من إعدادات المتصفح أو اختر صورة قائمة للمتابعة.'
+                )}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {errorMessage && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
+            <div className="flex gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-700 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-red-900 leading-relaxed">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
+        {selectedImage && (
+          <button
+            onClick={handleAnalyze}
+            disabled={isUploading}
+            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors mb-8 disabled:bg-neutral-300 disabled:cursor-not-allowed"
+          >
+            {isUploading
+              ? t('이미지 업로드 중', 'Uploading image', 'جار رفع الصورة')
+              : t('분석 시작', 'Start analysis', 'بدء التحليل')}
+          </button>
+        )}
 
         {history.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-neutral-900 mb-3">{t('최근 분석 기록', 'Recent analysis')}</h3>
+            <h3 className="text-sm font-medium text-neutral-900 mb-3">{t('최근 분석 기록', 'Recent analysis', 'التحليلات الأخيرة')}</h3>
             <div className="space-y-2">
               {history.slice(0, 3).map((item, index) => (
                 <button
@@ -77,7 +466,9 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
                     <div className="text-xs text-neutral-600 mt-1">
                       {language === 'ko'
                         ? `메뉴 ${item.menuCount}개 분석`
-                        : `Analyzed ${item.menuCount} items`}
+                        : language === 'ar'
+                          ? `تم تحليل ${item.menuCount} عناصر`
+                          : `Analyzed ${item.menuCount} items`}
                     </div>
                   </div>
                   <div className="text-xs text-neutral-500">→</div>
@@ -88,7 +479,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-neutral-500">{t('손글씨 메뉴판은 인식이 어려울 수 있어요', 'Handwritten menus may be hard to recognize')}</p>
+          <p className="text-xs text-neutral-500">{t('손글씨 메뉴판은 인식이 어려울 수 있어요', 'Handwritten menus may be hard to recognize', 'قد يصعب التعرف على قوائم الطعام المكتوبة بخط اليد')}</p>
         </div>
       </div>
     </div>

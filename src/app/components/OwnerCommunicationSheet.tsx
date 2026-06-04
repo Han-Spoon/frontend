@@ -1,73 +1,33 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, XCircle } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
+import {
+  formatOwnerCommunicationContent,
+  getAllergyName,
+  ownerCommunicationI18n,
+  translate,
+  type LocalizedText,
+  type OwnerContent,
+} from '../i18n';
 
-export type OwnerCommunicationType = 'order' | 'ingredient' | 'request' | 'spicy';
+export type OwnerCommunicationType =
+  | 'order'
+  | 'ingredient'
+  | 'request'
+  | 'spicy'
+  | 'lessSpicy'
+  | 'moreSpicy';
 export type OwnerResponseId = 'ok' | 'yes' | 'no' | 'possible' | 'difficult';
 export type OwnerResponseTone = 'success' | 'caution' | 'danger';
 
 export interface OwnerResponseOption {
   id: OwnerResponseId;
-  label: {
-    ko: string;
-    en: string;
-  };
+  label: LocalizedText;
   tone: OwnerResponseTone;
 }
 
 export const getOwnerResponseOptions = (type: OwnerCommunicationType): OwnerResponseOption[] => {
-  if (type === 'order') {
-    return [
-      {
-        id: 'ok',
-        label: {
-          ko: '네, 주문 받았습니다',
-          en: 'Yes, your order is placed',
-        },
-        tone: 'success',
-      },
-    ];
-  }
-
-  if (type === 'ingredient') {
-    return [
-      {
-        id: 'yes',
-        label: {
-          ko: '네, 들어 있어요',
-          en: 'Yes, it contains that',
-        },
-        tone: 'caution',
-      },
-      {
-        id: 'no',
-        label: {
-          ko: '아니요, 안 들어 있어요',
-          en: 'No, it does not contain that',
-        },
-        tone: 'success',
-      },
-    ];
-  }
-
-  return [
-    {
-      id: 'possible',
-      label: {
-        ko: '네, 가능해요',
-        en: 'Yes, that is possible',
-      },
-      tone: 'success',
-    },
-    {
-      id: 'difficult',
-      label: {
-        ko: '죄송해요, 어려워요',
-        en: 'Sorry, that is difficult',
-      },
-      tone: 'danger',
-    },
-  ];
+  return ownerCommunicationI18n.responseOptions[type] as OwnerResponseOption[];
 };
 
 export const getOwnerResponseOption = (
@@ -97,36 +57,56 @@ export function OwnerCommunicationSheet({
   const [response, setResponse] = useState<OwnerResponseId | null>(initialResponse);
   const [saved, setSaved] = useState(false);
 
-  const t = (ko: string, en: string) => (language === 'ko' ? ko : en);
+  const getContent = (): OwnerContent => {
+    const menuName = {
+      ko: menu.menuName,
+      en: menu.menuNameEn,
+      ar: menu.menuNameAr ?? menu.menuNameEn,
+    };
+    const emptyText = { ko: '', en: '', ar: '' };
 
-  const getContent = () => {
     switch (type) {
       case 'order':
-        return {
-          korean: `${menu.menuName} 하나 주세요`,
-          english: `One ${menu.menuNameEn}, please`,
-        };
+        return formatOwnerCommunicationContent(type, {
+          menuName,
+          ingredient: emptyText,
+          allergen: emptyText,
+        });
       case 'ingredient': {
-        const ingredient = menu.riskReasons[0]?.includes('갑각류') ? '갑각류' : '재료';
-        return {
-          korean: `여기에 ${ingredient}가 들어가 있나요?`,
-          english: `Does this contain ${ingredient === '갑각류' ? 'shellfish' : 'this ingredient'}?`,
-        };
+        const ingredient = menu.riskReasons[0]?.includes('갑각류')
+          ? ownerCommunicationI18n.ingredients.shellfish
+          : ownerCommunicationI18n.ingredients.generic;
+
+        return formatOwnerCommunicationContent(type, {
+          menuName,
+          ingredient,
+          allergen: emptyText,
+        });
       }
       case 'request': {
-        const allergen = userProfile?.allergies[0] || t('특정 재료', 'specific ingredient');
-        return {
-          korean: `저는 ${allergen} 알레르기가 있어요. ${allergen} 빼고 만들어 주실 수 있나요?`,
-          english: `I'm allergic to ${allergen}. Can you make it without ${allergen}?`,
+        const allergy = userProfile?.allergies[0];
+        const allergen = {
+          ko: getAllergyName(allergy, 'ko'),
+          en: getAllergyName(allergy, 'en'),
+          ar: getAllergyName(allergy, 'ar'),
         };
+
+        return formatOwnerCommunicationContent(type, {
+          menuName,
+          ingredient: emptyText,
+          allergen,
+        });
       }
       case 'spicy':
-        return {
-          korean: '안 맵게 만들어 주실 수 있나요?',
-          english: 'Can you make it not spicy?',
-        };
+      case 'lessSpicy':
+      case 'moreSpicy':
+        return formatOwnerCommunicationContent(type, {
+          menuName,
+          ingredient: emptyText,
+          allergen: emptyText,
+        });
       default:
-        return { korean: '', english: '' };
+        return { korean: '', english: '', arabic: '' };
     }
   };
 
@@ -185,21 +165,21 @@ export function OwnerCommunicationSheet({
         <div className="px-6 pb-8 pt-6 relative">
           <div className="mb-4">
             <div className="text-2xl font-bold text-neutral-900 leading-tight mb-2">
-              {content.korean}
+              {language === 'ko' ? content.korean : language === 'ar' ? content.arabic : content.english}
             </div>
             <div className="text-sm text-neutral-500">
-              {content.english}
+              {language === 'ko' ? content.english : content.korean}
             </div>
           </div>
 
           <div className="mb-6 p-4 bg-neutral-50 rounded-xl">
-            <div className="text-xs text-neutral-500 mb-1">{t('선택된 메뉴', 'Selected menu')}</div>
-            <div className="font-medium text-neutral-900">{menu.menuName}</div>
-            <div className="text-xs text-neutral-500 mt-1">{menu.menuNameEn}</div>
+            <div className="text-xs text-neutral-500 mb-1">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
+            <div className="font-medium text-neutral-900">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
+            <div className="text-xs text-neutral-500 mt-1">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
           </div>
 
           <div className="space-y-2 mb-4">
-            <div className="text-xs text-neutral-600 mb-3">{t('사장님 응답', 'Owner response')}</div>
+            <div className="text-xs text-neutral-600 mb-3">{translate(language, ownerCommunicationI18n.labels.ownerResponse)}</div>
             {responseButtons.map((btn) => {
               const selected = response === btn.id;
 
@@ -221,9 +201,9 @@ export function OwnerCommunicationSheet({
                     {selected ? getResponseIcon(btn.tone) : btn.id === 'ok' || btn.id === 'possible' ? '✓' : btn.id === 'yes' ? '!' : '✗'}
                   </span>
                   <span className="min-w-0 text-left leading-tight">
-                    <span className="block">{btn.label.ko}</span>
+                    <span className="block">{translate(language, btn.label)}</span>
                     <span className={`block text-xs mt-0.5 ${selected ? 'opacity-75' : 'text-neutral-500'}`}>
-                      {btn.label.en}
+                      {language === 'ko' ? btn.label.en : btn.label.ko}
                     </span>
                   </span>
                 </button>
@@ -243,10 +223,10 @@ export function OwnerCommunicationSheet({
             {saved ? (
               <span className="flex items-center justify-center gap-2">
                 <Check className="w-4 h-4" />
-                {t('저장되었습니다', 'Saved')}
+                {translate(language, ownerCommunicationI18n.labels.saved)}
               </span>
             ) : (
-              t('자주 쓰는 카드로 저장', 'Save as favorite card')
+              translate(language, ownerCommunicationI18n.labels.saveFavorite)
             )}
           </button>
         </div>
