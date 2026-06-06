@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { ArrowLeft, User, LogOut, ChevronRight } from 'lucide-react';
+import { logout } from '../../api/auth';
+import { deleteMe } from '../../api/user';
+import type { CurrentUser } from '../../api/user';
 import type { Language, UserAllergy, UserProfile } from '../App';
 
 interface HistoryItem {
@@ -21,6 +24,7 @@ interface SavedCard {
 interface MyPageScreenProps {
   language: Language;
   setLanguage: (language: Language) => void;
+  currentUser: CurrentUser | null;
   userProfile: UserProfile | null;
   history: HistoryItem[];
   onBack: () => void;
@@ -35,6 +39,7 @@ type TabType = 'profile' | 'history' | 'saved';
 export function MyPageScreen({
   language,
   setLanguage,
+  currentUser,
   userProfile,
   history,
   onBack,
@@ -45,6 +50,8 @@ export function MyPageScreen({
 }: MyPageScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [editingHistoryId, setEditingHistoryId] = useState<string | null>(null);
   const [editingHistoryTitle, setEditingHistoryTitle] = useState('');
   const [selectedSavedCardId, setSelectedSavedCardId] = useState<string | null>(null);
@@ -84,10 +91,33 @@ export function MyPageScreen({
     { value: 'ar', label: 'العربية' },
   ];
 
-  const handleLogout = () => {
-    setShowLogoutConfirm(false);
-    onLogout();
+  const handleLogout = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      onLogout();
+    }
   };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await deleteMe();
+      onLogout();
+    } catch (error) {
+      console.error('Delete account failed:', error);
+      setDeleteError(
+        typeof error === 'string'
+          ? error
+          : error instanceof Error
+          ? error.message
+          : 'Account deletion failed.'
+      );
+    }
+  };
+
+  // console.log(currentUser, 'Current user should be available in MyPageScreen');
 
   return (
     <div className="h-screen flex flex-col bg-white">
@@ -104,8 +134,12 @@ export function MyPageScreen({
             <User className="w-8 h-8 text-white" />
           </div>
           <div>
-            <div className="font-semibold text-neutral-900 mb-1">{t('사용자', 'User', 'المستخدم')}</div>
-            <div className="text-sm text-neutral-600">user@example.com</div>
+            <div className="font-semibold text-neutral-900 mb-1">
+              {currentUser?.nickname ?? 'User'}
+            </div>
+            <div className="text-sm text-neutral-600">
+              {currentUser?.email ?? 'user@example.com'}
+            </div>
           </div>
         </div>
       </div>
@@ -206,6 +240,40 @@ export function MyPageScreen({
             >
               {t('프로필 수정', 'Edit profile', 'تعديل الملف')}
             </button>
+
+            {/* <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="w-full h-12 mt-3 border border-red-500 text-red-500 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors"
+            >
+              {t('회원 탈퇴', 'Delete account', 'حذف الحساب')}
+            </button> */}
+
+            {showDeleteConfirm && (
+              <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center px-4">
+                <div className="w-full max-w-sm bg-white rounded-2xl p-6 shadow-lg">
+                  <div className="text-base font-semibold text-neutral-900 mb-4">
+                    {t('정말 계정을 삭제하시겠습니까?', 'Delete your account?', 'هل تريد حذف حسابك؟')}
+                  </div>
+                  {deleteError && (
+                    <p className="text-sm text-red-500 mb-3">{deleteError}</p>
+                  )}
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="flex-1 h-11 bg-white border border-neutral-300 rounded-xl text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                    >
+                      {t('취소', 'Cancel', 'إلغاء')}
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="flex-1 h-11 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors"
+                    >
+                      {t('삭제', 'Delete', 'حذف')}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
