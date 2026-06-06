@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Loader2 } from 'lucide-react';
+import { createScan, type ScanCreatePayload, type ScanMenuItem } from '../../api/scan';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 
 interface AnalyzingScreenProps {
@@ -11,6 +12,8 @@ interface AnalyzingScreenProps {
 
 export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
   const [step, setStep] = useState(0);
+  const [scanStatus, setScanStatus] = useState<'pending' | 'analyzing' | 'completed' | 'failed' | null>(null);
+  const [scanError, setScanError] = useState<string | null>(null);
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualInput, setManualInput] = useState('');
 
@@ -29,71 +32,99 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
     if (showManualInput) return;
 
     const timer = setInterval(() => {
-      setStep((prev) => {
-        if (prev >= steps.length - 1) {
-          clearInterval(timer);
-          setTimeout(() => {
-            const mockMenus: MenuAnalysis[] = [
-              {
-                id: '1',
-                menuName: '비빔밥',
-                menuNameEn: 'Bibimbap',
-                menuNameAr: 'بيبيمباب',
-                description: '밥 위에 나물, 고기, 고추장을 올린 한국 요리',
-                descriptionEn: 'A Korean rice dish topped with seasoned vegetables, meat, and chili paste',
-                descriptionAr: 'طبق أرز كوري يعلوه خضار متبلة ولحم ومعجون الفلفل الحار',
-                price: '12,000원',
-                riskLevel: 'safe',
-                riskReasons: [],
-                riskReasonsEn: [],
-                riskReasonsAr: [],
-                isSpicy: false,
-                isAlcohol: false,
-                image: 'https://sthanspoonprod.blob.core.windows.net/menu-images/비빔밥.png',
-              },
-              {
-                id: '2',
-                menuName: '김치찌개',
-                menuNameEn: 'Kimchi Stew',
-                menuNameAr: 'حساء الكيمتشي',
-                description: '김치와 돼지고기를 넣고 끓인 매운 찌개',
-                descriptionEn: 'A spicy stew made with kimchi and pork',
-                descriptionAr: 'حساء حار مصنوع من الكيمتشي ولحم الخنزير',
-                price: '10,000원',
-                riskLevel: 'caution',
-                riskReasons: ['매운 음식입니다', '돼지고기가 포함되어 있습니다'],
-                riskReasonsEn: ['This is spicy', 'Contains pork'],
-                riskReasonsAr: ['هذا الطبق حار', 'يحتوي على لحم الخنزير'],
-                isSpicy: true,
-                isAlcohol: false,
-              },
-              {
-                id: '3',
-                menuName: '해물파전',
-                menuNameEn: 'Seafood Pancake',
-                menuNameAr: 'فطيرة مأكولات بحرية',
-                description: '해산물과 파를 넣어 부친 전',
-                descriptionEn: 'A savory pancake with seafood and green onions',
-                descriptionAr: 'فطيرة مالحة مع المأكولات البحرية والبصل الأخضر',
-                price: '15,000원',
-                riskLevel: 'danger',
-                riskReasons: ['갑각류 알레르기 주의', '해산물이 포함되어 있습니다'],
-                riskReasonsEn: ['Contains shellfish', 'Includes seafood'],
-                riskReasonsAr: ['يحتوي على محار أو قشريات', 'يتضمن مأكولات بحرية'],
-                isSpicy: false,
-                isAlcohol: false,
-              },
-            ];
-            onComplete(mockMenus);
-          }, 500);
-          return prev;
-        }
-        return prev + 1;
-      });
+      setStep((prev) => Math.min(prev + 1, steps.length - 1));
     }, 1500);
 
     return () => clearInterval(timer);
-  }, [showManualInput, onComplete, steps]);
+  }, [showManualInput, steps.length]);
+
+  useEffect(() => {
+    if (!image) return;
+
+    let isMounted = true;
+
+    const mapMenuItem = (item: ScanMenuItem): MenuAnalysis => ({
+      id: item.id,
+      image: item.image ?? undefined,
+      menuName: item.menuName,
+      menuNameEn: item.menuNameEn ?? item.menuName,
+      menuNameAr: item.menuNameAr ?? undefined,
+      description: item.description,
+      descriptionEn: item.descriptionEn,
+      descriptionAr: item.descriptionAr,
+      price: item.price,
+      riskLevel: item.riskLevel,
+      riskReasons: item.riskReasons ?? [],
+      riskReasonsEn: item.riskReasonsEn,
+      riskReasonsAr: item.riskReasonsAr,
+      isSpicy: item.isSpicy,
+      is_spicy: item.isSpicy,
+      isAlcohol: item.isAlcohol,
+      is_alcohol: item.isAlcohol,
+    });
+
+    const runScan = async () => {
+      setScanError(null);
+      setScanStatus('pending');
+      setStep(0);
+
+      if (!image.storage?.key) {
+        setScanError(t(
+          '이미지 저장 키를 찾을 수 없습니다. 다시 시도해 주세요.',
+          'Image storage key is missing. Please try again.',
+          'لا يمكن العثور على مفتاح تخزين الصورة. يرجى المحاولة مرة أخرى.'
+        ));
+        setScanStatus('failed');
+        return;
+      }
+
+      const payload: ScanCreatePayload = {
+        storageKey: image.storage.key,
+        source: image.source,
+        mimeType: image.file?.type,
+        fileSize: image.file?.size,
+      };
+
+      try {
+        const scanResult = await createScan(payload);
+        if (!isMounted) return;
+
+        setScanStatus(scanResult.scanStatus);
+
+        if (scanResult.scanStatus === 'completed') {
+          onComplete(scanResult.menus.map(mapMenuItem));
+          return;
+        }
+
+        if (scanResult.scanStatus === 'failed') {
+          setScanError(t(
+            '스캔에 실패했습니다. 다시 시도해 주세요.',
+            'Scan failed. Please try again.',
+            'فشل المسح. يرجى المحاولة مرة أخرى.'
+          ));
+        }
+      } catch (error) {
+        if (!isMounted) return;
+
+        setScanStatus('failed');
+        setScanError(
+          error instanceof Error
+            ? error.message
+            : t(
+                '알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.',
+                'An unknown error occurred. Please try again.',
+                'حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.'
+              )
+        );
+      }
+    };
+
+    runScan();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [image, onComplete, language, t]);
 
   const handleManualAnalysis = () => {
     if (!manualInput.trim()) return;
@@ -193,6 +224,12 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
               />
             ))}
           </div>
+
+          {scanError && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
+              <p className="text-sm text-red-700 text-center">{scanError}</p>
+            </div>
+          )}
         </div>
       </div>
 

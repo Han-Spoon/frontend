@@ -4,20 +4,21 @@ import type { Language, UserProfile } from '../App';
 
 interface OnboardingScreenProps {
   language: Language;
+  initialProfile?: UserProfile;
   onComplete: (profile: UserProfile) => void;
   onSkip: () => void;
 }
 
-export function OnboardingScreen({ language, onComplete, onSkip }: OnboardingScreenProps) {
-  const [isFirstTime, setIsFirstTime] = useState(false);
-  const [noSpicy, setNoSpicy] = useState(false);
-  const [isVegan, setIsVegan] = useState(false);
-  const [veganType, setVeganType] = useState('');
-  const [hasReligion, setHasReligion] = useState(false);
-  const [religionType, setReligionType] = useState('');
-  const [hasAllergies, setHasAllergies] = useState(false);
-  const [selectedAllergies, setSelectedAllergies] = useState<string[]>([]);
-  const [noAlcohol, setNoAlcohol] = useState(false);
+export function OnboardingScreen({ language, initialProfile, onComplete, onSkip }: OnboardingScreenProps) {
+  const [isFirstTime, setIsFirstTime] = useState(initialProfile?.isFirstTime ?? false);
+  const [noSpicy, setNoSpicy] = useState(initialProfile?.noSpicy ?? false);
+  const [isVegan, setIsVegan] = useState(initialProfile?.isVegan ?? false);
+  const [veganType, setVeganType] = useState(initialProfile?.veganType ?? '');
+  const [hasReligion, setHasReligion] = useState(initialProfile?.hasReligion ?? false);
+  const [religionType, setReligionType] = useState(initialProfile?.religionType ?? '');
+  const [hasAllergies, setHasAllergies] = useState(initialProfile?.hasAllergies ?? false);
+  const [selectedAllergies, setSelectedAllergies] = useState<string[]>(initialProfile?.allergies?.filter((item): item is string => typeof item === 'string') ?? []);
+  const [noAlcohol, setNoAlcohol] = useState(initialProfile?.noAlcohol ?? false);
 
   const t = (ko: string, en: string, ar: string) => (
     language === 'ko' ? ko : language === 'ar' ? ar : en

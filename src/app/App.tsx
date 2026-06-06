@@ -6,6 +6,8 @@ import { HomeScreen } from './components/HomeScreen';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
+import { createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
+import type { CurrentUser } from '../api/user';
 
 export type Language = 'ko' | 'en' | 'ar';
 
@@ -84,17 +86,80 @@ export default function App() {
   const navigate = useNavigate();
   const [language, setLanguage] = useState<Language>('ko');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<MenuAnalysis[]>([]);
   const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
 
+  const loadCurrentUser = async () => {
+    try {
+      const user = await getMe();
+      setCurrentUser(user);
+    } catch (error) {
+      console.warn('Unable to fetch current user:', error);
+      setCurrentUser(null);
+    }
+  };
+
+  const loadUserProfile = async () => {
+    try {
+      const profile = await getProfile();
+      setUserProfile(profile);
+    } catch (error) {
+      console.warn('Unable to fetch profile:', error);
+      setUserProfile(null);
+    }
+  };
+
   useEffect(() => {
+    loadCurrentUser();
+    loadUserProfile();
+
     return () => {
       if (analysisImage?.previewUrl.startsWith('blob:')) {
         URL.revokeObjectURL(analysisImage.previewUrl);
       }
     };
-  }, [analysisImage]);
+  }, []);
+
+  const handleLanguageChange = async (languageValue: Language) => {
+    setLanguage(languageValue);
+
+    try {
+      await updateMe({ languageCode: languageValue });
+      setCurrentUser((prev) => (prev ? { ...prev, languageCode: languageValue } : prev));
+    } catch (error) {
+      console.error('Language update failed:', error);
+    }
+  };
+
+  const handleProfileSave = async (profile: UserProfile) => {
+    try {
+      if (userProfile) {
+        await updateProfile(profile);
+      } else {
+        await createProfile(profile);
+      }
+      setUserProfile(profile);
+      await loadCurrentUser();
+      navigate('/home');
+    } catch (error) {
+      console.error('Profile save failed:', error);
+      navigate('/home');
+    }
+  };
+
+  const handleLogin = async (hasProfile: boolean) => {
+    await loadCurrentUser();
+
+    if (hasProfile) {
+      await loadUserProfile();
+      navigate('/home');
+      return;
+    }
+
+    navigate('/onboarding');
+  };
 
   return (
     <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
@@ -107,13 +172,7 @@ export default function App() {
               <LoginScreen
                 language={language}
                 setLanguage={setLanguage}
-                onLogin={(hasProfile) => {
-                  if (hasProfile) {
-                    navigate('/home');
-                  } else {
-                    navigate('/onboarding');
-                  }
-                }}
+                onLogin={handleLogin}
               />
             }
           />
@@ -122,10 +181,8 @@ export default function App() {
             element={
               <OnboardingScreen
                 language={language}
-                onComplete={(profile) => {
-                  setUserProfile(profile);
-                  navigate('/home');
-                }}
+                initialProfile={userProfile ?? undefined}
+                onComplete={handleProfileSave}
                 onSkip={() => navigate('/home')}
               />
             }
@@ -195,7 +252,8 @@ export default function App() {
             element={
               <MyPageScreen
                 language={language}
-                setLanguage={setLanguage}
+                setLanguage={handleLanguageChange}
+                currentUser={currentUser}
                 userProfile={userProfile}
                 history={analysisHistory}
                 onBack={() => navigate('/home')}
@@ -209,7 +267,11 @@ export default function App() {
                     prev.map((item) => (item.id === id ? { ...item, title } : item))
                   );
                 }}
-                onLogout={() => navigate('/login')}
+                onLogout={() => {
+                  setUserProfile(null);
+                  setCurrentUser(null);
+                  navigate('/login');
+                }}
               />
             }
           />
