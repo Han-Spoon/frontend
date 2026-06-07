@@ -11,6 +11,7 @@ import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { createDefaultCards } from '../api/card';
+import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
 
 export type Language = 'ko' | 'en' | 'ar';
 
@@ -137,9 +138,61 @@ export default function App() {
     }
   };
 
+  const loadHistory = async () => {
+    try {
+      const items = await getScanHistory();
+      setAnalysisHistory(
+        items.map((item) => ({
+          id: item.scanId,
+          title:
+            item.title ??
+            formatHistoryTitle(language, item.scannedAt ? new Date(item.scannedAt) : new Date()),
+          date: item.scannedAt ?? new Date().toISOString(),
+          menuCount: item.menuCount ?? 0,
+          dangerCount: item.riskyMenuCount ?? 0,
+          menus: [],
+        })),
+      );
+    } catch (error) {
+      console.warn('Unable to fetch scan history:', error);
+    }
+  };
+
+  // 기록 열기: 상세를 백엔드에서 가져와 결과화면으로.
+  const openHistory = async (item: HistoryItem) => {
+    try {
+      const result = await getScanResult(item.id);
+      setCurrentAnalysis((result.menus ?? []).map(mapMenuResult));
+      setAnalysisImage(null);
+      navigate('/results');
+    } catch (error) {
+      console.error('Unable to open scan:', error);
+    }
+  };
+
+  const handleDeleteHistory = async (id: string) => {
+    try {
+      await deleteScan(id);
+      setAnalysisHistory((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error('Delete scan failed:', error);
+    }
+  };
+
+  const handleRenameHistory = async (id: string, title: string) => {
+    setAnalysisHistory((prev) => prev.map((item) => (item.id === id ? { ...item, title } : item)));
+    try {
+      await updateScanTitle(id, title);
+    } catch (error) {
+      console.error('Rename scan failed:', error);
+      loadHistory();
+    }
+  };
+
   useEffect(() => {
     loadCurrentUser();
     loadUserProfile();
+    loadHistory();
 
     return () => {
       if (analysisImage?.previewUrl.startsWith('blob:')) {
@@ -249,13 +302,11 @@ export default function App() {
                   setAnalysisImage(image);
                   navigate('/analyzing');
                 }}
-                onHistory={(item) => {
-                  setCurrentAnalysis(item.menus);
-                  setAnalysisImage(null);
-                  navigate('/results');
-                }}
+                onHistory={openHistory}
                 onMyPage={() => navigate('/mypage')}
                 history={analysisHistory}
+                onDeleteHistory={handleDeleteHistory}
+                onRenameHistory={handleRenameHistory}
               />
             }
           />
@@ -273,21 +324,12 @@ export default function App() {
               <AnalyzingScreen
                 language={language}
                 image={analysisImage}
-                onComplete={(menus) => {
+                onComplete={(_scanId, menus) => {
                   setCurrentAnalysis(menus);
                   setAnalysisImage(null);
-                  setAnalysisHistory((prev) => [
-                    {
-                      id: String(Date.now()),
-                      title: formatHistoryTitle(language, new Date()),
-                      date: new Date().toISOString(),
-                      menuCount: menus.length,
-                      dangerCount: menus.filter((menu) => menu.riskLevel !== 'safe').length,
-                      menus,
-                    },
-                    ...prev,
-                  ]);
                   navigate('/results');
+                  // 백엔드에 영속된 최신 기록으로 목록 갱신.
+                  loadHistory();
                 }}
                 onCancel={() => {
                   setAnalysisImage(null);
@@ -321,15 +363,8 @@ export default function App() {
                 onEditProfile={(section) =>
                   navigate('/onboarding', section ? { state: { editSection: section } } : undefined)
                 }
-                onHistoryClick={(item) => {
-                  setCurrentAnalysis(item.menus);
-                  navigate('/results');
-                }}
-                onEditHistoryTitle={(id, title) => {
-                  setAnalysisHistory((prev) =>
-                    prev.map((item) => (item.id === id ? { ...item, title } : item))
-                  );
-                }}
+                onHistoryClick={openHistory}
+                onEditHistoryTitle={handleRenameHistory}
                 onLogout={() => {
                   setUserProfile(null);
                   setCurrentUser(null);

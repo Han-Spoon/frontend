@@ -1,21 +1,25 @@
 import { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
-import { createScan, type ScanCreatePayload, type ScanMenuItem } from '../../api/scan';
+import { Camera, Loader2 } from 'lucide-react';
+import { getScanResult, mapMenuResult, startScan } from '../../api/scan';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 
 interface AnalyzingScreenProps {
   language: Language;
   image: PendingMenuImage | null;
-  onComplete: (menus: MenuAnalysis[]) => void;
+  onComplete: (scanId: string, menus: MenuAnalysis[]) => void;
   onCancel: () => void;
 }
 
+type Phase = 'analyzing' | 'retake' | 'failed';
+
+const POLL_INTERVAL_MS = 1500;
+const MAX_POLL_MS = 15000;
+
 export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
   const [step, setStep] = useState(0);
-  const [scanStatus, setScanStatus] = useState<'pending' | 'analyzing' | 'completed' | 'failed' | null>(null);
-  const [scanError, setScanError] = useState<string | null>(null);
-  const [showManualInput, setShowManualInput] = useState(false);
-  const [manualInput, setManualInput] = useState('');
+  const [phase, setPhase] = useState<Phase>('analyzing');
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   const t = (ko: string, en: string, ar: string) => (
     language === 'ko' ? ko : language === 'ar' ? ar : en
@@ -28,163 +32,112 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
     t('알레르기와 식단 조건을 비교하고 있어요', 'Comparing allergies and diet conditions', 'جار مقارنة الحساسية وشروط النظام الغذائي'),
   ];
 
+  // 로딩 단계 애니메이션 (분석 중일 때만)
   useEffect(() => {
-    if (showManualInput) return;
-
+    if (phase !== 'analyzing') return;
     const timer = setInterval(() => {
       setStep((prev) => Math.min(prev + 1, steps.length - 1));
     }, 1500);
-
     return () => clearInterval(timer);
-  }, [showManualInput, steps.length]);
+  }, [phase, steps.length]);
 
   useEffect(() => {
     if (!image) return;
 
-    let isMounted = true;
+    let cancelled = false;
+    const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-    const mapMenuItem = (item: ScanMenuItem): MenuAnalysis => ({
-      id: item.id,
-      image: item.image ?? undefined,
-      menuName: item.menuName,
-      menuNameEn: item.menuNameEn ?? item.menuName,
-      menuNameAr: item.menuNameAr ?? undefined,
-      description: item.description,
-      descriptionEn: item.descriptionEn,
-      descriptionAr: item.descriptionAr,
-      price: item.price,
-      riskLevel: item.riskLevel,
-      riskReasons: item.riskReasons ?? [],
-      riskReasonsEn: item.riskReasonsEn,
-      riskReasonsAr: item.riskReasonsAr,
-      isSpicy: item.isSpicy,
-      is_spicy: item.isSpicy,
-      isAlcohol: item.isAlcohol,
-      is_alcohol: item.isAlcohol,
-    });
-
-    const runScan = async () => {
-      setScanError(null);
-      setScanStatus('pending');
+    const run = async () => {
+      setPhase('analyzing');
+      setErrorMessage(null);
       setStep(0);
 
       if (!image.storage?.key) {
-        setScanError(t(
+        setErrorMessage(t(
           '이미지 저장 키를 찾을 수 없습니다. 다시 시도해 주세요.',
           'Image storage key is missing. Please try again.',
-          'لا يمكن العثور على مفتاح تخزين الصورة. يرجى المحاولة مرة أخرى.'
+          'لا يمكن العثور على مفتاح تخزين الصورة. يرجى المحاولة مرة أخرى.',
         ));
-        setScanStatus('failed');
+        setPhase('failed');
         return;
       }
 
-      const payload: ScanCreatePayload = {
-        storageKey: image.storage.key,
-        source: image.source,
-        mimeType: image.file?.type,
-        fileSize: image.file?.size,
-      };
-
       try {
-        const scanResult = await createScan(payload);
-        if (!isMounted) return;
+        const { scanId } = await startScan({ storageKey: image.storage.key, source: image.source });
+        const deadline = Date.now() + MAX_POLL_MS;
 
-        setScanStatus(scanResult.scanStatus);
+        while (!cancelled) {
+          const result = await getScanResult(scanId);
+          if (cancelled) return;
 
-        if (scanResult.scanStatus === 'completed') {
-          onComplete(scanResult.menus.map(mapMenuItem));
-          return;
-        }
-
-        if (scanResult.scanStatus === 'failed') {
-          setScanError(t(
-            '스캔에 실패했습니다. 다시 시도해 주세요.',
-            'Scan failed. Please try again.',
-            'فشل المسح. يرجى المحاولة مرة أخرى.'
-          ));
+          if (result.status === 'completed') {
+            onComplete(scanId, (result.menus ?? []).map(mapMenuResult));
+            return;
+          }
+          if (result.status === 'needs_retake') {
+            setPhase('retake');
+            return;
+          }
+          if (result.status === 'failed') {
+            setErrorMessage(t(
+              '스캔에 실패했습니다. 다시 시도해 주세요.',
+              'Scan failed. Please try again.',
+              'فشل المسح. يرجى المحاولة مرة أخرى.',
+            ));
+            setPhase('failed');
+            return;
+          }
+          if (Date.now() >= deadline) {
+            setErrorMessage(t(
+              '분석이 지연되고 있어요. 잠시 후 다시 시도해 주세요.',
+              'Analysis is taking longer than expected. Please try again later.',
+              'يستغرق التحليل وقتًا أطول من المتوقع. يرجى المحاولة لاحقًا.',
+            ));
+            setPhase('failed');
+            return;
+          }
+          await delay(POLL_INTERVAL_MS);
         }
       } catch (error) {
-        if (!isMounted) return;
-
-        setScanStatus('failed');
-        setScanError(
+        if (cancelled) return;
+        setErrorMessage(
           error instanceof Error
             ? error.message
-            : t(
-                '알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.',
-                'An unknown error occurred. Please try again.',
-                'حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.'
-              )
+            : t('알 수 없는 오류가 발생했습니다. 다시 시도해 주세요.', 'An unknown error occurred. Please try again.', 'حدث خطأ غير معروف. يرجى المحاولة مرة أخرى.'),
         );
+        setPhase('failed');
       }
     };
 
-    runScan();
+    run();
 
     return () => {
-      isMounted = false;
+      cancelled = true;
     };
-  }, [image, onComplete, language, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [image, attempt]);
 
-  const handleManualAnalysis = () => {
-    if (!manualInput.trim()) return;
-
-    const menuNames = manualInput.split(/[,\n]/).map((s) => s.trim()).filter(Boolean);
-    const mockMenus: MenuAnalysis[] = menuNames.map((name, i) => ({
-      id: String(i + 1),
-      menuName: name,
-      menuNameEn: name,
-      menuNameAr: name,
-      description: t('메뉴 정보를 찾고 있습니다', 'Looking up menu information', 'جار البحث عن معلومات الطبق'),
-      descriptionEn: t('메뉴 정보를 찾고 있습니다', 'Looking up menu information', 'جار البحث عن معلومات الطبق'),
-      descriptionAr: t('메뉴 정보를 찾고 있습니다', 'Looking up menu information', 'جار البحث عن معلومات الطبق'),
-      riskLevel: 'safe',
-      riskReasons: [],
-      riskReasonsEn: [],
-      riskReasonsAr: [],
-      isSpicy: false,
-      isAlcohol: false,
-    }));
-
-    onComplete(mockMenus);
-  };
-
-  if (showManualInput) {
+  // 재촬영 안내 (needs_retake)
+  if (phase === 'retake') {
     return (
       <div className="h-screen flex flex-col bg-white">
         <div className="h-14 border-b border-neutral-200 flex items-center justify-center px-5 relative flex-shrink-0">
-          <h1 className="font-semibold text-neutral-900">{t('메뉴를 찾지 못했어요', 'Cannot find menu', 'تعذر العثور على الأطباق')}</h1>
+          <h1 className="font-semibold text-neutral-900">{t('다시 촬영이 필요해요', 'Retake needed', 'يلزم إعادة التصوير')}</h1>
         </div>
-
-        <div className="flex-1 flex flex-col px-5 py-6">
-          <p className="text-sm text-neutral-600 mb-4">{t('사진에서 메뉴명을 정확히 읽지 못했어요', 'Could not read the menu text from the photo', 'تعذر قراءة أسماء الأطباق من الصورة بدقة')}</p>
-
-          <textarea
-            value={manualInput}
-            onChange={(e) => setManualInput(e.target.value)}
-            placeholder={t(
-              '메뉴명을 줄바꿈 또는 쉼표로 구분하여 입력해주세요\n예: 비빔밥, 김치찌개, 불고기',
-              'Enter menu names separated by line breaks or commas\nExample: Bibimbap, Kimchi Stew, Bulgogi',
-              'أدخل أسماء الأطباق مفصولة بأسطر جديدة أو فواصل\nمثال: بيبيمباب، حساء الكيمتشي، بولغوغي'
-            )}
-            className="w-full h-40 p-4 border border-neutral-300 rounded-xl resize-none focus:outline-none focus:border-neutral-500 text-sm"
-          />
-
-          <button
-            onClick={onCancel}
-            className="mt-4 w-full h-12 bg-white border border-neutral-300 rounded-xl text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
-          >
-            {t('다시 시도하기', 'Retry', 'إعادة المحاولة')}
-          </button>
+        <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-5">
+            <Camera className="w-7 h-7 text-neutral-700" />
+          </div>
+          <p className="text-base font-medium text-neutral-900">
+            {t('가이드라인에 맞춰 촬영해주세요', 'Please take the photo following the guideline.', 'يرجى التقاط الصورة وفقًا للإرشادات.')}
+          </p>
         </div>
-
         <div className="border-t border-neutral-200 px-5 py-4 flex-shrink-0">
           <button
-            onClick={handleManualAnalysis}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors disabled:bg-neutral-300 disabled:cursor-not-allowed"
-            disabled={!manualInput.trim()}
+            onClick={onCancel}
+            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors"
           >
-            {t('입력한 메뉴로 분석하기', 'Analyze entered menus', 'تحليل الأطباق المدخلة')}
+            {t('다시 촬영', 'Retake', 'إعادة التصوير')}
           </button>
         </div>
       </div>
@@ -209,31 +162,40 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
         </div>
 
         <div className="w-full max-w-xs">
-          <div className="mb-6">
-            <Loader2 className="w-10 h-10 text-neutral-900 animate-spin mx-auto mb-4" />
-            <p className="text-center text-base font-medium text-neutral-900">{steps[step]}</p>
-          </div>
-
-          <div className="flex items-center justify-center gap-2 mb-8">
-            {steps.map((_, i) => (
-              <div
-                key={i}
-                className={`h-1 rounded-full transition-all ${
-                  i <= step ? 'w-8 bg-neutral-900' : 'w-1 bg-neutral-300'
-                }`}
-              />
-            ))}
-          </div>
-
-          {scanError && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-3">
-              <p className="text-sm text-red-700 text-center">{scanError}</p>
+          {phase === 'analyzing' ? (
+            <>
+              <div className="mb-6">
+                <Loader2 className="w-10 h-10 text-neutral-900 animate-spin mx-auto mb-4" />
+                <p className="text-center text-base font-medium text-neutral-900">{steps[step]}</p>
+              </div>
+              <div className="flex items-center justify-center gap-2 mb-8">
+                {steps.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-1 rounded-full transition-all ${
+                      i <= step ? 'w-8 bg-neutral-900' : 'w-1 bg-neutral-300'
+                    }`}
+                  />
+                ))}
+              </div>
+            </>
+          ) : (
+            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+              <p className="text-sm text-red-700 text-center">{errorMessage}</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="border-t border-neutral-200 px-5 py-4 flex-shrink-0">
+      <div className="border-t border-neutral-200 px-5 py-4 flex-shrink-0 space-y-2">
+        {phase === 'failed' && (
+          <button
+            onClick={() => setAttempt((a) => a + 1)}
+            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors"
+          >
+            {t('다시 시도', 'Retry', 'إعادة المحاولة')}
+          </button>
+        )}
         <button
           onClick={onCancel}
           className="w-full h-12 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
