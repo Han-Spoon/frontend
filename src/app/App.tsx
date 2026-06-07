@@ -101,6 +101,10 @@ export default function App() {
     try {
       const user = await getMe();
       setCurrentUser(user);
+      // 언어 출처는 users 테이블(GET /users/me). 앱 언어를 저장된 값과 동기화한다.
+      if (user.languageCode === 'ko' || user.languageCode === 'en' || user.languageCode === 'ar') {
+        setLanguage(user.languageCode);
+      }
     } catch (error) {
       console.warn('Unable to fetch current user:', error);
       setCurrentUser(null);
@@ -183,10 +187,12 @@ export default function App() {
       }
     }
 
+    const wasEdit = Boolean(userProfile);
     setUserProfile(profile);
     setLanguage(profile.languageCode);
     await loadCurrentUser();
-    navigate('/home');
+    // 편집(기존 프로필)이면 마이페이지로, 신규 온보딩이면 홈으로.
+    navigate(wasEdit ? '/mypage' : '/home');
   };
 
   const handleLogin = async (hasProfile: boolean) => {
@@ -297,7 +303,9 @@ export default function App() {
                 userProfile={userProfile}
                 history={analysisHistory}
                 onBack={() => navigate('/home')}
-                onEditProfile={() => navigate('/onboarding')}
+                onEditProfile={(section) =>
+                  navigate('/onboarding', section ? { state: { editSection: section } } : undefined)
+                }
                 onHistoryClick={(item) => {
                   setCurrentAnalysis(item.menus);
                   navigate('/results');

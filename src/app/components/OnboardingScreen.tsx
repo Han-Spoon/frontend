@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search } from 'lucide-react';
 import type { Language, UserProfile } from '../App';
 import {
@@ -19,8 +20,17 @@ interface OnboardingScreenProps {
 
 const TOTAL_STEPS = 3;
 
+type EditSection = 'language' | 'country' | 'diet';
+const SECTION_TO_STEP: Record<EditSection, number> = { language: 1, country: 2, diet: 3 };
+
 export function OnboardingScreen({ language, setLanguage, initialProfile, onComplete }: OnboardingScreenProps) {
-  const [step, setStep] = useState(1);
+  const navigate = useNavigate();
+  const location = useLocation();
+  // 마이페이지에서 단위 수정으로 진입하면 해당 섹션만 노출한다.
+  const editSection = (location.state as { editSection?: EditSection } | null)?.editSection;
+  const editMode = !!editSection;
+
+  const [step, setStep] = useState(editMode ? SECTION_TO_STEP[editSection!] : 1);
 
   const [nationality, setNationality] = useState(initialProfile?.nationality ?? '');
   const [countrySearch, setCountrySearch] = useState('');
@@ -122,9 +132,9 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
     <div className="h-screen flex flex-col bg-white">
       {/* 헤더 + 진행 표시 */}
       <div className="h-14 border-b border-neutral-200 flex items-center justify-center px-5 relative flex-shrink-0">
-        {step > 1 && (
+        {(editMode || step > 1) && (
           <button
-            onClick={() => setStep((s) => s - 1)}
+            onClick={() => (editMode ? navigate(-1) : setStep((s) => s - 1))}
             className="absolute left-5"
             aria-label={t('이전', 'Back', 'رجوع')}
           >
@@ -132,17 +142,23 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
           </button>
         )}
         <h1 className="font-semibold text-neutral-900">
-          {t('프로필 설정', 'Profile setup', 'إعداد الملف')}
+          {editMode
+            ? t('프로필 수정', 'Edit profile', 'تعديل الملف')
+            : t('프로필 설정', 'Profile setup', 'إعداد الملف')}
         </h1>
-        <span className="absolute right-5 text-xs text-neutral-500">{step}/{TOTAL_STEPS}</span>
+        {!editMode && (
+          <span className="absolute right-5 text-xs text-neutral-500">{step}/{TOTAL_STEPS}</span>
+        )}
       </div>
 
-      <div className="h-1 bg-neutral-100 flex-shrink-0">
-        <div
-          className="h-full bg-neutral-900 transition-all"
-          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
-        />
-      </div>
+      {!editMode && (
+        <div className="h-1 bg-neutral-100 flex-shrink-0">
+          <div
+            className="h-full bg-neutral-900 transition-all"
+            style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+          />
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col">
         <h2 className="text-lg font-semibold mb-6">{stepTitle}</h2>
@@ -330,7 +346,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
       {/* 하단 액션 */}
       <div className="border-t border-neutral-200 px-5 py-4 space-y-2 flex-shrink-0">
         {errorMessage && <p className="text-xs text-red-500 text-center">{errorMessage}</p>}
-        {step < TOTAL_STEPS ? (
+        {!editMode && step < TOTAL_STEPS ? (
           <button
             onClick={() => setStep((s) => s + 1)}
             disabled={!canGoNext}
@@ -346,7 +362,9 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
           >
             {saving
               ? t('저장 중...', 'Saving...', 'جارٍ الحفظ...')
-              : t('저장하고 시작하기', 'Save and start', 'حفظ والبدء')}
+              : editMode
+                ? t('저장', 'Save', 'حفظ')
+                : t('저장하고 시작하기', 'Save and start', 'حفظ والبدء')}
           </button>
         )}
       </div>

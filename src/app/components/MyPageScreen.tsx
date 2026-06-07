@@ -5,7 +5,14 @@ import { deleteMe } from '../../api/user';
 import type { CurrentUser } from '../../api/user';
 import type { Language, UserAllergy, UserProfile } from '../App';
 import { getAllergyName } from '../i18n';
-import { RELIGION_OPTIONS, VEGETARIAN_OPTIONS } from '../constants/onboarding';
+import {
+  RELIGION_OPTIONS,
+  VEGETARIAN_OPTIONS,
+  getCountryFlag,
+  getCountryName,
+} from '../constants/onboarding';
+
+type ProfileSection = 'language' | 'country' | 'diet';
 
 interface HistoryItem {
   id: string;
@@ -30,7 +37,8 @@ interface MyPageScreenProps {
   userProfile: UserProfile | null;
   history: HistoryItem[];
   onBack: () => void;
-  onEditProfile: () => void;
+  /** section 미지정 시 전체 온보딩(신규 생성), 지정 시 해당 단위만 수정 */
+  onEditProfile: (section?: ProfileSection) => void;
   onHistoryClick: (item: HistoryItem) => void;
   onEditHistoryTitle: (id: string, title: string) => void;
   onLogout: () => void;
@@ -40,7 +48,6 @@ type TabType = 'profile' | 'history' | 'saved';
 
 export function MyPageScreen({
   language,
-  setLanguage,
   currentUser,
   userProfile,
   history,
@@ -97,6 +104,35 @@ export function MyPageScreen({
     { value: 'en', label: 'English' },
     { value: 'ar', label: 'العربية' },
   ];
+  const currentLanguageLabel = languageOptions.find((o) => o.value === language)?.label ?? language;
+
+  const sectionHeader = (title: string, section: ProfileSection) => (
+    <div className="flex items-center justify-between mb-2">
+      <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+      <button
+        onClick={() => onEditProfile(section)}
+        className="flex items-center gap-0.5 text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+      >
+        {t('수정', 'Edit', 'تعديل')}
+        <ChevronRight className="w-3.5 h-3.5" />
+      </button>
+    </div>
+  );
+
+  // 해당되면 흰색 배경, 아니면 회색 배경으로 표시.
+  const dietRow = (active: boolean, emoji: string, label: string, detail?: string) => (
+    <div
+      className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
+        active ? 'bg-white border-neutral-200' : 'bg-neutral-50 border-transparent'
+      }`}
+    >
+      <span className="text-lg leading-none">{emoji}</span>
+      <span className={`text-sm ${active ? 'text-neutral-900' : 'text-neutral-400'}`}>
+        {label}
+        {active && detail ? ` · ${detail}` : ''}
+      </span>
+    </div>
+  );
 
   const handleLogout = async () => {
     try {
@@ -174,86 +210,104 @@ export function MyPageScreen({
 
       <div className="flex-1 overflow-y-auto">
         {activeTab === 'profile' && (
-          <div className="px-5 py-6">
-            <div className="flex items-center gap-2" style={{ justifyContent: 'flex-end' }}>
-                {languageOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setLanguage(option.value)}
-                    className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-                      language === option.value
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            {/* <div className="flex items-center justify-between mb-4 mt-4">
-              <h2 className="text-lg font-medium text-neutral-900">{t('현재 식단 설정', 'Current profile settings', 'إعدادات الملف الحالية')}</h2>
-            </div> */}
-
-            <div className="space-y-3 mb-6 mt-4">
-              {userProfile?.noSpicy && (
-                <div className="p-4 bg-neutral-50 rounded-xl">
-                  <span className="text-sm text-neutral-900">{t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار')}</span>
-                </div>
-              )}
-              {userProfile?.isVegan && (
-                <div className="p-4 bg-neutral-50 rounded-xl">
-                  <span className="text-sm text-neutral-900">
-                    {t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')} ({getVeganLabel(userProfile.veganType)})
-                  </span>
-                </div>
-              )}
-              {userProfile?.hasReligion && (
-                <div className="p-4 bg-neutral-50 rounded-xl">
-                  <span className="text-sm text-neutral-900">
-                    {t('종교 식단', 'Religious diet', 'نظام غذائي ديني')} ({getReligionLabel(userProfile.religionType)})
-                  </span>
-                </div>
-              )}
-              {userProfile?.hasAllergies && userProfile.allergies.length > 0 && (
-                <div className="p-4 bg-neutral-50 rounded-xl">
-                  <div className="text-sm text-neutral-900 mb-2">{t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}</div>
-                  <div className="flex flex-wrap gap-2">
-                    {userProfile.allergies.map((allergy) => (
-                      <span
-                        key={getAllergyDisplayName(allergy)}
-                        className="px-2 py-1 bg-white border border-neutral-300 rounded-md text-xs text-neutral-700"
-                      >
-                        {getAllergyDisplayName(allergy)}
-                      </span>
-                    ))}
+          <div className="px-5 py-6 space-y-6">
+            {userProfile ? (
+              <>
+                {/* 언어 */}
+                <section>
+                  {sectionHeader(t('언어', 'Language', 'اللغة'), 'language')}
+                  <div className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-neutral-200">
+                    <span className="text-sm text-neutral-900">{currentLanguageLabel}</span>
                   </div>
-                </div>
-              )}
-              {userProfile?.noAlcohol && (
-                <div className="p-4 bg-neutral-50 rounded-xl">
-                  <span className="text-sm text-neutral-900">{t('금주', 'No alcohol', 'بدون كحول')}</span>
-                </div>
-              )}
-              {!userProfile && (
-                <div className="p-4 bg-neutral-50 rounded-xl text-center">
-                  <span className="text-sm text-neutral-600">{t('설정된 프로필이 없습니다', 'No profile set', 'لا يوجد ملف محدد')}</span>
-                </div>
-              )}
-            </div>
+                </section>
 
-            <button
-              onClick={onEditProfile}
-              className="w-full h-12 bg-neutral-900 text-white text-sm font-medium rounded-xl hover:bg-neutral-800 transition-colors"
-            >
-              {t('프로필 수정', 'Edit profile', 'تعديل الملف')}
-            </button>
+                {/* 나라 */}
+                <section>
+                  {sectionHeader(t('나라', 'Country', 'البلد'), 'country')}
+                  <div className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-neutral-200">
+                    {userProfile.nationality ? (
+                      <>
+                        <span className="text-lg leading-none">{getCountryFlag(userProfile.nationality)}</span>
+                        <span className="text-sm text-neutral-900">
+                          {getCountryName(userProfile.nationality, language)}
+                        </span>
+                      </>
+                    ) : (
+                      <span className="text-sm text-neutral-400">{t('없음', 'None', 'لا شيء')}</span>
+                    )}
+                  </div>
+                </section>
 
-            {/* <button
-              onClick={() => setShowDeleteConfirm(true)}
-              className="w-full h-12 mt-3 border border-red-500 text-red-500 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors"
-            >
-              {t('회원 탈퇴', 'Delete account', 'حذف الحساب')}
-            </button> */}
+                {/* 식단 */}
+                <section>
+                  {sectionHeader(t('식단', 'Diet', 'النظام الغذائي'), 'diet')}
+                  <div className="space-y-2">
+                    {dietRow(!!userProfile.noSpicy, '🌶️', t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار'))}
+                    {dietRow(
+                      !!userProfile.isVegan,
+                      '🥗',
+                      t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم'),
+                      getVeganLabel(userProfile.veganType),
+                    )}
+                    {dietRow(
+                      !!userProfile.hasReligion,
+                      '🙏',
+                      t('종교 식단', 'Religious diet', 'نظام غذائي ديني'),
+                      getReligionLabel(userProfile.religionType),
+                    )}
+                    {dietRow(!!userProfile.noAlcohol, '🍺', t('금주', 'No alcohol', 'بدون كحول'))}
+
+                    {/* 알레르기 */}
+                    <div
+                      className={`rounded-xl px-4 py-3 border ${
+                        userProfile.hasAllergies && userProfile.allergies.length > 0
+                          ? 'bg-white border-neutral-200'
+                          : 'bg-neutral-50 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-lg leading-none">🥜</span>
+                        <span
+                          className={`text-sm ${
+                            userProfile.hasAllergies && userProfile.allergies.length > 0
+                              ? 'text-neutral-900'
+                              : 'text-neutral-400'
+                          }`}
+                        >
+                          {t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}
+                        </span>
+                      </div>
+                      {userProfile.hasAllergies && userProfile.allergies.length > 0 ? (
+                        <div className="flex flex-wrap gap-2 pl-8">
+                          {userProfile.allergies.map((allergy) => (
+                            <span
+                              key={getAllergyDisplayName(allergy)}
+                              className="px-2 py-1 bg-neutral-100 border border-neutral-200 rounded-md text-xs text-neutral-700"
+                            >
+                              {getAllergyDisplayName(allergy)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-sm text-neutral-400 pl-8">{t('없음', 'None', 'لا شيء')}</span>
+                      )}
+                    </div>
+                  </div>
+                </section>
+              </>
+            ) : (
+              <div className="py-12 text-center space-y-4">
+                <p className="text-sm text-neutral-600">
+                  {t('설정된 프로필이 없습니다', 'No profile set', 'لا يوجد ملف محدد')}
+                </p>
+                <button
+                  onClick={() => onEditProfile()}
+                  className="h-12 px-6 bg-neutral-900 text-white text-sm font-medium rounded-xl hover:bg-neutral-800 transition-colors"
+                >
+                  {t('프로필 설정하기', 'Set up profile', 'إعداد الملف')}
+                </button>
+              </div>
+            )}
 
             {showDeleteConfirm && (
               <div className="fixed inset-0 bg-black/50 z-40 flex items-center justify-center px-4">
