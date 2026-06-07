@@ -365,6 +365,7 @@ export default function App() {
                 }
                 onHistoryClick={openHistory}
                 onEditHistoryTitle={handleRenameHistory}
+                onDeleteHistory={handleDeleteHistory}
                 onLogout={() => {
                   setUserProfile(null);
                   setCurrentUser(null);

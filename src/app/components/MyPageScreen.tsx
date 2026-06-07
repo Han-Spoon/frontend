@@ -11,6 +11,7 @@ import {
   getCountryFlag,
   getCountryName,
 } from '../constants/onboarding';
+import { ScanHistoryList } from './ScanHistoryList';
 
 type ProfileSection = 'language' | 'country' | 'diet';
 
@@ -34,17 +35,22 @@ interface MyPageScreenProps {
   onEditProfile: (section?: ProfileSection) => void;
   onHistoryClick: (item: HistoryItem) => void;
   onEditHistoryTitle: (id: string, title: string) => void;
+  onDeleteHistory: (id: string) => void;
   onLogout: () => void;
 }
 
-type TabType = 'profile' | 'setting';
+type TabType = 'profile' | 'scan' | 'setting';
 
 export function MyPageScreen({
   language,
   currentUser,
   userProfile,
+  history,
   onBack,
   onEditProfile,
+  onHistoryClick,
+  onEditHistoryTitle,
+  onDeleteHistory,
   onLogout,
 }: MyPageScreenProps) {
   const [activeTab, setActiveTab] = useState<TabType>('profile');
@@ -149,6 +155,7 @@ export function MyPageScreen({
       <div className="flex border-b border-neutral-200">
         {[
           { value: 'profile', label: t('프로필', 'Profile', 'الملف') },
+          { value: 'scan', label: t('스캔 기록', 'Scans', 'عمليات المسح') },
           { value: 'setting', label: t('설정', 'Setting', 'الإعدادات') },
         ].map(({ value, label }) => (
           <button
@@ -262,6 +269,27 @@ export function MyPageScreen({
                 >
                   {t('프로필 설정하기', 'Set up profile', 'إعداد الملف')}
                 </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeTab === 'scan' && (
+          <div className="px-5 py-6">
+            {history.length > 0 ? (
+              <ScanHistoryList
+                language={language}
+                history={history}
+                onOpen={onHistoryClick}
+                onDelete={onDeleteHistory}
+                onRename={onEditHistoryTitle}
+              />
+            ) : (
+              <div className="py-16 text-center">
+                <div className="text-4xl mb-4">📋</div>
+                <p className="text-sm text-neutral-600">
+                  {t('스캔 기록이 없어요', 'No scan history yet', 'لا يوجد سجل مسح بعد')}
+                </p>
               </div>
             )}
           </div>

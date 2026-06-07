@@ -13,7 +13,7 @@ interface AnalyzingScreenProps {
 type Phase = 'analyzing' | 'retake' | 'failed';
 
 const POLL_INTERVAL_MS = 1500;
-const MAX_POLL_MS = 15000;
+const MAX_POLL_MS = 20000;
 
 export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
   const [step, setStep] = useState(0);
