@@ -1,0 +1,12 @@
+{
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://ca-hanspoon-api.jollyocean-e0276302.koreacentral.azurecontainerapps.io/api/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
