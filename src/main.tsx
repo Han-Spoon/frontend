@@ -5,9 +5,6 @@ import { BrowserRouter } from "react-router-dom";
 import App from "./app/App.tsx";
 import "./styles/index.css";
 
-console.log("GOOGLE CLIENT ID:", import.meta.env.VITE_GOOGLE_CLIENT_ID);
-console.log("ORIGIN:", window.location.origin);
-
 createRoot(document.getElementById("root")!).render(
   <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
     <BrowserRouter>
