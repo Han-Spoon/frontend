@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { AlertTriangle, Camera, ImageIcon, RotateCcw, User } from 'lucide-react';
 import type { Language, PendingMenuImage } from '../App';
 import logo from '../../icons/logo.png';
+import { BottomNav } from './BottomNav';
 
 interface HomeScreenProps {
   language: Language;
@@ -453,7 +454,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
 
         {history.length > 0 && (
           <div>
-            <h3 className="text-sm font-medium text-neutral-900 mb-3">{t('최근 분석 기록', 'Recent analysis', 'التحليلات الأخيرة')}</h3>
+            <h3 className="text-lg font-semibold text-neutral-900 mb-3">{t('나의 스캔 기록', 'My scan history', 'سجل عمليات المسح')}</h3>
             <div className="space-y-2">
               {history.slice(0, 3).map((item, index) => (
                 <button
@@ -482,6 +483,8 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history }: H
           <p className="text-xs text-neutral-500">{t('손글씨 메뉴판은 인식이 어려울 수 있어요', 'Handwritten menus may be hard to recognize', 'قد يصعب التعرف على قوائم الطعام المكتوبة بخط اليد')}</p>
         </div>
       </div>
+
+      <BottomNav language={language} />
     </div>
   );
 }

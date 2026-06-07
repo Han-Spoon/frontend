@@ -65,7 +65,12 @@ export async function googleLogin(idToken: string): Promise<AuthData> {
   return data;
 }
 
-export async function refreshAccessToken(): Promise<AuthData> {
+// 백엔드가 refresh 토큰을 회전(rotate)시키므로, 동시에 여러 요청이 401을 만나
+// 각각 refresh를 호출하면 두 번째부터 무효 토큰으로 실패해 세션이 깨진다.
+// 진행 중인 refresh가 있으면 그 Promise를 공유한다(single-flight).
+let inFlightRefresh: Promise<AuthData> | null = null;
+
+async function doRefresh(): Promise<AuthData> {
   const refreshToken = getRefreshToken();
 
   const response = await fetch('/api/v1/auth/refresh', {
@@ -94,6 +99,15 @@ export async function refreshAccessToken(): Promise<AuthData> {
   saveAuthData(data);
 
   return data;
+}
+
+export function refreshAccessToken(): Promise<AuthData> {
+  if (!inFlightRefresh) {
+    inFlightRefresh = doRefresh().finally(() => {
+      inFlightRefresh = null;
+    });
+  }
+  return inFlightRefresh;
 }
 
 export async function logout() {

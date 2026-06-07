@@ -6,8 +6,11 @@ import { HomeScreen } from './components/HomeScreen';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
+import { CurationScreen } from './components/CurationScreen';
+import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
+import { createDefaultCards } from '../api/card';
 
 export type Language = 'ko' | 'en' | 'ar';
 
@@ -185,6 +188,10 @@ export default function App() {
           throw error;
         }
       }
+      // 신규 가입(첫 프로필 생성) 시 기본 사장님 요청카드 3종을 넣어준다. (비차단)
+      await createDefaultCards().catch((error) =>
+        console.warn('Default cards setup failed:', error),
+      );
     }
 
     const wasEdit = Boolean(userProfile);
@@ -251,6 +258,14 @@ export default function App() {
                 history={analysisHistory}
               />
             }
+          />
+          <Route
+            path="/curation"
+            element={<CurationScreen language={language} onMyPage={() => navigate('/mypage')} />}
+          />
+          <Route
+            path="/cards"
+            element={<CardsScreen language={language} onMyPage={() => navigate('/mypage')} />}
           />
           <Route
             path="/analyzing"

@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Search } from 'lucide-react';
 import type { Language, UserProfile } from '../App';
+import { ApiError } from '../../api/user';
 import {
   ALLERGY_OPTIONS,
   COUNTRY_CODES,
@@ -110,13 +111,29 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
       await onComplete(profile);
     } catch (error) {
       console.error('Profile save failed:', error);
-      setErrorMessage(
-        t(
-          '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
-          'Failed to save. Please try again.',
-          'فشل الحفظ. يرجى المحاولة مرة أخرى.',
-        ),
+      let message = t(
+        '저장에 실패했습니다. 잠시 후 다시 시도해 주세요.',
+        'Failed to save. Please try again.',
+        'فشل الحفظ. يرجى المحاولة مرة أخرى.',
       );
+      if (error instanceof ApiError) {
+        if (error.status === 401) {
+          message = t(
+            '세션이 만료되었습니다. 다시 로그인해 주세요.',
+            'Your session expired. Please log in again.',
+            'انتهت الجلسة. يرجى تسجيل الدخول مرة أخرى.',
+          );
+        } else if (error.status === 404) {
+          message = t(
+            '백엔드에 프로필 API가 없습니다. 백엔드 버전을 확인하세요.',
+            'Profile API not found on the server. Check the backend version.',
+            'واجهة الملف غير موجودة على الخادم. تحقق من إصدار الخادم.',
+          );
+        } else {
+          message = `${message} (${error.status})`;
+        }
+      }
+      setErrorMessage(message);
     } finally {
       setSaving(false);
     }

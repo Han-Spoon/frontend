@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AlertTriangle, Check, XCircle } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
+import { saveCard, type CardType } from '../../api/card';
 import {
   formatOwnerCommunicationContent,
   getAllergyName,
@@ -56,6 +57,15 @@ export function OwnerCommunicationSheet({
 }: OwnerCommunicationSheetProps) {
   const [response, setResponse] = useState<OwnerResponseId | null>(initialResponse);
   const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+
+  // 시트 카드 종류 → 백엔드 CardType (order/ingredient_check/exclude)
+  const toCardType = (sheetType: OwnerCommunicationType): CardType => {
+    if (sheetType === 'order') return 'order';
+    if (sheetType === 'ingredient') return 'ingredient_check';
+    return 'exclude';
+  };
 
   const getContent = (): OwnerContent => {
     const menuName = {
@@ -141,11 +151,32 @@ export function OwnerCommunicationSheet({
     onResponseSelect?.(type, option.id);
   };
 
-  const handleSave = () => {
-    setSaved(true);
-    setTimeout(() => {
-      onClose();
-    }, 1000);
+  const handleSave = async () => {
+    if (saving || saved) return;
+    try {
+      setSaving(true);
+      setSaveError('');
+      await saveCard({
+        type: toCardType(type),
+        menuNameKo: menu.menuName,
+        text: { ko: content.korean, en: content.english, ar: content.arabic },
+      });
+      setSaved(true);
+      setTimeout(() => {
+        onClose();
+      }, 1000);
+    } catch (error) {
+      console.error('Card save failed:', error);
+      setSaveError(
+        language === 'ko'
+          ? '저장에 실패했어요. 다시 시도해 주세요.'
+          : language === 'ar'
+            ? 'فشل الحفظ. يرجى المحاولة مرة أخرى.'
+            : 'Failed to save. Please try again.',
+      );
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -211,13 +242,14 @@ export function OwnerCommunicationSheet({
             })}
           </div>
 
+          {saveError && <p className="text-xs text-red-500 text-center mb-2">{saveError}</p>}
           <button
             onClick={handleSave}
-            disabled={saved}
-            className={`w-full h-12 rounded-xl text-sm font-medium transition-colors ${
+            disabled={saved || saving}
+            className={`w-full h-12 rounded-xl text-sm font-medium transition-colors disabled:cursor-not-allowed ${
               saved
                 ? 'bg-green-600 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200'
+                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 disabled:opacity-60'
             }`}
           >
             {saved ? (
@@ -225,6 +257,8 @@ export function OwnerCommunicationSheet({
                 <Check className="w-4 h-4" />
                 {translate(language, ownerCommunicationI18n.labels.saved)}
               </span>
+            ) : saving ? (
+              language === 'ko' ? '저장 중...' : language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...'
             ) : (
               translate(language, ownerCommunicationI18n.labels.saveFavorite)
             )}
