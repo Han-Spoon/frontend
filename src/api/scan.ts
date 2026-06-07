@@ -10,6 +10,13 @@ export interface FinalMessage {
   ar?: string | null;
 }
 
+export interface OwnerCard {
+  menuName?: string | null;
+  /** 애매함 플래그 (예: has_unclear_jeotgal) */
+  flag?: string | null;
+  question?: unknown;
+}
+
 /** 백엔드 스캔 결과의 메뉴 1건 (MenuResult). */
 export interface MenuResult {
   displayOrder?: number | null;
@@ -20,7 +27,7 @@ export interface MenuResult {
   riskLevel: 'safe' | 'caution' | 'danger';
   hits?: string[] | null;
   message?: FinalMessage | null;
-  ownerCard?: unknown;
+  ownerCard?: OwnerCard | null;
 }
 
 export interface ScanCreatedResponse {
@@ -107,8 +114,11 @@ export async function deleteScan(scanId: string): Promise<void> {
 
 /** 백엔드 MenuResult → 프론트 MenuAnalysis 매핑. */
 export function mapMenuResult(menu: MenuResult, index: number): MenuAnalysis {
-  const hits = menu.hits ?? [];
-  const isAlcohol = hits.some((hit) => hit.toLowerCase().includes('alcohol'));
+  // danger 재료(hits: is_*)와 caution 의심재료(ownerCard.flag: has_unclear_*)를 합쳐
+  // 위험/의심 재료 태그의 원천으로 보관(코드 그대로, 렌더 시 언어 변환).
+  const flagFromOwnerCard = menu.ownerCard?.flag ? [menu.ownerCard.flag] : [];
+  const tags = Array.from(new Set([...(menu.hits ?? []), ...flagFromOwnerCard]));
+  const isAlcohol = tags.some((tag) => tag.toLowerCase().includes('alcohol'));
 
   return {
     id: String(menu.displayOrder ?? index),
@@ -120,9 +130,9 @@ export function mapMenuResult(menu: MenuResult, index: number): MenuAnalysis {
     descriptionAr: menu.message?.ar ?? undefined,
     price: menu.priceText ?? undefined,
     riskLevel: menu.riskLevel,
-    riskReasons: hits,
-    riskReasonsEn: hits,
-    riskReasonsAr: hits,
+    riskReasons: tags,
+    riskReasonsEn: tags,
+    riskReasonsAr: tags,
     isSpicy: Boolean(menu.isSpicy),
     is_spicy: Boolean(menu.isSpicy),
     isAlcohol,

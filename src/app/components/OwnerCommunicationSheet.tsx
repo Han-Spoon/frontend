@@ -5,6 +5,7 @@ import { saveCard, type CardType } from '../../api/card';
 import {
   formatOwnerCommunicationContent,
   getAllergyName,
+  getHitTagLabel,
   ownerCommunicationI18n,
   translate,
   type LocalizedText,
@@ -67,6 +68,13 @@ export function OwnerCommunicationSheet({
     return 'exclude';
   };
 
+  // 이 메뉴의 플래그된 재료(코드)를 언어별로 라벨화 후 쉼표 나열.
+  const flaggedFor = (lang: Language) =>
+    Array.from(
+      new Set((menu.riskReasons ?? []).map((code) => getHitTagLabel(code, lang)).filter(Boolean)),
+    ).join(', ');
+  const flaggedLabels = { ko: flaggedFor('ko'), en: flaggedFor('en'), ar: flaggedFor('ar') };
+
   const getContent = (): OwnerContent => {
     const menuName = {
       ko: menu.menuName,
@@ -83,8 +91,9 @@ export function OwnerCommunicationSheet({
           allergen: emptyText,
         });
       case 'ingredient': {
-        const ingredient = menu.riskReasons[0]?.includes('갑각류')
-          ? ownerCommunicationI18n.ingredients.shellfish
+        // 이 메뉴의 플래그된 재료(hits + ownerCard.flag)를 언어별로 나열.
+        const ingredient = flaggedLabels.ko
+          ? { ko: flaggedLabels.ko, en: flaggedLabels.en, ar: flaggedLabels.ar }
           : ownerCommunicationI18n.ingredients.generic;
 
         return formatOwnerCommunicationContent(type, {
@@ -94,12 +103,15 @@ export function OwnerCommunicationSheet({
         });
       }
       case 'request': {
-        const allergy = userProfile?.allergies[0];
-        const allergen = {
-          ko: getAllergyName(allergy, 'ko'),
-          en: getAllergyName(allergy, 'en'),
-          ar: getAllergyName(allergy, 'ar'),
-        };
+        // 플래그된 재료가 있으면 그걸, 없으면 사용자 알레르기 첫 항목으로 폴백.
+        const fallbackAllergy = userProfile?.allergies[0];
+        const allergen = flaggedLabels.ko
+          ? { ko: flaggedLabels.ko, en: flaggedLabels.en, ar: flaggedLabels.ar }
+          : {
+              ko: getAllergyName(fallbackAllergy, 'ko'),
+              en: getAllergyName(fallbackAllergy, 'en'),
+              ar: getAllergyName(fallbackAllergy, 'ar'),
+            };
 
         return formatOwnerCommunicationContent(type, {
           menuName,

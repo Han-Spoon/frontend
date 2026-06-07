@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import logo from '../../icons/logo.png';
+import { getHitTagLabel } from '../i18n';
 import {
   getOwnerResponseOption,
   OwnerCommunicationSheet,
@@ -319,7 +320,10 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
                   <div>
-                    <h3 className="font-semibold text-neutral-900 mb-1">{getMenuName(menu)}</h3>
+                    <h3 className="font-semibold text-neutral-900 mb-1">
+                      {getMenuName(menu)}
+                      {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ml-1">🌶️</span>}
+                    </h3>
                     <p className="text-xs text-neutral-500">{getMenuSubName(menu)}</p>
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-3">
@@ -332,22 +336,31 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
 
                 <p className="text-sm text-neutral-600 mb-3">{getDescription(menu)}</p>
 
-                <div className="flex items-center gap-2 mb-3 flex-wrap">
-                  {getDietTags(menu).map((tag) => (
-                    <span key={tag.key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${tag.className}`}>
-                      {tag.key === 'spicy' ? <Flame className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                      {t(tag.label.ko, tag.label.en, tag.label.ar)}
-                    </span>
-                  ))}
-                </div>
-
-                {getRiskReasons(menu).length > 0 && (
-                  <div className="mb-3 p-3 bg-neutral-50 rounded-lg">
-                    {getRiskReasons(menu).map((reason, i) => (
-                      <p key={i} className="text-xs text-neutral-700">• {reason}</p>
-                    ))}
-                  </div>
-                )}
+                {(() => {
+                  const dietTags = getDietTags(menu);
+                  const ingredientTags = Array.from(
+                    new Set(menu.riskReasons.map((code) => getHitTagLabel(code, language)).filter(Boolean)),
+                  );
+                  if (dietTags.length === 0 && ingredientTags.length === 0) return null;
+                  const ingredientClass =
+                    menu.riskLevel === 'danger' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700';
+                  return (
+                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                      {dietTags.map((tag) => (
+                        <span key={tag.key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${tag.className}`}>
+                          {tag.key === 'spicy' ? <Flame className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
+                          {t(tag.label.ko, tag.label.en, tag.label.ar)}
+                        </span>
+                      ))}
+                      {ingredientTags.map((label) => (
+                        <span key={`ing-${label}`} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${ingredientClass}`}>
+                          <AlertTriangle className="w-3 h-3" />
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+                  );
+                })()}
 
                 <div className={`grid gap-2 ${menu.riskLevel !== 'safe' || isSpicyMenu(menu) ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <button

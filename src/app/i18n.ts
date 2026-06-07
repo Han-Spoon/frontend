@@ -37,6 +37,41 @@ export const allergyI18n = {
   ) as Record<string, LocalizedText>,
 };
 
+// 알레르기 19종 외에 hit_tags에 나오는 추가 라벨(알코올, 애매함 플래그).
+export const HIT_TAG_LABELS: Record<string, LocalizedText> = {
+  alcohol: { ko: '알코올', en: 'Alcohol', ar: 'كحول' },
+  unclear_broth: { ko: '육수', en: 'Broth', ar: 'مرق' },
+  unclear_jeotgal: { ko: '젓갈', en: 'Salted seafood', ar: 'مأكولات بحرية مملحة' },
+  unclear: { ko: '확인 필요 재료', en: 'Ingredient to confirm', ar: 'مكوّن للتأكد' },
+};
+
+const prettifyTag = (raw: string) => raw.replace(/^(is_|has_)/, '').replace(/_/g, ' ').trim();
+
+/**
+ * 백엔드 hit_tags(is_egg, has_unclear_jeotgal 등)를 사용자 언어 라벨로 변환.
+ * 알레르기 19종은 allergyI18n(=ALLERGY_OPTIONS) 단일 출처를 재사용한다.
+ */
+export const getHitTagLabel = (tag: string, language: Language): string => {
+  if (!tag) return '';
+  const lower = tag.toLowerCase();
+
+  if (lower.startsWith('is_')) {
+    const code = lower.slice(3);
+    return allergyI18n.names[code]?.[language] ?? HIT_TAG_LABELS[code]?.[language] ?? prettifyTag(tag);
+  }
+
+  if (lower.startsWith('has_')) {
+    const code = lower.slice(4); // 예: unclear_broth
+    return (
+      HIT_TAG_LABELS[code]?.[language] ??
+      (code.startsWith('unclear') ? HIT_TAG_LABELS.unclear[language] : undefined) ??
+      prettifyTag(tag)
+    );
+  }
+
+  return allergyI18n.names[lower]?.[language] ?? HIT_TAG_LABELS[lower]?.[language] ?? prettifyTag(tag);
+};
+
 export const ownerCommunicationI18n = {
   labels: {
     selectedMenu: {
