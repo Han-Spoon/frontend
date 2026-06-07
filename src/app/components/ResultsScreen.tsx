@@ -65,7 +65,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     pesco: { ko: '페스코 주의', en: 'Pesco caution', ar: 'تنبيه بيسكو' },
   };
 
-  const normalizeReligionType = (value?: string) => {
+  const normalizeReligionType = (value?: string | null) => {
     const normalized = value?.trim().toLowerCase();
     const aliases: Record<string, string> = {
       halal: 'halal',
@@ -79,7 +79,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     return normalized ? aliases[normalized] : undefined;
   };
 
-  const normalizeVeganType = (value?: string) => {
+  const normalizeVeganType = (value?: string | null) => {
     const normalized = value?.trim().toLowerCase().replace(/-/g, '_');
     const aliases: Record<string, string> = {
       vegan: 'vegan',

@@ -4,6 +4,8 @@ import { logout } from '../../api/auth';
 import { deleteMe } from '../../api/user';
 import type { CurrentUser } from '../../api/user';
 import type { Language, UserAllergy, UserProfile } from '../App';
+import { getAllergyName } from '../i18n';
+import { RELIGION_OPTIONS, VEGETARIAN_OPTIONS } from '../constants/onboarding';
 
 interface HistoryItem {
   id: string;
@@ -82,9 +84,14 @@ export function MyPageScreen({
   const getSavedCardSubText = (card: SavedCard) => (
     language === 'ko' ? card.english : card.korean
   );
-  const getAllergyDisplayName = (allergy: string | UserAllergy) => (
-    typeof allergy === 'string' ? allergy : allergy.allergy_name_ko
-  );
+  const getAllergyDisplayName = (allergy: string | UserAllergy) =>
+    getAllergyName(allergy, language);
+
+  const getVeganLabel = (code?: string | null) =>
+    VEGETARIAN_OPTIONS.find((option) => option.value === code)?.label[language] ?? code ?? '';
+
+  const getReligionLabel = (code?: string | null) =>
+    RELIGION_OPTIONS.find((option) => option.value === code)?.label[language] ?? code ?? '';
   const languageOptions: { value: Language; label: string }[] = [
     { value: 'ko', label: '한국어' },
     { value: 'en', label: 'English' },
@@ -196,14 +203,14 @@ export function MyPageScreen({
               {userProfile?.isVegan && (
                 <div className="p-4 bg-neutral-50 rounded-xl">
                   <span className="text-sm text-neutral-900">
-                    {t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')} ({userProfile.veganType})
+                    {t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')} ({getVeganLabel(userProfile.veganType)})
                   </span>
                 </div>
               )}
               {userProfile?.hasReligion && (
                 <div className="p-4 bg-neutral-50 rounded-xl">
                   <span className="text-sm text-neutral-900">
-                    {t('종교 식단', 'Religious diet', 'نظام غذائي ديني')} ({userProfile.religionType})
+                    {t('종교 식단', 'Religious diet', 'نظام غذائي ديني')} ({getReligionLabel(userProfile.religionType)})
                   </span>
                 </div>
               )}

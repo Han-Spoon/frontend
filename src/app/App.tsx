@@ -6,8 +6,8 @@ import { HomeScreen } from './components/HomeScreen';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
-import { createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
-import type { CurrentUser } from '../api/user';
+import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
+import type { CurrentUser, UserProfilePayload } from '../api/user';
 
 export type Language = 'ko' | 'en' | 'ar';
 
@@ -19,13 +19,19 @@ export interface UserAllergy {
 }
 
 export interface UserProfile {
+  /** ISO 3166-1 alpha-2 (대문자, 예: "SA") */
+  nationality: string;
+  languageCode: Language;
   isFirstTime: boolean;
   isVegan: boolean;
-  veganType?: string;
+  /** VegetarianType 코드값 (vegan|lacto|ovo|lacto_ovo|pesco) */
+  veganType?: string | null;
   hasReligion: boolean;
-  religionType?: string;
+  /** ReligionType 코드값 (halal|kosher|hindu) */
+  religionType?: string | null;
   hasAllergies: boolean;
-  allergies: Array<string | UserAllergy>;
+  /** AllergyCode 코드값 배열 (egg, milk, ...) */
+  allergies: string[];
   noSpicy: boolean;
   noAlcohol: boolean;
 }
@@ -104,7 +110,20 @@ export default function App() {
   const loadUserProfile = async () => {
     try {
       const profile = await getProfile();
-      setUserProfile(profile);
+      // ProfileResponse에는 languageCode가 없으므로 현재 앱 언어를 사용한다.
+      setUserProfile({
+        nationality: profile.nationality ?? '',
+        languageCode: (profile.languageCode as Language) ?? language,
+        isFirstTime: Boolean(profile.isFirstTime),
+        isVegan: Boolean(profile.isVegan),
+        veganType: profile.veganType ?? null,
+        hasReligion: Boolean(profile.hasReligion),
+        religionType: profile.religionType ?? null,
+        hasAllergies: Boolean(profile.hasAllergies),
+        allergies: profile.allergies ?? [],
+        noSpicy: Boolean(profile.noSpicy),
+        noAlcohol: Boolean(profile.noAlcohol),
+      });
     } catch (error) {
       console.warn('Unable to fetch profile:', error);
       setUserProfile(null);
@@ -134,19 +153,40 @@ export default function App() {
   };
 
   const handleProfileSave = async (profile: UserProfile) => {
-    try {
-      if (userProfile) {
-        await updateProfile(profile);
-      } else {
-        await createProfile(profile);
+    const payload: UserProfilePayload = {
+      nationality: profile.nationality.toUpperCase(),
+      languageCode: profile.languageCode,
+      isFirstTime: profile.isFirstTime,
+      isVegan: profile.isVegan,
+      veganType: profile.isVegan ? profile.veganType ?? null : null,
+      hasReligion: profile.hasReligion,
+      religionType: profile.hasReligion ? profile.religionType ?? null : null,
+      hasAllergies: profile.hasAllergies,
+      allergies: profile.hasAllergies ? profile.allergies : [],
+      noSpicy: profile.noSpicy,
+      noAlcohol: profile.noAlcohol,
+    };
+
+    // 신규는 POST, 기존 프로필이 있으면 PATCH.
+    // 신규인데 이미 서버에 프로필이 있으면(409) PATCH로 폴백한다.
+    if (userProfile) {
+      await updateProfile(payload);
+    } else {
+      try {
+        await createProfile(payload);
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 409) {
+          await updateProfile(payload);
+        } else {
+          throw error;
+        }
       }
-      setUserProfile(profile);
-      await loadCurrentUser();
-      navigate('/home');
-    } catch (error) {
-      console.error('Profile save failed:', error);
-      navigate('/home');
     }
+
+    setUserProfile(profile);
+    setLanguage(profile.languageCode);
+    await loadCurrentUser();
+    navigate('/home');
   };
 
   const handleLogin = async (hasProfile: boolean) => {
@@ -181,9 +221,9 @@ export default function App() {
             element={
               <OnboardingScreen
                 language={language}
+                setLanguage={setLanguage}
                 initialProfile={userProfile ?? undefined}
                 onComplete={handleProfileSave}
-                onSkip={() => navigate('/home')}
               />
             }
           />

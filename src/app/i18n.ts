@@ -1,4 +1,5 @@
 import type { Language, UserAllergy } from './App';
+import { ALLERGY_OPTIONS } from './constants/onboarding';
 
 export type LocalizedText = Record<Language, string>;
 export type OwnerCommunicationContentType =
@@ -29,14 +30,11 @@ export const allergyI18n = {
     en: 'specific ingredient',
     ar: 'مكون معين',
   },
-  names: {
-    갑각류: { ko: '갑각류', en: 'shellfish', ar: 'محار وقشريات' },
-    견과류: { ko: '견과류', en: 'nuts', ar: 'مكسرات' },
-    유제품: { ko: '유제품', en: 'dairy', ar: 'منتجات الألبان' },
-    계란: { ko: '계란', en: 'eggs', ar: 'بيض' },
-    글루텐: { ko: '글루텐', en: 'gluten', ar: 'غلوتين' },
-    대두: { ko: '대두', en: 'soy', ar: 'صويا' },
-  } satisfies Record<string, LocalizedText>,
+  // 백엔드 AllergyCode 코드값(egg, milk, ...)을 키로 하는 다국어 라벨 맵.
+  // 식약처 19종 정의는 constants/onboarding.ts(ALLERGY_OPTIONS)를 단일 출처로 사용한다.
+  names: Object.fromEntries(
+    ALLERGY_OPTIONS.map((option) => [option.value, option.label]),
+  ) as Record<string, LocalizedText>,
 };
 
 export const ownerCommunicationI18n = {

@@ -14,15 +14,33 @@ export interface UpdateCurrentUserPayload {
 }
 
 export interface UserProfilePayload {
-  isFirstTime?: boolean;
+  /** ISO 3166-1 alpha-2 (대문자, 예: "SA") */
+  nationality: string;
+  languageCode: 'ko' | 'en' | 'ar';
+  isFirstTime: boolean;
   isVegan: boolean;
-  veganType?: string;
+  /** VegetarianType 코드값 (vegan|lacto|ovo|lacto_ovo|pesco) — isVegan=false면 null */
+  veganType?: string | null;
   hasReligion: boolean;
-  religionType?: string;
+  /** ReligionType 코드값 (halal|kosher|hindu) — hasReligion=false면 null */
+  religionType?: string | null;
   hasAllergies: boolean;
+  /** AllergyCode 코드값 배열 (egg, milk, ...) */
   allergies?: string[];
   noSpicy: boolean;
   noAlcohol: boolean;
+}
+
+export class ApiError extends Error {
+  status: number;
+  body: string;
+
+  constructor(status: number, body: string) {
+    super(`API 요청 실패: ${status}`);
+    this.name = 'ApiError';
+    this.status = status;
+    this.body = body;
+  }
 }
 
 async function parseResponse<T>(response: Response): Promise<T> {
@@ -31,7 +49,7 @@ async function parseResponse<T>(response: Response): Promise<T> {
 
   if (!response.ok) {
     console.error('API request failed:', response.status, text);
-    throw new Error(`API 요청 실패: ${response.status}`);
+    throw new ApiError(response.status, text);
   }
 
   return (json.data ?? json) as T;
