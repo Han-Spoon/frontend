@@ -7,7 +7,11 @@ function joinBlobUrl(fileName: string, ext: string) {
   const baseUrl = BLOB_IMAGE_BASE_URL.replace(/\/$/, '');
   const sas = BLOB_IMAGE_SAS && !BLOB_IMAGE_SAS.startsWith('?') ? `?${BLOB_IMAGE_SAS}` : BLOB_IMAGE_SAS;
 
-  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}`;
+  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}${sas}`;
+}
+
+function normalizeBlobFileName(fileName: string) {
+  return fileName.trim().normalize('NFD');
 }
 
 function canLoadImage(url: string): Promise<boolean> {
@@ -26,7 +30,7 @@ export async function findBlobImageByFileName(fileNameWithoutExt: string): Promi
     return null;
   }
 
-  const fileName = fileNameWithoutExt.trim();
+  const fileName = normalizeBlobFileName(fileNameWithoutExt);
 
   for (const ext of IMAGE_EXTENSIONS) {
     const url = joinBlobUrl(fileName, ext);
