@@ -250,7 +250,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={isFirstTime}
                 onChange={(e) => setIsFirstTime(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('한국 음식 처음', 'New to Korean food', 'أول مرة مع الطعام الكوري')}</span>
             </label>
@@ -260,7 +260,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={noSpicy}
                 onChange={(e) => setNoSpicy(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار')}</span>
             </label>
@@ -270,7 +270,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={isVegan}
                 onChange={(e) => setIsVegan(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')}</span>
             </label>
@@ -284,7 +284,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                       name="veganType"
                       checked={veganType === option.value}
                       onChange={() => setVeganType(option.value)}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
                     />
                     <span className="text-sm text-neutral-700">{option.label[language]}</span>
                   </label>
@@ -297,7 +297,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={hasReligion}
                 onChange={(e) => setHasReligion(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('종교 식단', 'Religious diet', 'نظام غذائي ديني')}</span>
             </label>
@@ -311,7 +311,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                       name="religionType"
                       checked={religionType === option.value}
                       onChange={() => setReligionType(option.value)}
-                      className="w-4 h-4"
+                      className="w-4 h-4 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
                     />
                     <span className="text-sm text-neutral-700">{option.label[language]}</span>
                   </label>
@@ -324,7 +324,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={hasAllergies}
                 onChange={(e) => setHasAllergies(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}</span>
             </label>
@@ -352,7 +352,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 type="checkbox"
                 checked={noAlcohol}
                 onChange={(e) => setNoAlcohol(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300"
+                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
               />
               <span className="text-sm text-neutral-900">{t('금주', 'No alcohol', 'بدون كحول')}</span>
             </label>

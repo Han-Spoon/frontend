@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import logo from '../../icons/logo.png';
+import { findBlobImageByFileName } from '../../api/image';
 import { getHitTagLabel } from '../i18n';
 import {
   getOwnerResponseOption,
@@ -19,6 +20,13 @@ interface ResultsScreenProps {
   onRescan: () => void;
 }
 
+interface MenuImageProps {
+  menu: MenuAnalysis;
+  language: Language;
+  getMenuName: (menu: MenuAnalysis) => string;
+  t: (ko: string, en: string, ar: string) => string;
+}
+
 type FilterType = 'all' | 'safe' | 'caution' | 'danger';
 type CardActionType = Exclude<OwnerCommunicationType, 'spicy'>;
 type DietTag = {
@@ -26,6 +34,74 @@ type DietTag = {
   label: { ko: string; en: string; ar: string };
   className: string;
 };
+
+export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
+  const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
+  const [isDefaultImage, setIsDefaultImage] = useState(!menu.image);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveImage() {
+      // 1. menu.image가 있으면 그대로 사용
+      if (menu.image) {
+        setResolvedImage(menu.image);
+        setIsDefaultImage(false);
+        return;
+      }
+
+      // 2. menu.image가 없으면 메뉴명과 같은 Blob 이미지 파일 탐색
+      const fileNameWithoutExt = menu.menuName;
+      const blobImageUrl = await findBlobImageByFileName(fileNameWithoutExt);
+
+      if (!isMounted) return;
+
+      // 3. Blob 이미지가 있으면 해당 이미지 사용
+      if (blobImageUrl) {
+        setResolvedImage(blobImageUrl);
+        setIsDefaultImage(false);
+        return;
+      }
+
+      // 4. Blob 이미지도 없으면 기본 이미지 사용
+      setResolvedImage(null);
+      setIsDefaultImage(true);
+    }
+
+    resolveImage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [menu, getMenuName]);
+
+  const imageAlt = isDefaultImage
+    ? t('기본 메뉴 이미지', 'Default menu image', 'صورة قائمة افتراضية')
+    : getMenuName(menu);
+
+  if (resolvedImage) {
+    return (
+      <img
+        src={resolvedImage}
+        alt={imageAlt}
+        className="w-full h-full object-cover"
+      />
+    );
+  }
+
+  return (
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-neutral-100 text-neutral-400">
+      <img
+        src={logo}
+        alt={imageAlt}
+        className="w-12 h-12 object-contain opacity-40"
+      />
+      <span className="text-xs font-medium">
+        {t('이미지 없음', 'No image', 'لا توجد صورة')}
+      </span>
+    </div>
+  );
+}
 
 export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }: ResultsScreenProps) {
   const [filter, setFilter] = useState<FilterType>('all');
@@ -305,16 +381,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
           {filteredMenus.map((menu) => (
             <div key={menu.id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
               <div className="w-full h-40 bg-neutral-100">
-                {menu.image ? (
-                  <img src={menu.image} alt={getImageAlt(menu)} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-neutral-100 text-neutral-400">
-                    <img src={logo} alt={getImageAlt(menu)} className="w-12 h-12 object-contain opacity-40" />
-                    <span className="text-xs font-medium">
-                      {t('이미지 없음', 'No image', 'لا توجد صورة')}
-                    </span>
-                  </div>
-                )}
+                <MenuImage
+                  menu={menu}
+                  language={language}
+                  getMenuName={getMenuName}
+                  t={t}
+                />
               </div>
 
               <div className="p-4">
@@ -329,7 +401,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-3">
                     {renderRiskBadge(menu)}
                     {menu.price && (
-                      <span className="text-sm font-medium text-neutral-900">{menu.price}</span>
+                      <span className="text-sm font-medium text-neutral-900">{Number(menu.price).toLocaleString()}원</span>
                     )}
                   </div>
                 </div>
@@ -339,7 +411,11 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                 {(() => {
                   const dietTags = getDietTags(menu);
                   const ingredientTags = Array.from(
-                    new Set(menu.riskReasons.map((code) => getHitTagLabel(code, language)).filter(Boolean)),
+                    new Set(menu.riskReasons
+                      .map((code) => getHitTagLabel(code, language))
+                      .filter((label): label is string => Boolean(label))
+                      .filter((label) => label.trim().toLowerCase() !== 'unknown menu')
+                    ),
                   );
                   if (dietTags.length === 0 && ingredientTags.length === 0) return null;
                   const ingredientClass =
@@ -347,15 +423,21 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   return (
                     <div className="flex items-center gap-2 mb-3 flex-wrap">
                       {dietTags.map((tag) => (
-                        <span key={tag.key} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${tag.className}`}>
+                        <span 
+                          key={tag.key} 
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${tag.className}`}
+                        >
                           {tag.key === 'spicy' ? <Flame className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
                           {t(tag.label.ko, tag.label.en, tag.label.ar)}
                         </span>
                       ))}
                       {ingredientTags.map((label) => (
-                        <span key={`ing-${label}`} className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${ingredientClass}`}>
+                        <span
+                          key={`ing-${label}`}
+                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${ingredientClass}`}
+                        >
                           <AlertTriangle className="w-3 h-3" />
-                          {label}
+                          {label === 'fish' ? '생선' : label}
                         </span>
                       ))}
                     </div>
