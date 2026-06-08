@@ -1,6 +1,14 @@
 const BLOB_IMAGE_BASE_URL = import.meta.env.VITE_BLOB_IMAGE_BASE_URL;
+const BLOB_IMAGE_SAS = import.meta.env.VITE_BLOB_IMAGE_SAS ?? '';
 
 const IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'webp'];
+
+function joinBlobUrl(fileName: string, ext: string) {
+  const baseUrl = BLOB_IMAGE_BASE_URL.replace(/\/$/, '');
+  const sas = BLOB_IMAGE_SAS && !BLOB_IMAGE_SAS.startsWith('?') ? `?${BLOB_IMAGE_SAS}` : BLOB_IMAGE_SAS;
+
+  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}${sas}`;
+}
 
 function canLoadImage(url: string): Promise<boolean> {
   return new Promise((resolve) => {
@@ -18,10 +26,10 @@ export async function findBlobImageByFileName(fileNameWithoutExt: string): Promi
     return null;
   }
 
-  const encodedFileName = encodeURIComponent(fileNameWithoutExt.trim());
+  const fileName = fileNameWithoutExt.trim();
 
   for (const ext of IMAGE_EXTENSIONS) {
-    const url = `${BLOB_IMAGE_BASE_URL}/${encodedFileName}.${ext}`;
+    const url = joinBlobUrl(fileName, ext);
 
     const exists = await canLoadImage(url);
 
