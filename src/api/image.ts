@@ -7,7 +7,7 @@ function joinBlobUrl(fileName: string, ext: string) {
   const baseUrl = BLOB_IMAGE_BASE_URL.replace(/\/$/, '');
   const sas = BLOB_IMAGE_SAS && !BLOB_IMAGE_SAS.startsWith('?') ? `?${BLOB_IMAGE_SAS}` : BLOB_IMAGE_SAS;
 
-  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}${sas}`;
+  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}`;
 }
 
 function canLoadImage(url: string): Promise<boolean> {
