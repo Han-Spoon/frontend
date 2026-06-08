@@ -45,6 +45,7 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
     async function resolveImage() {
       // 1. menu.image가 있으면 그대로 사용
       if (menu.image) {
+        console.log('[MenuImage] image URL:', menu.image);
         setResolvedImage(menu.image);
         setIsDefaultImage(false);
         return;
@@ -58,6 +59,7 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
 
       // 3. Blob 이미지가 있으면 해당 이미지 사용
       if (blobImageUrl) {
+        console.log('[MenuImage] image URL:', blobImageUrl);
         setResolvedImage(blobImageUrl);
         setIsDefaultImage(false);
         return;
