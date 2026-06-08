@@ -27,20 +27,31 @@ function canLoadImage(url: string): Promise<boolean> {
 
 export async function findBlobImageByFileName(fileNameWithoutExt: string): Promise<string | null> {
   if (!BLOB_IMAGE_BASE_URL || !fileNameWithoutExt.trim()) {
+    console.log('[MenuImage] skip blob lookup:', {
+      hasBaseUrl: Boolean(BLOB_IMAGE_BASE_URL),
+      fileName: fileNameWithoutExt,
+    });
     return null;
   }
 
   const fileName = normalizeBlobFileName(fileNameWithoutExt);
+  console.log('[MenuImage] blob lookup:', {
+    originalFileName: fileNameWithoutExt,
+    normalizedFileName: fileName,
+  });
 
   for (const ext of IMAGE_EXTENSIONS) {
     const url = joinBlobUrl(fileName, ext);
+    console.log('[MenuImage] trying image URL:', url);
 
     const exists = await canLoadImage(url);
 
     if (exists) {
+      console.log('[MenuImage] found image URL:', url);
       return url;
     }
   }
 
+  console.log('[MenuImage] no blob image found:', fileName);
   return null;
 }

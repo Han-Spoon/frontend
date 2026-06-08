@@ -43,6 +43,8 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
     let isMounted = true;
 
     async function resolveImage() {
+      console.log('[MenuImage] menu:', menu);
+
       // 1. menu.image가 있으면 그대로 사용
       if (menu.image) {
         console.log('[MenuImage] image URL:', menu.image);
