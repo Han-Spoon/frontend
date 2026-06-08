@@ -7,6 +7,7 @@ import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
 import { CurationScreen } from './components/CurationScreen';
+import { CurationDetailScreen } from './components/CurationDetailScreen';
 import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
@@ -309,6 +310,7 @@ export default function App() {
             path="/curation"
             element={<CurationScreen language={language} onMyPage={() => navigate('/mypage')} />}
           />
+          <Route path="/curation/:id" element={<CurationDetailScreen language={language} />} />
           <Route
             path="/cards"
             element={<CardsScreen language={language} onMyPage={() => navigate('/mypage')} />}

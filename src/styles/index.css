@@ -1,3 +1,14 @@
 @import './fonts.css';
 @import './tailwind.css';
 @import './theme.css';
+
+/* 모바일 컨테이너 내부 스크롤바 숨김 (스크롤 기능은 유지) */
+.mobile-container *::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+.mobile-container * {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
