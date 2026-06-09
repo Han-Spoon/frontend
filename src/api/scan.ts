@@ -2,7 +2,17 @@ import { authFetch } from './authFetch';
 import { ApiError } from './user';
 import type { MenuAnalysis } from '../app/App';
 
-export type ScanStatus = 'processing' | 'completed' | 'failed' | 'needs_retake';
+export type ScanStatus =
+  | 'pending'
+  | 'processing'
+  | 'analyzing'
+  | 'completed'
+  | 'complete'
+  | 'done'
+  | 'succeeded'
+  | 'failed'
+  | 'needs_retake';
+export type NormalizedScanStatus = 'processing' | 'completed' | 'failed' | 'needs_retake' | 'unknown';
 
 export interface FinalMessage {
   ko: string;
@@ -88,6 +98,28 @@ export async function startScan(payload: StartScanPayload): Promise<ScanCreatedR
 export async function getScanResult(scanId: string): Promise<ScanResultResponse> {
   const response = await authFetch(`/api/v1/scans/${scanId}`, { method: 'GET' });
   return parse<ScanResultResponse>(response);
+}
+
+export function normalizeScanStatus(status?: string | null): NormalizedScanStatus {
+  const normalized = status?.trim().toLowerCase();
+
+  if (normalized === 'completed' || normalized === 'complete' || normalized === 'done' || normalized === 'succeeded') {
+    return 'completed';
+  }
+
+  if (normalized === 'needs_retake') {
+    return 'needs_retake';
+  }
+
+  if (normalized === 'failed') {
+    return 'failed';
+  }
+
+  if (normalized === 'pending' || normalized === 'processing' || normalized === 'analyzing') {
+    return 'processing';
+  }
+
+  return 'unknown';
 }
 
 export async function getScanHistory(page = 0, size = 20): Promise<ScanHistoryItem[]> {
