@@ -37,6 +37,11 @@ export const getOwnerResponseOption = (
   responseId: OwnerResponseId,
 ) => getOwnerResponseOptions(type).find((option) => option.id === responseId);
 
+const HIDDEN_OWNER_CONTENT_LABELS = new Set([
+  'hidden animal',
+  'unknown remain',
+]);
+
 interface OwnerCommunicationSheetProps {
   menu: MenuAnalysis;
   type: OwnerCommunicationType;
@@ -71,7 +76,10 @@ export function OwnerCommunicationSheet({
   // 이 메뉴의 플래그된 재료(코드)를 언어별로 라벨화 후 쉼표 나열.
   const flaggedFor = (lang: Language) =>
     Array.from(
-      new Set((menu.riskReasons ?? []).map((code) => getHitTagLabel(code, lang)).filter(Boolean)),
+      new Set((menu.riskReasons ?? [])
+        .map((code) => getHitTagLabel(code, lang))
+        .filter(Boolean)
+        .filter((label) => !HIDDEN_OWNER_CONTENT_LABELS.has(label.trim().toLowerCase()))),
     ).join(', ');
   const flaggedLabels = { ko: flaggedFor('ko'), en: flaggedFor('en'), ar: flaggedFor('ar') };
 
