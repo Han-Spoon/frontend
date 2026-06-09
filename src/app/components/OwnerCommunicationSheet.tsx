@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { AlertTriangle, Check, XCircle } from 'lucide-react';
+import { AlertTriangle, Check, Volume2, XCircle } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import { saveCard, type CardType } from '../../api/card';
+import { speak, ttsSupported } from '../utils/speech';
 import {
   formatOwnerCommunicationContent,
   getAllergyName,
@@ -214,13 +215,24 @@ export function OwnerCommunicationSheet({
         </div>
 
         <div className="px-6 pb-8 pt-6 relative">
-          <div className="mb-4">
-            <div className="text-2xl font-bold text-neutral-900 leading-tight mb-2">
-              {language === 'ko' ? content.korean : language === 'ar' ? content.arabic : content.english}
+          <div className="mb-4 flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <div className="text-2xl font-bold text-neutral-900 leading-tight mb-2 break-words">
+                {language === 'ko' ? content.korean : language === 'ar' ? content.arabic : content.english}
+              </div>
+              <div className="text-sm text-neutral-500 break-words">
+                {language === 'ko' ? content.english : content.korean}
+              </div>
             </div>
-            <div className="text-sm text-neutral-500">
-              {language === 'ko' ? content.english : content.korean}
-            </div>
+            {ttsSupported && content.korean && (
+              <button
+                onClick={() => speak(content.korean, 'ko-KR')}
+                className="flex-shrink-0 w-11 h-11 rounded-full bg-neutral-900 text-white flex items-center justify-center hover:bg-neutral-800 transition-colors"
+                aria-label={language === 'ko' ? '음성 듣기' : language === 'ar' ? 'تشغيل الصوت' : 'Play audio'}
+              >
+                <Volume2 className="w-5 h-5" />
+              </button>
+            )}
           </div>
 
           <div className="mb-6 p-4 bg-neutral-50 rounded-xl">

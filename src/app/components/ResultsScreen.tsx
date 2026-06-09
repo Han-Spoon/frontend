@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX } from 'lucide-react';
+import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX, Volume2 } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import logo from '../../icons/logo.png';
 import { findBlobImageByFileName } from '../../api/image';
 import { getHitTagLabel } from '../i18n';
-import { getMenuLabel } from '../constants/menuNames';
+import { getMenuMeaning, getMenuPronunciation } from '../constants/menuNames';
+import { speak, ttsSupported } from '../utils/speech';
 import {
   getOwnerResponseOption,
   OwnerCommunicationSheet,
@@ -209,12 +210,10 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     setSelectedMenu(null);
   };
 
-  // 메인: 사용자 언어 메뉴명(ko=한국어, en/ar=사전 번역 또는 발음 음역)
-  const getMenuName = (menu: MenuAnalysis) =>
-    language === 'ko' ? menu.menuName : getMenuLabel(menu.menuName, language);
-  // 보조(회색): ko 모드면 영문(로마자/사전), 그 외엔 원래 한국어명
-  const getMenuSubName = (menu: MenuAnalysis) =>
-    language === 'ko' ? getMenuLabel(menu.menuName, 'en') : menu.menuName;
+  // 메인: 항상 한국어 메뉴명
+  const getMenuName = (menu: MenuAnalysis) => menu.menuName;
+  // 회색 보조줄: 사용자 언어 발음(en=로마자, ar=아랍 음역). ko는 빈 값.
+  const getMenuSubName = (menu: MenuAnalysis) => getMenuPronunciation(menu.menuName, language);
   const getDescription = (menu: MenuAnalysis) =>
     language === 'ko'
       ? menu.description
@@ -405,13 +404,24 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
 
               <div className="p-4">
                 <div className="flex items-start justify-between mb-2">
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <h3 className="font-semibold text-neutral-900 mb-1">
                       {getMenuName(menu)}
                       {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ml-1">🌶️</span>}
                     </h3>
                     {getMenuSubName(menu) && (
-                      <p className="text-xs text-neutral-500">{getMenuSubName(menu)}</p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-sm text-neutral-500 min-w-0 break-words">{getMenuSubName(menu)}</span>
+                        {ttsSupported && (
+                          <button
+                            onClick={() => speak(menu.menuName, 'ko-KR')}
+                            className="flex-shrink-0 w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors"
+                            aria-label={t('음성 듣기', 'Play audio', 'تشغيل الصوت')}
+                          >
+                            <Volume2 className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-3">
@@ -422,7 +432,14 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   </div>
                 </div>
 
-                <p className="text-sm text-neutral-600 mb-3">{getDescription(menu)}</p>
+                <p className="text-sm text-neutral-600 mb-3">
+                  {getMenuMeaning(menu.menuName, language) && (
+                    <span className="font-medium text-neutral-800">
+                      {getMenuMeaning(menu.menuName, language)}.{' '}
+                    </span>
+                  )}
+                  {getDescription(menu)}
+                </p>
 
                 {(() => {
                   const dietTags = getDietTags(menu);
