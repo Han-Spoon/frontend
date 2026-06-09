@@ -41,6 +41,8 @@ const HIDDEN_RISK_REASON_LABELS = new Set([
   'hidden animal',
 ]);
 
+const asStringList = (value?: string[] | null) => (Array.isArray(value) ? value : []);
+
 export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
   const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
   const [isDefaultImage, setIsDefaultImage] = useState(!menu.image);
@@ -118,6 +120,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
   const [selectedMenu, setSelectedMenu] = useState<MenuAnalysis | null>(null);
   const [sheetType, setSheetType] = useState<OwnerCommunicationType | null>(null);
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
+  const menuList = Array.isArray(menus) ? menus : [];
 
   const t = (ko: string, en: string, ar: string) => (
     language === 'ko' ? ko : language === 'ar' ? ar : en
@@ -186,14 +189,14 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     return normalized ? aliases[normalized] : undefined;
   };
 
-  const filteredMenus = menus.filter((menu) => {
+  const filteredMenus = menuList.filter((menu) => {
     if (filter === 'all') return true;
     return menu.riskLevel === filter;
   });
 
-  const safeCount = menus.filter((m) => m.riskLevel === 'safe').length;
-  const cautionCount = menus.filter((m) => m.riskLevel === 'caution').length;
-  const dangerCount = menus.filter((m) => m.riskLevel === 'danger').length;
+  const safeCount = menuList.filter((m) => m.riskLevel === 'safe').length;
+  const cautionCount = menuList.filter((m) => m.riskLevel === 'caution').length;
+  const dangerCount = menuList.filter((m) => m.riskLevel === 'danger').length;
 
   const openSheet = (menu: MenuAnalysis, type: OwnerCommunicationType) => {
     setSelectedMenu(menu);
@@ -219,10 +222,10 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
         : menu.descriptionEn ?? menu.description;
   const getRiskReasons = (menu: MenuAnalysis) =>
     language === 'ko'
-      ? menu.riskReasons
+      ? asStringList(menu.riskReasons)
       : language === 'ar'
-        ? menu.riskReasonsAr ?? menu.riskReasonsEn ?? menu.riskReasons
-        : menu.riskReasonsEn ?? menu.riskReasons;
+        ? asStringList(menu.riskReasonsAr ?? menu.riskReasonsEn ?? menu.riskReasons)
+        : asStringList(menu.riskReasonsEn ?? menu.riskReasons);
   const getImageAlt = (menu: MenuAnalysis) => (
     menu.image
       ? getMenuName(menu)
@@ -362,7 +365,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
       <div className="flex-1 overflow-y-auto">
         <div className="px-5 py-4 bg-neutral-50 border-b border-neutral-200">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-600">{t(`총 ${menus.length}개 메뉴 인식`, `Detected ${menus.length} items`, `تم التعرف على ${menus.length} عناصر`)}</span>
+            <span className="text-neutral-600">{t(`총 ${menuList.length}개 메뉴 인식`, `Detected ${menuList.length} items`, `تم التعرف على ${menuList.length} عناصر`)}</span>
           </div>
         </div>
 
@@ -421,7 +424,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                 {(() => {
                   const dietTags = getDietTags(menu);
                   const ingredientTags = Array.from(
-                    new Set(menu.riskReasons
+                    new Set(asStringList(menu.riskReasons)
                       .map((code) => getHitTagLabel(code, language))
                       .filter((label): label is string => Boolean(label))
                       .filter((label) => !HIDDEN_RISK_REASON_LABELS.has(label.trim().toLowerCase()))
@@ -505,7 +508,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
           <div className="px-5 pb-6">
             <h3 className="text-sm font-medium text-neutral-900 mb-3">{t('같은 식당 내 안전 메뉴', 'Other safe menu items', 'أطباق آمنة أخرى في نفس المطعم')}</h3>
             <div className="space-y-2">
-              {menus.filter((m) => m.riskLevel === 'safe').slice(0, 2).map((menu) => (
+              {menuList.filter((m) => m.riskLevel === 'safe').slice(0, 2).map((menu) => (
                 <div key={menu.id} className="p-3 bg-green-50 border border-green-200 rounded-xl">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-green-900">{getMenuName(menu)}</span>
