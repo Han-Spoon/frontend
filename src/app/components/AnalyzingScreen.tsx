@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
-import { getScanResult, mapMenuResult, startScan } from '../../api/scan';
+import { getScanResult, mapMenuResult, normalizeScanStatus, startScan } from '../../api/scan';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 
 interface AnalyzingScreenProps {
@@ -13,7 +13,7 @@ interface AnalyzingScreenProps {
 type Phase = 'analyzing' | 'retake' | 'failed';
 
 const POLL_INTERVAL_MS = 1500;
-const MAX_POLL_MS = 90000;
+const MAX_POLL_MS = 300000;
 
 export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
   const [step, setStep] = useState(0);
@@ -70,15 +70,17 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
           const result = await getScanResult(scanId);
           if (cancelled) return;
 
-          if (result.status === 'completed') {
+          const status = normalizeScanStatus(result.status);
+
+          if (status === 'completed') {
             onComplete(scanId, (result.menus ?? []).map(mapMenuResult));
             return;
           }
-          if (result.status === 'needs_retake') {
+          if (status === 'needs_retake') {
             setPhase('retake');
             return;
           }
-          if (result.status === 'failed') {
+          if (status === 'failed') {
             setErrorMessage(t(
               '스캔에 실패했습니다. 다시 시도해 주세요.',
               'Scan failed. Please try again.',
@@ -86,6 +88,9 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
             ));
             setPhase('failed');
             return;
+          }
+          if (status === 'unknown') {
+            console.warn('Unknown scan status:', result.status, result);
           }
           if (Date.now() >= deadline) {
             setErrorMessage(t(
