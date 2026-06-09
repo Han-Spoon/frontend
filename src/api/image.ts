@@ -3,7 +3,6 @@ const BLOB_IMAGE_BASE_URL = import.meta.env.VITE_BLOB_IMAGE_BASE_URL ?? DEFAULT_
 const BLOB_IMAGE_SAS = import.meta.env.VITE_BLOB_IMAGE_SAS ?? '';
 
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
-const MAX_FUZZY_CANDIDATES = 8;
 
 function joinBlobUrl(fileName: string, ext: string) {
   const baseUrl = BLOB_IMAGE_BASE_URL.replace(/\/$/, '');
@@ -40,7 +39,7 @@ function getHangulSubstrings(value: string) {
 /**
  * 후보를 정확도 순 2단계(tier)로 나눈다.
  * tier1: 정확한 이름/괄호 제거/공백 제거/토큰  (가장 가능성 높음)
- * tier2: 한글 부분문자열 fuzzy (상한 적용)
+ * tier2: 한글 부분문자열 fuzzy (tier1 실패 시에만 병렬 시도, 매칭 범위는 원본과 동일하게 전부)
  */
 function getCandidateTiers(fileName: string): string[][] {
   const withoutParentheses = fileName.replace(/\s*[([].*?[)\]]\s*/g, ' ').trim();
@@ -52,9 +51,8 @@ function getCandidateTiers(fileName: string): string[][] {
 
   const tier1 = dedupe([fileName, withoutParentheses, withoutSpaces, ...tokens]);
   const tier1Set = new Set(tier1);
-  const tier2 = dedupe(getHangulSubstrings(withoutSpaces))
-    .filter((c) => !tier1Set.has(c))
-    .slice(0, MAX_FUZZY_CANDIDATES);
+  // 한글 부분문자열 전부 유지(자르지 않음). tier1이 실패한 경우에만 병렬로 시도되므로 느려지지 않는다.
+  const tier2 = dedupe(getHangulSubstrings(withoutSpaces)).filter((c) => !tier1Set.has(c));
 
   return [tier1, tier2];
 }
