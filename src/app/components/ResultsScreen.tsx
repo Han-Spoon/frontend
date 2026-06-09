@@ -35,6 +35,12 @@ type DietTag = {
   className: string;
 };
 
+const HIDDEN_RISK_REASON_LABELS = new Set([
+  'unknown menu',
+  'unknown remain',
+  'hidden animal',
+]);
+
 export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
   const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
   const [isDefaultImage, setIsDefaultImage] = useState(!menu.image);
@@ -418,7 +424,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                     new Set(menu.riskReasons
                       .map((code) => getHitTagLabel(code, language))
                       .filter((label): label is string => Boolean(label))
-                      .filter((label) => label.trim().toLowerCase() !== 'unknown menu')
+                      .filter((label) => !HIDDEN_RISK_REASON_LABELS.has(label.trim().toLowerCase()))
                     ),
                   );
                   if (dietTags.length === 0 && ingredientTags.length === 0) return null;
