@@ -4,6 +4,7 @@ import type { Language, MenuAnalysis, UserProfile } from '../App';
 import logo from '../../icons/logo.png';
 import { findBlobImageByFileName } from '../../api/image';
 import { getHitTagLabel } from '../i18n';
+import { getMenuLabel } from '../constants/menuNames';
 import {
   getOwnerResponseOption,
   OwnerCommunicationSheet,
@@ -208,12 +209,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     setSelectedMenu(null);
   };
 
-  const getMenuName = (menu: MenuAnalysis) => (
-    language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn
-  );
-  const getMenuSubName = (menu: MenuAnalysis) => (
-    language === 'ko' ? menu.menuNameEn : language === 'ar' ? menu.menuName : menu.menuName
-  );
+  // 메인: 사용자 언어 메뉴명(ko=한국어, en/ar=사전 번역 또는 발음 음역)
+  const getMenuName = (menu: MenuAnalysis) =>
+    language === 'ko' ? menu.menuName : getMenuLabel(menu.menuName, language);
+  // 보조(회색): ko 모드면 영문(로마자/사전), 그 외엔 원래 한국어명
+  const getMenuSubName = (menu: MenuAnalysis) =>
+    language === 'ko' ? getMenuLabel(menu.menuName, 'en') : menu.menuName;
   const getDescription = (menu: MenuAnalysis) =>
     language === 'ko'
       ? menu.description
@@ -409,7 +410,9 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                       {getMenuName(menu)}
                       {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ml-1">🌶️</span>}
                     </h3>
-                    <p className="text-xs text-neutral-500">{getMenuSubName(menu)}</p>
+                    {getMenuSubName(menu) && (
+                      <p className="text-xs text-neutral-500">{getMenuSubName(menu)}</p>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-3">
                     {renderRiskBadge(menu)}
