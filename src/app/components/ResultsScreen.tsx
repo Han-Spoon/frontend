@@ -35,6 +35,46 @@ type DietTag = {
   className: string;
 };
 
+const MENU_IMAGE_OVERRIDES = [
+  {
+    keyword: '김밥',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/김밥.png',
+  },
+  {
+    keyword: '떡볶이',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/떡볶이.png',
+  },
+  {
+    keyword: '순대',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/순대.png',
+  },
+  {
+    keyword: '새우튀김',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/새우튀김.jpg',
+  },
+  {
+    keyword: '식혜',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/식혜.jpg',
+  },
+  {
+    keyword: '수정과',
+    url: 'https://sthanspoonprod.blob.core.windows.net/menu-images/수정과.jpg',
+  },
+];
+
+function getMenuImageOverride(menu: MenuAnalysis, displayName: string) {
+  const names = [
+    menu.menuName,
+    menu.menuNameEn,
+    menu.menuNameAr,
+    displayName,
+  ].filter(Boolean);
+
+  return MENU_IMAGE_OVERRIDES.find(({ keyword }) =>
+    names.some((name) => name?.includes(keyword))
+  )?.url ?? null;
+}
+
 export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
   const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
   const [isDefaultImage, setIsDefaultImage] = useState(!menu.image);
@@ -53,13 +93,23 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
         return;
       }
 
-      // 2. menu.image가 없으면 메뉴명과 같은 Blob 이미지 파일 탐색
+      // 2. 특정 메뉴명은 지정된 고정 이미지 URL 사용
+      const overrideImageUrl = getMenuImageOverride(menu, getMenuName(menu));
+
+      if (overrideImageUrl) {
+        console.log('[MenuImage] override image URL:', overrideImageUrl);
+        setResolvedImage(overrideImageUrl);
+        setIsDefaultImage(false);
+        return;
+      }
+
+      // 3. menu.image가 없으면 메뉴명과 같은 Blob 이미지 파일 탐색
       const fileNameWithoutExt = menu.menuName;
       const blobImageUrl = await findBlobImageByFileName(fileNameWithoutExt);
 
       if (!isMounted) return;
 
-      // 3. Blob 이미지가 있으면 해당 이미지 사용
+      // 4. Blob 이미지가 있으면 해당 이미지 사용
       if (blobImageUrl) {
         console.log('[MenuImage] image URL:', blobImageUrl);
         setResolvedImage(blobImageUrl);
@@ -67,7 +117,7 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
         return;
       }
 
-      // 4. Blob 이미지도 없으면 기본 이미지 사용
+      // 5. Blob 이미지도 없으면 기본 이미지 사용
       setResolvedImage(null);
       setIsDefaultImage(true);
     }
