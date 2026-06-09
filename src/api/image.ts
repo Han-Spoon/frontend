@@ -15,14 +15,39 @@ function normalizeBlobFileName(fileName: string) {
   return fileName.trim().normalize('NFD');
 }
 
-function getBlobFileNameCandidates(fileName: string) {
-  const normalized = normalizeBlobFileName(fileName);
-  const withoutParentheses = normalizeBlobFileName(
-    fileName.replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ')
-  );
-  const withoutSpaces = normalizeBlobFileName(fileName.replace(/\s+/g, ''));
+function isHangulSyllable(char: string) {
+  const code = char.charCodeAt(0);
+  return code >= 0xac00 && code <= 0xd7a3;
+}
 
-  return Array.from(new Set([normalized, withoutParentheses, withoutSpaces]))
+function getHangulSubstrings(value: string) {
+  if (!Array.from(value).every(isHangulSyllable)) return [];
+
+  const candidates: string[] = [];
+  const chars = Array.from(value);
+
+  for (let length = chars.length - 1; length >= 2; length -= 1) {
+    for (let start = 0; start <= chars.length - length; start += 1) {
+      candidates.push(chars.slice(start, start + length).join(''));
+    }
+  }
+
+  return candidates;
+}
+
+function getBlobFileNameCandidates(fileName: string) {
+  const withoutParentheses = fileName.replace(/\s*[\(\[].*?[\)\]]\s*/g, ' ');
+  const withoutSpaces = withoutParentheses.replace(/\s+/g, '');
+  const tokens = withoutParentheses.split(/\s+/).filter(Boolean);
+  const hangulSubstrings = getHangulSubstrings(withoutSpaces);
+
+  return Array.from(new Set([
+    fileName,
+    withoutParentheses,
+    withoutSpaces,
+    ...tokens,
+    ...hangulSubstrings,
+  ].map(normalizeBlobFileName)))
     .filter((candidate) => candidate.length > 0);
 }
 
