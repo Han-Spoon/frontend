@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX, Volume2 } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import logo from '../../icons/logo.png';
-import { findBlobImageByFileName } from '../../api/image';
+import { findMenuImageByName } from '../../api/image';
 import { getHitTagLabel } from '../i18n';
 import { getMenuMeaning, getMenuPronunciation } from '../constants/menuNames';
 import { speak, ttsSupported } from '../utils/speech';
@@ -63,21 +63,21 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
         return;
       }
 
-      // 2. menu.image가 없으면 메뉴명과 같은 Blob 이미지 파일 탐색
+      // 2. menu.image가 없으면 메뉴명과 같은 참고 이미지 탐색
       const fileNameWithoutExt = menu.menuName;
-      const blobImageUrl = await findBlobImageByFileName(fileNameWithoutExt);
+      const referenceImageUrl = await findMenuImageByName(fileNameWithoutExt);
 
       if (!isMounted) return;
 
-      // 3. Blob 이미지가 있으면 해당 이미지 사용
-      if (blobImageUrl) {
-        console.log('[MenuImage] image URL:', blobImageUrl);
-        setResolvedImage(blobImageUrl);
+      // 3. 참고 이미지가 있으면 해당 이미지 사용
+      if (referenceImageUrl) {
+        console.log('[MenuImage] image URL:', referenceImageUrl);
+        setResolvedImage(referenceImageUrl);
         setIsDefaultImage(false);
         return;
       }
 
-      // 4. Blob 이미지도 없으면 기본 이미지 사용
+      // 4. 없으면 기본 이미지 사용
       setResolvedImage(null);
       setIsDefaultImage(true);
     }

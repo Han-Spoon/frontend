@@ -5,7 +5,7 @@
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://ca-hanspoon-api.jollyocean-e0276302.koreacentral.azurecontainerapps.io/api/:path*"
+      "destination": "https://api.han-spoon.site/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ]

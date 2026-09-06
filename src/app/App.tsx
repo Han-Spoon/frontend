@@ -65,9 +65,8 @@ export interface PendingMenuImage {
   previewUrl: string;
   source: 'camera' | 'upload';
   storage?: {
-    provider: 'postgresql' | 'blob';
+    provider: 's3';
     key?: string;
-    url?: string;
   };
 }
 

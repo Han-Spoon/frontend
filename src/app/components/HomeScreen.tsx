@@ -208,14 +208,13 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
       setIsUploading(true);
       setErrorMessage(null);
 
-      const blobStorage = selectedImage.file ? await uploadImage(selectedImage.file) : null;
-      const imageForAnalysis: PendingMenuImage = blobStorage
+      const uploaded = selectedImage.file ? await uploadImage(selectedImage.file) : null;
+      const imageForAnalysis: PendingMenuImage = uploaded
         ? {
             ...selectedImage,
             storage: {
-              provider: 'blob',
-              key: blobStorage.key,
-              url: blobStorage.url,
+              provider: 's3',
+              key: uploaded.key,
             },
           }
         : selectedImage;

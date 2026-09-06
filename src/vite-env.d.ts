@@ -5,9 +5,10 @@ declare module '*.svg';
 declare module '*.jpg';
 declare module '*.jpeg';
 
-type ImportMetaEnv = {
-  readonly VITE_MENU_BLOB_SAS_URL?: string;
-};
+interface ImportMetaEnv {
+  readonly VITE_GOOGLE_CLIENT_ID: string;
+  readonly VITE_MENU_IMAGE_BASE_URL?: string;
+}
 
 interface ImportMeta {
   readonly env: ImportMetaEnv;

@@ -1,17 +1,16 @@
-const DEFAULT_BLOB_IMAGE_BASE_URL = 'https://sthanspoonprod.blob.core.windows.net/menu-images';
-const BLOB_IMAGE_BASE_URL = import.meta.env.VITE_BLOB_IMAGE_BASE_URL ?? DEFAULT_BLOB_IMAGE_BASE_URL;
-const BLOB_IMAGE_SAS = import.meta.env.VITE_BLOB_IMAGE_SAS ?? '';
+// 메뉴명으로 참고 이미지를 찾는 선택 기능.
+// 기본값 없음 — VITE_MENU_IMAGE_BASE_URL 이 없으면 조회 자체를 하지 않는다.
+const MENU_IMAGE_BASE_URL = import.meta.env.VITE_MENU_IMAGE_BASE_URL ?? '';
 
 const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'webp'];
 
-function joinBlobUrl(fileName: string, ext: string) {
-  const baseUrl = BLOB_IMAGE_BASE_URL.replace(/\/$/, '');
-  const sas = BLOB_IMAGE_SAS && !BLOB_IMAGE_SAS.startsWith('?') ? `?${BLOB_IMAGE_SAS}` : BLOB_IMAGE_SAS;
+function joinImageUrl(fileName: string, ext: string) {
+  const baseUrl = MENU_IMAGE_BASE_URL.replace(/\/$/, '');
 
-  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}${sas}`;
+  return `${baseUrl}/${encodeURIComponent(fileName)}.${ext}`;
 }
 
-function normalizeBlobFileName(fileName: string) {
+function normalizeFileName(fileName: string) {
   return fileName.trim().normalize('NFD');
 }
 
@@ -47,7 +46,7 @@ function getCandidateTiers(fileName: string): string[][] {
   const tokens = withoutParentheses.split(/\s+/).filter(Boolean);
 
   const dedupe = (arr: string[]) =>
-    Array.from(new Set(arr.map(normalizeBlobFileName))).filter((c) => c.length > 0);
+    Array.from(new Set(arr.map(normalizeFileName))).filter((c) => c.length > 0);
 
   const tier1 = dedupe([fileName, withoutParentheses, withoutSpaces, ...tokens]);
   const tier1Set = new Set(tier1);
@@ -85,9 +84,9 @@ function firstLoadableUrl(urls: string[]): Promise<string | null> {
 // 같은 메뉴명 재조회를 막는 캐시(진행 중 Promise 공유 + 결과 캐시).
 const lookupCache = new Map<string, Promise<string | null>>();
 
-async function resolveBlobImage(key: string): Promise<string | null> {
+async function resolveMenuImage(key: string): Promise<string | null> {
   for (const tier of getCandidateTiers(key)) {
-    const urls = tier.flatMap((name) => IMAGE_EXTENSIONS.map((ext) => joinBlobUrl(name, ext)));
+    const urls = tier.flatMap((name) => IMAGE_EXTENSIONS.map((ext) => joinImageUrl(name, ext)));
     const found = await firstLoadableUrl(urls);
     if (found) return found;
   }
@@ -95,18 +94,18 @@ async function resolveBlobImage(key: string): Promise<string | null> {
 }
 
 /**
- * 메뉴명으로 Blob 메뉴 이미지를 찾는다.
+ * 메뉴명으로 참고 메뉴 이미지를 찾는다. 미설정 시 항상 null.
  * - 후보 × 확장자를 tier별로 "병렬" 시도해 가장 먼저 로드되는 URL 채택(순차 대비 대폭 단축)
  * - 동일 메뉴명은 캐시로 1회만 조회
  */
-export function findBlobImageByFileName(fileNameWithoutExt: string): Promise<string | null> {
+export function findMenuImageByName(fileNameWithoutExt: string): Promise<string | null> {
   const key = fileNameWithoutExt.trim();
-  if (!BLOB_IMAGE_BASE_URL || !key) return Promise.resolve(null);
+  if (!MENU_IMAGE_BASE_URL || !key) return Promise.resolve(null);
 
   const cached = lookupCache.get(key);
   if (cached) return cached;
 
-  const promise = resolveBlobImage(key);
+  const promise = resolveMenuImage(key);
   lookupCache.set(key, promise);
   return promise;
 }
