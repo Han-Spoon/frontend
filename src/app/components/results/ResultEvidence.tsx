@@ -1,8 +1,6 @@
 import type { ReactNode } from 'react';
 import { AlertTriangle, CheckCircle2, OctagonX } from 'lucide-react';
-import type { EvidenceConfidence, MenuAnalysis } from '../../App';
-import { CONFIDENCE_LABELS, localizeMenuText } from '../../results/resultViewModel';
-import type { Language } from '../../locales';
+import type { MenuAnalysis } from '../../App';
 
 export type ResultTranslator = (ko: string, en: string, ar: string) => string;
 
@@ -36,6 +34,11 @@ export function RiskBadge({ level, t }: { level: MenuAnalysis['riskLevel']; t: R
 
 export function StatusGuidance({ level, t }: { level: MenuAnalysis['riskLevel']; t: ResultTranslator }) {
   const Icon = statusIcons[level];
+  const label = level === 'safe'
+    ? t('안전', 'Safe', 'آمن')
+    : level === 'caution'
+      ? t('주의', 'Caution', 'تنبيه')
+      : t('위험', 'Danger', 'خطر');
   const guidance = level === 'safe'
     ? t(
       '현재 확인된 정보로는 안심하고 선택해도 좋아요',
@@ -55,9 +58,9 @@ export function StatusGuidance({ level, t }: { level: MenuAnalysis['riskLevel'];
       );
 
   return (
-    <div className={`flex items-start gap-2.5 rounded-xl border px-3 py-3 ${statusClasses[level]}`}>
-      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-      <p className="text-sm font-semibold leading-5">{guidance}</p>
+    <div className="flex items-start gap-2.5 rounded-xl border border-border-warm bg-surface-raised px-3 py-2.5">
+      <Icon className={`mt-0.5 size-4 shrink-0 ${level === 'safe' ? 'text-status-safe' : level === 'caution' ? 'text-status-caution' : 'text-status-danger'}`} aria-hidden="true" />
+      <p className="text-sm leading-5 text-text-secondary"><strong className="me-1.5 text-text-primary">{label}</strong>{guidance}</p>
     </div>
   );
 }
@@ -79,46 +82,5 @@ export function EvidenceSection({
       </h4>
       {children}
     </section>
-  );
-}
-
-export function ConfidenceBadge({
-  confidence,
-  language,
-}: {
-  confidence: EvidenceConfidence;
-  language: Language;
-}) {
-  return (
-    <span className="inline-flex rounded-md bg-surface-interactive px-2 py-1 text-[11px] font-bold text-text-secondary">
-      {localizeMenuText(CONFIDENCE_LABELS[confidence], language)}
-    </span>
-  );
-}
-
-export function ResultCount({
-  level,
-  count,
-  label,
-}: {
-  level: MenuAnalysis['riskLevel'];
-  count: number;
-  label: string;
-}) {
-  const Icon = statusIcons[level];
-  const iconClass = level === 'safe'
-    ? 'text-status-safe'
-    : level === 'caution'
-      ? 'text-status-caution'
-      : 'text-status-danger';
-
-  return (
-    <div className="min-w-0 flex-1 rounded-xl border border-border-warm bg-surface-raised px-3 py-3 shadow-[var(--shadow-card)]">
-      <div className="mb-1 flex items-center gap-1.5">
-        <Icon className={`size-4 shrink-0 ${iconClass}`} aria-hidden="true" />
-        <span className="truncate text-xs font-semibold text-text-secondary">{label}</span>
-      </div>
-      <strong className="text-xl font-extrabold tabular-nums text-text-primary">{count}</strong>
-    </div>
   );
 }

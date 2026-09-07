@@ -35,8 +35,8 @@ export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
       },
       profileRelatedItems: [{ ko: '생선 알레르기', en: 'Fish allergy', ar: 'حساسية السمك' }],
       ingredients: [
-        { name: { ko: '쌀', en: 'Rice', ar: 'أرز' }, inclusionLikelihood: 'high', confidence: 'high' },
-        { name: { ko: '나물', en: 'Seasoned vegetables', ar: 'خضروات متبلة' }, inclusionLikelihood: 'high', confidence: 'medium' },
+        { name: { ko: '쌀', en: 'Rice', ar: 'أرز' }, inclusionLikelihood: 'high', confidence: 'high', sourceTypes: ['menu-description'] },
+        { name: { ko: '나물', en: 'Seasoned vegetables', ar: 'خضروات متبلة' }, inclusionLikelihood: 'high', confidence: 'medium', sourceTypes: ['menu-description', 'trusted-cooking'] },
       ],
       sources: [
         { type: 'menu-description', confidence: 'high' },
@@ -68,6 +68,7 @@ export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
         name: { ko: '멸치', en: 'Anchovy', ar: 'أنشوجة' },
         inclusionLikelihood: 'high',
         confidence: 'medium',
+        sourceTypes: ['menu-context', 'staff'],
         staffEvidence: { checkedCount: 12, usedCount: 8, sampleSufficient: true },
       }],
       hiddenIngredientPaths: [[
@@ -98,7 +99,7 @@ export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
     explainability: {
       decisionReason: { ko: '주재료가 돼지고기라 할랄 식단과 맞지 않아요.', en: 'The main ingredient is pork, which does not fit a halal diet.', ar: 'المكوّن الرئيسي هو لحم الخنزير، وهو لا يناسب النظام الحلال.' },
       profileRelatedItems: [{ ko: '할랄 식단', en: 'Halal diet', ar: 'نظام حلال' }],
-      ingredients: [{ name: { ko: '돼지고기', en: 'Pork', ar: 'لحم الخنزير' }, inclusionLikelihood: 'high', confidence: 'high' }],
+      ingredients: [{ name: { ko: '돼지고기', en: 'Pork', ar: 'لحم الخنزير' }, inclusionLikelihood: 'high', confidence: 'high', sourceTypes: ['menu-description'] }],
       sources: [{ type: 'menu-description', confidence: 'high' }],
       curationId: 'grill-cut',
     },
