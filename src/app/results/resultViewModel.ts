@@ -32,6 +32,7 @@ export const LIKELIHOOD_LABELS: Record<'high' | 'medium' | 'low', LocalizedMenuT
 
 export interface IngredientViewModel extends MenuIngredientEvidence {
   localizedName: string;
+  localizedSources: string[];
 }
 
 export interface MenuResultViewModel {
@@ -39,7 +40,6 @@ export interface MenuResultViewModel {
   profileRelatedItems: string[];
   ingredients: IngredientViewModel[];
   hiddenIngredientPaths: string[][];
-  sources: Array<{ type: EvidenceSourceType; label: string; confidence?: EvidenceConfidence }>;
   uncertainties: string[];
   curationId?: string;
 }
@@ -62,6 +62,8 @@ export function buildMenuResultViewModel(menu: MenuAnalysis, language: Language)
   const localizedIngredients = ingredients.map((ingredient) => ({
     ...ingredient,
     localizedName: localizeMenuText(ingredient.name, language),
+    localizedSources: (ingredient.sourceTypes ?? []).map((sourceType) =>
+      localizeMenuText(SOURCE_LABELS[sourceType], language)),
   }));
 
   const localizedReasons = language === 'ko'
@@ -87,30 +89,23 @@ export function buildMenuResultViewModel(menu: MenuAnalysis, language: Language)
     hiddenIngredientPaths: (explainability?.hiddenIngredientPaths ?? []).map((path) =>
       path.map((item) => localizeMenuText(item, language)),
     ),
-    sources: (explainability?.sources ?? []).map((source) => ({
-      type: source.type,
-      label: source.title
-        ? localizeMenuText(source.title, language)
-        : localizeMenuText(SOURCE_LABELS[source.type], language),
-      confidence: source.confidence,
-    })),
     uncertainties: (explainability?.uncertainties ?? []).map((item) => localizeMenuText(item, language)),
     curationId: explainability?.curationId ?? getCurationIdForMenu(menu.menuName),
   };
 }
 
 const veganLabels: Record<string, LocalizedMenuText> = {
-  vegan: { ko: '비건', en: 'Vegan', ar: 'نباتي صرف' },
-  lacto: { ko: '락토 채식', en: 'Lacto vegetarian', ar: 'نباتي مع الألبان' },
-  ovo: { ko: '오보 채식', en: 'Ovo vegetarian', ar: 'نباتي مع البيض' },
-  lacto_ovo: { ko: '락토 오보 채식', en: 'Lacto-ovo vegetarian', ar: 'نباتي مع الألبان والبيض' },
-  pesco: { ko: '페스코 채식', en: 'Pescatarian', ar: 'نباتي مع الأسماك' },
+  vegan: { ko: '비건', en: 'Vegan', ar: 'نباتي صرف', 'zh-CN': '纯素', ja: 'ヴィーガン', 'zh-TW': '純素', es: 'vegana' },
+  lacto: { ko: '락토 채식', en: 'Lacto vegetarian', ar: 'نباتي مع الألبان', 'zh-CN': '乳素', ja: 'ラクト・ベジタリアン', 'zh-TW': '奶素', es: 'lactovegetariana' },
+  ovo: { ko: '오보 채식', en: 'Ovo vegetarian', ar: 'نباتي مع البيض', 'zh-CN': '蛋素', ja: 'オボ・ベジタリアン', 'zh-TW': '蛋素', es: 'ovovegetariana' },
+  lacto_ovo: { ko: '락토 오보 채식', en: 'Lacto-ovo vegetarian', ar: 'نباتي مع الألبان والبيض', 'zh-CN': '蛋奶素', ja: 'ラクト・オボ・ベジタリアン', 'zh-TW': '蛋奶素', es: 'ovolactovegetariana' },
+  pesco: { ko: '페스코 채식', en: 'Pescatarian', ar: 'نباتي مع الأسماك', 'zh-CN': '鱼素', ja: 'ペスカタリアン', 'zh-TW': '魚素', es: 'pescetariana' },
 };
 
 const religionLabels: Record<string, LocalizedMenuText> = {
-  halal: { ko: '할랄', en: 'Halal', ar: 'حلال' },
-  kosher: { ko: '코셔', en: 'Kosher', ar: 'كوشير' },
-  hindu: { ko: '힌두 식단', en: 'Hindu diet', ar: 'نظام غذائي هندوسي' },
+  halal: { ko: '할랄', en: 'Halal', ar: 'حلال', 'zh-CN': '清真', ja: 'ハラール', 'zh-TW': '清真', es: 'halal' },
+  kosher: { ko: '코셔', en: 'Kosher', ar: 'كوشير', 'zh-CN': '犹太洁食', ja: 'コーシャ', 'zh-TW': '猶太潔食', es: 'kosher' },
+  hindu: { ko: '힌두 식단', en: 'Hindu diet', ar: 'نظام غذائي هندوسي', 'zh-CN': '印度教饮食', ja: 'ヒンドゥー教の食事', 'zh-TW': '印度教飲食', es: 'hindú' },
 };
 
 const noSpicyLabel: LocalizedMenuText = {
@@ -123,25 +118,44 @@ const noAlcoholLabel: LocalizedMenuText = {
   'zh-CN': '不含酒精', ja: 'アルコールを除外', 'zh-TW': '不含酒精', es: 'Sin alcohol',
 };
 
-export function getProfileSummary(profile: UserProfile | null, language: Language): string[] {
+export type ProfileCommunicationKind = 'allergy' | 'diet' | 'spicy' | 'alcohol';
+
+export interface ProfileCommunicationItem {
+  id: string;
+  kind: ProfileCommunicationKind;
+  label: LocalizedMenuText;
+}
+
+export function getProfileCommunicationItems(profile: UserProfile | null): ProfileCommunicationItem[] {
   if (!profile) return [];
-  const items: string[] = [];
+  const items: ProfileCommunicationItem[] = [];
+
   if (profile.isVegan && profile.veganType) {
     const key = profile.veganType.toLowerCase().replace(/-/g, '_');
-    items.push(localizeMenuText(veganLabels[key] ?? { ko: profile.veganType, en: profile.veganType }, language));
+    items.push({ id: `vegan:${key}`, kind: 'diet', label: veganLabels[key] ?? { ko: profile.veganType, en: profile.veganType } });
   }
   if (profile.hasReligion && profile.religionType) {
     const key = profile.religionType.toLowerCase();
-    items.push(localizeMenuText(religionLabels[key] ?? { ko: profile.religionType, en: profile.religionType }, language));
+    items.push({ id: `religion:${key}`, kind: 'diet', label: religionLabels[key] ?? { ko: profile.religionType, en: profile.religionType } });
   }
   if (profile.hasAllergies) {
-    items.push(...profile.allergies.map((code) => getAllergyName(code, language)).filter(Boolean));
+    items.push(...profile.allergies.map((code) => ({
+      id: `allergy:${code}`,
+      kind: 'allergy' as const,
+      label: {
+        ko: getAllergyName(code, 'ko'), en: getAllergyName(code, 'en'), ar: getAllergyName(code, 'ar'),
+        'zh-CN': getAllergyName(code, 'zh-CN'), ja: getAllergyName(code, 'ja'),
+        'zh-TW': getAllergyName(code, 'zh-TW'), es: getAllergyName(code, 'es'),
+      },
+    })));
   }
-  if (profile.noSpicy) {
-    items.push(localizeMenuText(noSpicyLabel, language));
-  }
-  if (profile.noAlcohol) {
-    items.push(localizeMenuText(noAlcoholLabel, language));
-  }
-  return Array.from(new Set(items));
+  if (profile.noSpicy) items.push({ id: 'preference:no-spicy', kind: 'spicy', label: noSpicyLabel });
+  if (profile.noAlcohol) items.push({ id: 'preference:no-alcohol', kind: 'alcohol', label: noAlcoholLabel });
+  return items;
+}
+
+export function getProfileSummary(profile: UserProfile | null, language: Language): string[] {
+  return Array.from(new Set(
+    getProfileCommunicationItems(profile).map((item) => localizeMenuText(item.label, language)),
+  ));
 }

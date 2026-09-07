@@ -65,6 +65,8 @@ export interface MenuIngredientEvidence {
   /** 백엔드가 제공할 때만 노출한다. 프런트에서는 확률을 계산하지 않는다. */
   inclusionLikelihood?: 'high' | 'medium' | 'low';
   confidence?: EvidenceConfidence;
+  /** 이 재료와 직접 연결된 출처만 전달한다. 메뉴 전체 출처를 임의로 재료에 배분하지 않는다. */
+  sourceTypes?: EvidenceSourceType[];
   staffEvidence?: {
     usedCount?: number;
     checkedCount?: number;

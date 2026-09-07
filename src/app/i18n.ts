@@ -7,6 +7,9 @@ export type OwnerCommunicationContentType =
   | 'order'
   | 'ingredient'
   | 'request'
+  | 'exclude'
+  | 'diet'
+  | 'spicyCheck'
   | 'spicy'
   | 'lessSpicy'
   | 'moreSpicy';
@@ -267,6 +270,33 @@ export const ownerCommunicationI18n = {
       ja: `${translate('ja', allergen)}のアレルギーがあります。${translate('ja', allergen)}抜きで作れますか？`,
       'zh-TW': `我對${translate('zh-TW', allergen)}過敏。可以不放${translate('zh-TW', allergen)}嗎？`,
       es: `Soy alérgico/a a ${translate('es', allergen)}. ¿Puede prepararlo sin ${translate('es', allergen)}?`,
+    }),
+    exclude: ({ ingredient }: OwnerContentParams): OwnerContent => ownerContent({
+      ko: `${ingredient.ko} 빼고 만들어 주실 수 있나요?`,
+      en: `Can you make it without ${ingredient.en}?`,
+      ar: `هل يمكن تحضيره بدون ${ingredient.ar}؟`,
+      'zh-CN': `可以不放${translate('zh-CN', ingredient)}吗？`,
+      ja: `${translate('ja', ingredient)}抜きで作れますか？`,
+      'zh-TW': `可以不放${translate('zh-TW', ingredient)}嗎？`,
+      es: `¿Puede prepararlo sin ${translate('es', ingredient)}?`,
+    }),
+    diet: ({ ingredient }: OwnerContentParams): OwnerContent => ownerContent({
+      ko: `저는 ${ingredient.ko} 식단을 지켜요. 주문 전에 확인해 주세요.`,
+      en: `I follow a ${ingredient.en} diet. Please check before I order.`,
+      ar: `أتبع نظامًا غذائيًا ${ingredient.ar}. يرجى التحقق قبل أن أطلب.`,
+      'zh-CN': `我遵循${translate('zh-CN', ingredient)}饮食。点餐前请帮我确认。`,
+      ja: `${translate('ja', ingredient)}の食事基準があります。注文前に確認してください。`,
+      'zh-TW': `我遵循${translate('zh-TW', ingredient)}飲食。點餐前請幫我確認。`,
+      es: `Sigo una dieta ${translate('es', ingredient)}. Por favor, compruébelo antes de que pida.`,
+    }),
+    spicyCheck: (): OwnerContent => ownerContent({
+      ko: '이 음식은 매운가요?',
+      en: 'Is this food spicy?',
+      ar: 'هل هذا الطعام حار؟',
+      'zh-CN': '这道菜辣吗？',
+      ja: 'この料理は辛いですか？',
+      'zh-TW': '這道菜辣嗎？',
+      es: '¿Este plato es picante?',
     }),
     spicy: (): OwnerContent => ownerContent({
       ko: '안 맵게 만들어 주실 수 있나요?',
