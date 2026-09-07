@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search } from 'lucide-react';
+import { ArrowLeft, Check, Search } from 'lucide-react';
 import type { Language, UserProfile } from '../App';
 import { ApiError } from '../../api/user';
 import {
@@ -11,6 +11,7 @@ import {
   getCountryFlag,
   getCountryName,
 } from '../constants/onboarding';
+import { createTranslator, LANGUAGE_OPTIONS, translateText } from '../locales';
 
 interface OnboardingScreenProps {
   language: Language;
@@ -49,15 +50,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
-
-  const languageOptions: { value: Language; label: string; sub: string }[] = [
-    { value: 'ko', label: '한국어', sub: 'Korean' },
-    { value: 'en', label: 'English', sub: 'English' },
-    { value: 'ar', label: 'العربية', sub: 'Arabic' },
-  ];
+  const t = createTranslator(language);
 
   const countries = useMemo(() => {
     const list = COUNTRY_CODES.map((code) => ({
@@ -146,71 +139,90 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
   );
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="h-dvh flex flex-col bg-rice-cream">
       {/* 헤더 + 진행 표시 */}
-      <div className="h-14 border-b border-neutral-200 flex items-center justify-center px-5 relative flex-shrink-0">
+      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-center px-5 relative flex-shrink-0">
         {(editMode || step > 1) && (
           <button
             onClick={() => (editMode ? navigate(-1) : setStep((s) => s - 1))}
-            className="absolute left-5"
+            className="absolute start-4 inline-flex size-11 items-center justify-center rounded-full text-soy-ink transition-colors hover:bg-brand-green-50"
             aria-label={t('이전', 'Back', 'رجوع')}
           >
-            <ArrowLeft className="w-5 h-5 text-neutral-700" />
+            <ArrowLeft className="size-5 rtl:rotate-180" />
           </button>
         )}
-        <h1 className="font-semibold text-neutral-900">
+        <h1 className="text-base font-bold text-soy-ink">
           {editMode
             ? t('프로필 수정', 'Edit profile', 'تعديل الملف')
             : t('프로필 설정', 'Profile setup', 'إعداد الملف')}
         </h1>
         {!editMode && (
-          <span className="absolute right-5 text-xs text-neutral-500">{step}/{TOTAL_STEPS}</span>
+          <span className="absolute end-5 rounded-full bg-brand-green-50 px-2.5 py-1 text-xs font-bold text-brand-green-700">
+            {step}/{TOTAL_STEPS}
+          </span>
         )}
       </div>
 
       {!editMode && (
-        <div className="h-1 bg-neutral-100 flex-shrink-0">
+        <div
+          className="h-1 bg-brand-green-50 flex-shrink-0"
+          role="progressbar"
+          aria-label={t('프로필 설정 진행률', 'Profile setup progress', 'تقدم إعداد الملف')}
+          aria-valuemin={1}
+          aria-valuemax={TOTAL_STEPS}
+          aria-valuenow={step}
+        >
           <div
-            className="h-full bg-neutral-900 transition-all"
+            className="h-full rounded-e-full bg-brand-orange-500 transition-all duration-300"
             style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
           />
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto px-5 py-6 flex flex-col">
-        <h2 className="text-lg font-semibold mb-6">{stepTitle}</h2>
+      <div className="flex-1 overflow-y-auto px-5 py-7 flex flex-col">
+        <div className="mb-6">
+          {!editMode && (
+            <p className="mb-1 text-xs font-bold tracking-[0.08em] text-brand-green-700">
+              {t(`STEP ${step}`, `STEP ${step}`, `الخطوة ${step}`)}
+            </p>
+          )}
+          <h2 className="max-w-sm text-2xl font-extrabold tracking-[-0.02em] text-soy-ink">{stepTitle}</h2>
+        </div>
 
         {/* Step 2 — 나라 설정 */}
         {step === 2 && (
           <div className="flex-1 flex flex-col min-h-0">
             <div className="relative mb-4">
-              <Search className="w-4 h-4 text-neutral-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <Search className="size-5 text-sesame-gray absolute start-4 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
+                aria-label={t('나라 검색', 'Search country', 'ابحث عن بلد')}
                 value={countrySearch}
                 onChange={(e) => setCountrySearch(e.target.value)}
                 placeholder={t('나라 검색', 'Search country', 'ابحث عن بلد')}
-                className="w-full h-12 pl-10 pr-4 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:border-neutral-400"
+                className="w-full h-13 ps-12 pe-4 rounded-2xl border border-border-warm bg-rice-white text-sm text-soy-ink shadow-sm placeholder:text-sesame-gray focus:border-brand-green-500 focus:outline-none focus:ring-4 focus:ring-brand-green-500/10"
               />
             </div>
 
-            <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-1">
+            <div className="flex-1 overflow-y-auto -mx-1 px-1 space-y-2">
               {countries.map((country) => (
                 <button
                   key={country.code}
                   onClick={() => setNationality(country.code)}
-                  className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-colors ${
+                  aria-pressed={nationality === country.code}
+                  className={`min-h-13 w-full flex items-center gap-3 px-4 py-3 rounded-2xl border text-start transition-colors ${
                     nationality === country.code
-                      ? 'bg-neutral-900 text-white border-neutral-900'
-                      : 'bg-white text-neutral-800 border-neutral-200 hover:bg-neutral-50'
+                      ? 'bg-brand-green-700 text-white border-brand-green-700 shadow-sm'
+                      : 'bg-rice-white text-soy-ink border-border-warm hover:border-brand-green-500 hover:bg-brand-green-50'
                   }`}
                 >
                   <span className="text-xl leading-none">{country.flag}</span>
-                  <span className="text-sm">{country.name}</span>
+                  <span className="min-w-0 flex-1 text-sm font-semibold">{country.name}</span>
+                  {nationality === country.code && <Check className="size-5 shrink-0" aria-hidden="true" />}
                 </button>
               ))}
               {countries.length === 0 && (
-                <p className="text-sm text-neutral-400 text-center py-8">
+                <p className="text-sm text-sesame-gray text-center py-8">
                   {t('검색 결과가 없습니다', 'No results', 'لا توجد نتائج')}
                 </p>
               )}
@@ -221,21 +233,25 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
         {/* Step 1 — 언어 설정 */}
         {step === 1 && (
           <div className="space-y-3">
-            {languageOptions.map((option) => (
+            {LANGUAGE_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setLanguage(option.value)}
-                className={`w-full flex items-center justify-between p-4 rounded-xl border transition-colors ${
+                aria-pressed={language === option.value}
+                className={`min-h-18 w-full flex items-center gap-4 p-4 rounded-2xl border text-start transition-colors ${
                   language === option.value
-                    ? 'bg-neutral-900 text-white border-neutral-900'
-                    : 'bg-white text-neutral-900 border-neutral-200 hover:bg-neutral-50'
+                    ? 'bg-brand-green-700 text-white border-brand-green-700 shadow-sm'
+                    : 'bg-rice-white text-soy-ink border-border-warm hover:border-brand-green-500 hover:bg-brand-green-50'
                 }`}
               >
-                <span className="text-base font-medium">{option.label}</span>
-                <span
-                  className={`text-xs ${language === option.value ? 'text-neutral-300' : 'text-neutral-400'}`}
-                >
-                  {option.sub}
+                <span className="min-w-0 flex-1">
+                  <span className="block text-base font-bold">{option.label}</span>
+                  <span className={`block text-xs ${language === option.value ? 'text-white/70' : 'text-sesame-gray'}`}>
+                    {option.sub}
+                  </span>
+                </span>
+                <span className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${language === option.value ? 'border-white/40 bg-white/15' : 'border-border-warm'}`}>
+                  {language === option.value && <Check className="size-4" aria-hidden="true" />}
                 </span>
               </button>
             ))}
@@ -244,130 +260,131 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
 
         {/* Step 3 — 식단 프로필 */}
         {step === 3 && (
-          <div className="space-y-4">
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+          <div className="space-y-3">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${isFirstTime ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={isFirstTime}
                 onChange={(e) => setIsFirstTime(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('한국 음식 처음', 'New to Korean food', 'أول مرة مع الطعام الكوري')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('한국 음식 처음', 'New to Korean food', 'أول مرة مع الطعام الكوري')}</span>
             </label>
 
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${noSpicy ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={noSpicy}
                 onChange={(e) => setNoSpicy(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار')}</span>
             </label>
 
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${isVegan ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={isVegan}
                 onChange={(e) => setIsVegan(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('채식·비건', 'Vegetarian/Vegan', 'نباتي/نباتي صارم')}</span>
             </label>
 
             {isVegan && (
-              <div className="ml-8 space-y-2 pb-2">
+              <div className="space-y-3 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
                 {VEGETARIAN_OPTIONS.map((option) => (
-                  <label key={option.value} className="flex items-center gap-2">
+                  <label key={option.value} className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="radio"
                       name="veganType"
                       checked={veganType === option.value}
                       onChange={() => setVeganType(option.value)}
-                      className="w-4 h-4 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                      className="mt-0.5 size-4 shrink-0 accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
                     />
-                    <span className="text-sm text-neutral-700">{option.label[language]}</span>
+                    <span className="text-sm text-soy-ink">{translateText(language, option.label)}</span>
                   </label>
                 ))}
               </div>
             )}
 
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${hasReligion ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={hasReligion}
                 onChange={(e) => setHasReligion(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('종교 식단', 'Religious diet', 'نظام غذائي ديني')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('종교 식단', 'Religious diet', 'نظام غذائي ديني')}</span>
             </label>
 
             {hasReligion && (
-              <div className="ml-8 space-y-2 pb-2">
+              <div className="space-y-3 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
                 {RELIGION_OPTIONS.map((option) => (
-                  <label key={option.value} className="flex items-center gap-2">
+                  <label key={option.value} className="flex items-start gap-3 cursor-pointer">
                     <input
                       type="radio"
                       name="religionType"
                       checked={religionType === option.value}
                       onChange={() => setReligionType(option.value)}
-                      className="w-4 h-4 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                      className="mt-0.5 size-4 shrink-0 accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
                     />
-                    <span className="text-sm text-neutral-700">{option.label[language]}</span>
+                    <span className="text-sm text-soy-ink">{translateText(language, option.label)}</span>
                   </label>
                 ))}
               </div>
             )}
 
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${hasAllergies ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={hasAllergies}
                 onChange={(e) => setHasAllergies(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}</span>
             </label>
 
             {hasAllergies && (
-              <div className="ml-8 flex flex-wrap gap-2 pb-2">
+              <div className="flex flex-wrap gap-2 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
                 {ALLERGY_OPTIONS.map((allergy) => (
                   <button
                     key={allergy.value}
                     onClick={() => toggleAllergy(allergy.value)}
-                    className={`px-3 py-1.5 text-xs rounded-full border transition-colors ${
+                    aria-pressed={selectedAllergies.includes(allergy.value)}
+                    className={`min-h-9 px-3 py-1.5 text-xs rounded-full border transition-colors ${
                       selectedAllergies.includes(allergy.value)
-                        ? 'bg-neutral-900 text-white border-neutral-900'
-                        : 'bg-white text-neutral-700 border-neutral-300 hover:border-neutral-400'
+                        ? 'bg-brand-green-700 text-white border-brand-green-700'
+                        : 'bg-rice-white text-soy-ink border-border-warm hover:border-brand-green-500'
                     }`}
                   >
-                    {allergy.label[language]}
+                    {translateText(language, allergy.label)}
                   </button>
                 ))}
               </div>
             )}
 
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-neutral-200 cursor-pointer hover:bg-neutral-50">
+            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${noAlcohol ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
               <input
                 type="checkbox"
                 checked={noAlcohol}
                 onChange={(e) => setNoAlcohol(e.target.checked)}
-                className="w-5 h-5 rounded border-neutral-300 accent-neutral-900 focus:ring-2 focus:ring-neutral-900/20"
+                className="mt-0.5 size-5 shrink-0 rounded border-border-warm accent-brand-green-700 focus:ring-2 focus:ring-brand-green-500/20"
               />
-              <span className="text-sm text-neutral-900">{t('금주', 'No alcohol', 'بدون كحول')}</span>
+              <span className="text-sm font-semibold text-soy-ink">{t('금주', 'No alcohol', 'بدون كحول')}</span>
             </label>
           </div>
         )}
       </div>
 
       {/* 하단 액션 */}
-      <div className="border-t border-neutral-200 px-5 py-4 space-y-2 flex-shrink-0">
-        {errorMessage && <p className="text-xs text-red-500 text-center">{errorMessage}</p>}
+      <div className="border-t border-border-warm bg-rice-white/95 px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] space-y-2 flex-shrink-0">
+        {errorMessage && <p className="text-xs text-red-500 text-center" role="alert">{errorMessage}</p>}
         {!editMode && step < TOTAL_STEPS ? (
           <button
             onClick={() => setStep((s) => s + 1)}
             disabled={!canGoNext}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm transition-colors hover:bg-brand-green-900 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t('다음', 'Next', 'التالي')}
           </button>
@@ -375,7 +392,8 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
           <button
             onClick={handleSave}
             disabled={!step3Valid || saving}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-busy={saving}
+            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm transition-colors hover:bg-brand-green-900 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {saving
               ? t('저장 중...', 'Saving...', 'جارٍ الحفظ...')

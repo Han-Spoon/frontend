@@ -1,4 +1,5 @@
 import { authFetch } from './authFetch';
+import type { BackendLanguage } from '../app/locales';
 
 export interface CurrentUser {
   id: string;
@@ -10,13 +11,13 @@ export interface CurrentUser {
 
 export interface UpdateCurrentUserPayload {
   nickname?: string;
-  languageCode?: 'ko' | 'en' | 'ar';
+  languageCode?: BackendLanguage;
 }
 
 export interface UserProfilePayload {
   /** ISO 3166-1 alpha-2 (대문자, 예: "SA") */
   nationality: string;
-  languageCode: 'ko' | 'en' | 'ar';
+  languageCode: BackendLanguage;
   isFirstTime: boolean;
   isVegan: boolean;
   /** VegetarianType 코드값 (vegan|lacto|ovo|lacto_ovo|pesco) — isVegan=false면 null */

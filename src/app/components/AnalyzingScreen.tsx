@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Camera, Loader2 } from 'lucide-react';
 import { getScanResult, mapMenuResult, normalizeScanStatus, startScan } from '../../api/scan';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
+import { createTranslator } from '../locales';
 
 interface AnalyzingScreenProps {
   language: Language;
@@ -21,9 +22,7 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
+  const t = createTranslator(language);
 
   const steps = [
     t('메뉴판 이미지를 읽고 있어요', 'Scanning menu image', 'جار قراءة صورة القائمة'),
@@ -125,22 +124,22 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
   // 재촬영 안내 (needs_retake)
   if (phase === 'retake') {
     return (
-      <div className="h-screen flex flex-col bg-white">
-        <div className="h-14 border-b border-neutral-200 flex items-center justify-center px-5 relative flex-shrink-0">
-          <h1 className="font-semibold text-neutral-900">{t('다시 촬영이 필요해요', 'Retake needed', 'يلزم إعادة التصوير')}</h1>
+      <div className="h-dvh flex flex-col bg-rice-cream">
+        <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-center px-5 relative flex-shrink-0">
+          <h1 className="text-base font-bold text-soy-ink">{t('다시 촬영이 필요해요', 'Retake needed', 'يلزم إعادة التصوير')}</h1>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <div className="w-16 h-16 rounded-full bg-neutral-100 flex items-center justify-center mb-5">
-            <Camera className="w-7 h-7 text-neutral-700" />
+          <div className="size-20 rounded-[1.75rem] bg-brand-orange-100 flex items-center justify-center mb-6 shadow-sm">
+            <Camera className="size-8 text-brand-orange-500" />
           </div>
-          <p className="text-base font-medium text-neutral-900">
+          <p className="max-w-xs text-lg font-bold leading-relaxed text-soy-ink">
             {t('가이드라인에 맞춰 촬영해주세요', 'Please take the photo following the guideline.', 'يرجى التقاط الصورة وفقًا للإرشادات.')}
           </p>
         </div>
-        <div className="border-t border-neutral-200 px-5 py-4 flex-shrink-0">
+        <div className="border-t border-border-warm bg-rice-white/95 px-5 py-4 flex-shrink-0">
           <button
             onClick={onCancel}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors"
+            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm hover:bg-brand-green-900 transition-colors"
           >
             {t('다시 촬영', 'Retake', 'إعادة التصوير')}
           </button>
@@ -150,19 +149,22 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
   }
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      <div className="h-14 border-b border-neutral-200 flex items-center justify-center px-5 relative flex-shrink-0">
-        <h1 className="font-semibold text-neutral-900">{t('메뉴판 분석 중', 'Analyzing menu', 'جار تحليل القائمة')}</h1>
+    <div className="h-dvh flex flex-col bg-rice-cream">
+      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-center px-5 relative flex-shrink-0">
+        <h1 className="text-base font-bold text-soy-ink">{t('메뉴판 분석 중', 'Analyzing menu', 'جار تحليل القائمة')}</h1>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-5">
-        <div className="w-full max-w-xs aspect-[4/3] bg-neutral-100 rounded-2xl mb-8 overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center px-5 py-7">
+        <div className="relative w-full max-w-xs aspect-[4/3] bg-rice-white rounded-[1.75rem] mb-8 overflow-hidden border border-border-warm shadow-[0_14px_38px_rgba(23,107,77,0.12)]">
           {image ? (
             <img src={image.previewUrl} alt={t('분석 중인 메뉴판', 'Menu being analyzed', 'القائمة قيد التحليل')} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-neutral-400">
+            <div className="w-full h-full flex items-center justify-center text-sesame-gray">
               <span className="text-6xl">📋</span>
             </div>
+          )}
+          {phase === 'analyzing' && (
+            <div className="animate-scan-line pointer-events-none absolute inset-x-5 top-[12%] h-0.5 rounded-full bg-brand-orange-500 shadow-[0_0_14px_rgba(244,119,59,0.8)]" aria-hidden="true" />
           )}
         </div>
 
@@ -170,40 +172,40 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
           {phase === 'analyzing' ? (
             <>
               <div className="mb-6">
-                <Loader2 className="w-10 h-10 text-neutral-900 animate-spin mx-auto mb-4" />
-                <p className="text-center text-base font-medium text-neutral-900">{steps[step]}</p>
+                <Loader2 className="size-10 text-brand-green-700 animate-spin mx-auto mb-4" />
+                <p className="min-h-12 text-center text-base font-bold leading-relaxed text-soy-ink">{steps[step]}</p>
               </div>
               <div className="flex items-center justify-center gap-2 mb-8">
                 {steps.map((_, i) => (
                   <div
                     key={i}
                     className={`h-1 rounded-full transition-all ${
-                      i <= step ? 'w-8 bg-neutral-900' : 'w-1 bg-neutral-300'
+                      i <= step ? 'w-8 bg-brand-green-700' : 'w-1 bg-border-warm'
                     }`}
                   />
                 ))}
               </div>
             </>
           ) : (
-            <div className="mb-6 rounded-xl border border-red-200 bg-red-50 p-4">
+            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
               <p className="text-sm text-red-700 text-center">{errorMessage}</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="border-t border-neutral-200 px-5 py-4 flex-shrink-0 space-y-2">
+      <div className="border-t border-border-warm bg-rice-white/95 px-5 py-4 flex-shrink-0 space-y-2">
         {phase === 'failed' && (
           <button
             onClick={() => setAttempt((a) => a + 1)}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors"
+            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm hover:bg-brand-green-900 transition-colors"
           >
             {t('다시 시도', 'Retry', 'إعادة المحاولة')}
           </button>
         )}
         <button
           onClick={onCancel}
-          className="w-full h-12 text-sm text-neutral-600 hover:text-neutral-900 transition-colors"
+          className="w-full h-12 text-sm font-semibold text-sesame-gray hover:text-soy-ink transition-colors"
         >
           {t('취소', 'Cancel', 'إلغاء')}
         </button>

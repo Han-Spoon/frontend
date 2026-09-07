@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { AlertTriangle, Camera, ImageIcon, RotateCcw, User } from 'lucide-react';
 import type { HistoryItem, Language, PendingMenuImage } from '../App';
-import logo from '../../icons/logo.png';
+import logo from '../../assets/brand/han-spoon-logo.svg';
 import { BottomNav } from './BottomNav';
 import { ScanHistoryList } from './ScanHistoryList';
 import { uploadImage } from '../../api/upload';
+import { createTranslator } from '../locales';
 
 interface HomeScreenProps {
   language: Language;
@@ -32,9 +33,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
   const objectUrlRef = useRef<string | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
+  const t = createTranslator(language);
 
   const stopCamera = () => {
     cameraStreamRef.current?.getTracks().forEach((track) => track.stop());
@@ -247,31 +246,36 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
   }, []);
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      <div className="h-14 border-b border-neutral-200 flex items-center justify-between px-5 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xl">
-            <img src={logo} alt="한스푼 로고" className="w-6 h-6 object-contain" />
-          </span>
-          <span className="font-semibold">{t('한 스푼', 'Han Spoon', 'هان سبون')}</span>
-        </div>
+    <div className="h-dvh flex flex-col bg-rice-cream text-soy-ink">
+      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-between px-5 flex-shrink-0 backdrop-blur">
+        <img src={logo} alt={t('한스푼', 'Han Spoon', 'هان سبون')} className="h-auto w-[108px]" />
         <button
           onClick={onMyPage}
-          className="w-9 h-9 rounded-full bg-neutral-100 flex items-center justify-center hover:bg-neutral-200 transition-colors"
+          className="w-11 h-11 rounded-full bg-brand-green-50 flex items-center justify-center text-brand-green-700 hover:bg-brand-green-100 transition-colors"
+          aria-label={t('마이페이지', 'My page', 'صفحتي')}
         >
-          <User className="w-5 h-5 text-neutral-700" />
+          <User className="w-5 h-5" />
         </button>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-5 py-8">
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-2">{t('메뉴판을 찍으면', 'Scan a menu', 'امسح قائمة الطعام')}</h2>
-          <p className="text-sm text-neutral-600">{t('먹을 수 있는 메뉴를 알려드려요', 'We tell you what is safe to eat', 'سنخبرك بما يمكنك تناوله بأمان')}</p>
-          <p className="text-xs text-neutral-500 mt-2">
+      <div className="flex-1 overflow-y-auto px-5 pb-10 pt-7">
+        <div className="mb-6">
+          <div className="mb-3 inline-flex items-center rounded-full bg-brand-orange-100 px-3 py-1.5 text-xs font-bold text-[#873b17]">
+            {t('메뉴판 스캔', 'Menu scan', 'مسح القائمة')}
+          </div>
+          <h2 className="text-[26px] font-extrabold leading-[1.3] tracking-[-0.02em] text-soy-ink">
+            {t('오늘의 메뉴를\n안심하고 골라보세요', 'Choose today’s meal\nwith confidence', 'اختر وجبتك اليوم\nبكل ثقة').split('\n').map((line, index, lines) => (
+              <span key={line}>
+                {line}
+                {index < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </h2>
+          <p className="text-sm leading-6 text-sesame-gray mt-3">
             {t(
-              '*메뉴판을 사각형 틀에 맞춰 정면에서 찍어주세요.',
-              '*Fit the menu inside the rectangle and take the photo straight on.',
-              'ضع القائمة داخل الإطار المستطيل والتقط الصورة من الأمام.'
+              '메뉴판 전체가 보이도록 정면에서 찍으면 더 정확해요.',
+              'For better results, capture the full menu straight on.',
+              'لنتائج أدق، التقط صورة القائمة كاملة من الأمام.'
             )}
           </p>
         </div>
@@ -284,13 +288,13 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
           onChange={handleFileChange}
         />
 
-        <div className="mb-4">
+        <div className="mb-4 rounded-[28px] border border-border-warm bg-rice-white p-3 shadow-[0_12px_36px_rgba(54,70,60,0.08)]">
           {selectedImage ? (
-            <div className="overflow-hidden rounded-2xl border border-neutral-200 bg-neutral-100">
+            <div className="overflow-hidden rounded-[20px] border border-brand-green-100 bg-brand-green-50">
               <img src={selectedImage.previewUrl} alt={t('선택한 메뉴판 미리보기', 'Selected menu preview', 'معاينة قائمة الطعام المحددة')} className="w-full h-64 object-cover" />
             </div>
           ) : cameraStream ? (
-            <div className="relative overflow-hidden rounded-2xl border border-neutral-200 bg-black">
+            <div className="relative overflow-hidden rounded-[20px] border border-brand-green-100 bg-black">
               <video
                 ref={videoRef}
                 autoPlay
@@ -310,14 +314,15 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
             <button
               onClick={handleCameraClick}
               disabled={isStartingCamera}
-              className="w-full h-48 bg-neutral-50 border-2 border-dashed border-neutral-300 rounded-2xl flex flex-col items-center justify-center gap-3 hover:bg-neutral-100 hover:border-neutral-400 transition-colors disabled:opacity-60"
+              className="w-full h-52 bg-brand-green-50/70 border-2 border-dashed border-brand-green-500/40 rounded-[20px] flex flex-col items-center justify-center gap-4 hover:bg-brand-green-50 hover:border-brand-green-500 transition-colors disabled:opacity-60"
             >
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm">
-                <Camera className="w-7 h-7 text-neutral-700" />
+              <div className="w-16 h-16 bg-brand-orange-500 rounded-[22px] flex items-center justify-center shadow-[0_10px_24px_rgba(244,119,59,0.25)] rotate-[-3deg]">
+                <Camera className="w-7 h-7 text-white rotate-[3deg]" />
               </div>
-              <span className="text-base font-medium text-neutral-900">
+              <span className="text-base font-bold text-brand-green-900">
                 {isStartingCamera ? t('카메라 여는 중', 'Opening camera', 'جار فتح الكاميرا') : t('메뉴판 촬영하기', 'Take a menu photo', 'التقط صورة للقائمة')}
               </span>
+              <span className="text-xs text-sesame-gray">{t('카메라가 바로 열려요', 'Your camera opens right away', 'ستفتح الكاميرا مباشرة')}</span>
             </button>
           )}
         </div>
@@ -325,7 +330,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
         {cameraStream && !selectedImage && (
           <button
             onClick={capturePhoto}
-            className="w-full h-12 bg-neutral-900 text-white rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-800 transition-colors"
+            className="w-full h-13 bg-brand-green-700 text-white rounded-2xl flex items-center justify-center gap-2 mb-3 hover:bg-brand-green-900 transition-colors"
           >
             <Camera className="w-5 h-5" />
             <span className="text-sm font-medium">{t('촬영하기', 'Capture photo', 'التقاط صورة')}</span>
@@ -336,23 +341,23 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
           <div className="mb-3">
             <button
               onClick={handleRetake}
-              className="w-full h-12 bg-white border border-neutral-300 rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-50 transition-colors"
+              className="w-full h-12 bg-rice-white border border-border-warm rounded-2xl flex items-center justify-center gap-2 mb-3 hover:bg-brand-green-50 transition-colors"
             >
-              <RotateCcw className="w-4 h-4 text-neutral-600" />
-              <span className="text-sm text-neutral-700">{t('다시 촬영', 'Retake', 'إعادة الالتقاط')}</span>
+              <RotateCcw className="w-4 h-4 text-brand-green-700" />
+              <span className="text-sm font-semibold text-brand-green-900">{t('다시 촬영', 'Retake', 'إعادة الالتقاط')}</span>
             </button>
           </div>
         )}
 
         <button
           onClick={handleGalleryClick}
-          className="w-full h-12 bg-white border border-neutral-300 rounded-xl flex items-center justify-center gap-2 mb-3 hover:bg-neutral-50 transition-colors"
+          className="w-full h-12 bg-rice-white border border-border-warm rounded-2xl flex items-center justify-center gap-2 mb-3 hover:bg-brand-green-50 transition-colors"
         >
-          <ImageIcon className="w-5 h-5 text-neutral-600" />
-          <span className="text-sm text-neutral-700">{t('사진에서 선택하기', 'Choose from photos', 'اختر من الصور')}</span>
+          <ImageIcon className="w-5 h-5 text-brand-green-700" />
+          <span className="text-sm font-semibold text-brand-green-900">{t('사진에서 선택하기', 'Choose from photos', 'اختر من الصور')}</span>
         </button>
 
-        <p className="text-xs text-neutral-500 mb-4">
+        <p className="text-xs leading-5 text-sesame-gray mb-4 px-1">
           {t(
             `JPG, PNG, WEBP 사진만 가능 · 최대 ${MAX_FILE_SIZE_MB}MB · GIF/영상/문서는 불가`,
             `JPG, PNG, WEBP photos only · Max ${MAX_FILE_SIZE_MB}MB · No GIFs, videos, or documents`,
@@ -388,7 +393,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
           <button
             onClick={handleAnalyze}
             disabled={isUploading}
-            className="w-full h-14 bg-neutral-900 text-white rounded-xl font-medium hover:bg-neutral-800 transition-colors mb-8 disabled:bg-neutral-300 disabled:cursor-not-allowed"
+            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold hover:bg-brand-green-900 transition-colors mb-8 disabled:bg-[#b9c5be] disabled:cursor-not-allowed shadow-[0_10px_24px_rgba(23,107,77,0.18)]"
           >
             {isUploading
               ? t('이미지 업로드 중', 'Uploading image', 'جار رفع الصورة')
@@ -398,7 +403,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
 
         {history.length > 0 && (
           <div>
-            <h3 className="text-lg font-semibold text-neutral-900 mb-3">{t('최신 스캔 기록', 'Recent scans', 'أحدث عمليات المسح')}</h3>
+            <h3 className="text-lg font-bold text-soy-ink mb-3">{t('최근에 살펴본 메뉴', 'Recently viewed menus', 'القوائم التي شاهدتها مؤخراً')}</h3>
             <ScanHistoryList
               language={language}
               history={history.slice(0, 3)}
@@ -410,7 +415,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
         )}
 
         <div className="mt-8 text-center">
-          <p className="text-xs text-neutral-500">{t('손글씨 메뉴판은 인식이 어려울 수 있어요', 'Handwritten menus may be hard to recognize', 'قد يصعب التعرف على قوائم الطعام المكتوبة بخط اليد')}</p>
+          <p className="text-xs text-sesame-gray">{t('손글씨 메뉴판은 인식이 어려울 수 있어요', 'Handwritten menus may be hard to recognize', 'قد يصعب التعرف على قوائم الطعام المكتوبة بخط اليد')}</p>
         </div>
       </div>
 

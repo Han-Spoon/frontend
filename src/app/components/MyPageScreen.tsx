@@ -4,7 +4,8 @@ import { logout } from '../../api/auth';
 import { deleteMe } from '../../api/user';
 import type { CurrentUser } from '../../api/user';
 import type { Language, UserAllergy, UserProfile } from '../App';
-import { getAllergyName } from '../i18n';
+import { getAllergyName, translate } from '../i18n';
+import { createTranslator, LANGUAGE_OPTIONS } from '../locales';
 import {
   RELIGION_OPTIONS,
   VEGETARIAN_OPTIONS,
@@ -58,34 +59,31 @@ export function MyPageScreen({
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleteError, setDeleteError] = useState('');
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
+  const t = createTranslator(language);
 
   const getAllergyDisplayName = (allergy: string | UserAllergy) => getAllergyName(allergy, language);
 
-  const getVeganLabel = (code?: string | null) =>
-    VEGETARIAN_OPTIONS.find((option) => option.value === code)?.label[language] ?? code ?? '';
+  const getVeganLabel = (code?: string | null) => {
+    const option = VEGETARIAN_OPTIONS.find((item) => item.value === code);
+    return option ? translate(language, option.label) : code ?? '';
+  };
 
-  const getReligionLabel = (code?: string | null) =>
-    RELIGION_OPTIONS.find((option) => option.value === code)?.label[language] ?? code ?? '';
+  const getReligionLabel = (code?: string | null) => {
+    const option = RELIGION_OPTIONS.find((item) => item.value === code);
+    return option ? translate(language, option.label) : code ?? '';
+  };
 
-  const languageOptions: { value: Language; label: string }[] = [
-    { value: 'ko', label: '한국어' },
-    { value: 'en', label: 'English' },
-    { value: 'ar', label: 'العربية' },
-  ];
-  const currentLanguageLabel = languageOptions.find((o) => o.value === language)?.label ?? language;
+  const currentLanguageLabel = LANGUAGE_OPTIONS.find((o) => o.value === language)?.label ?? language;
 
   const sectionHeader = (title: string, section: ProfileSection) => (
     <div className="flex items-center justify-between mb-2">
-      <h3 className="text-sm font-semibold text-neutral-900">{title}</h3>
+      <h3 className="text-sm font-bold text-soy-ink">{title}</h3>
       <button
         onClick={() => onEditProfile(section)}
-        className="flex items-center gap-0.5 text-xs font-medium text-neutral-500 hover:text-neutral-900 transition-colors"
+        className="flex min-h-9 items-center gap-0.5 text-xs font-bold text-brand-green-700 hover:text-brand-green-900 transition-colors"
       >
         {t('수정', 'Edit', 'تعديل')}
-        <ChevronRight className="w-3.5 h-3.5" />
+        <ChevronRight className="size-3.5 rtl:rotate-180" />
       </button>
     </div>
   );
@@ -93,12 +91,12 @@ export function MyPageScreen({
   // 해당되면 흰색 배경, 아니면 회색 배경으로 표시.
   const dietRow = (active: boolean, emoji: string, label: string, detail?: string) => (
     <div
-      className={`flex items-center gap-3 rounded-xl px-4 py-3 border ${
-        active ? 'bg-white border-neutral-200' : 'bg-neutral-50 border-transparent'
+      className={`flex min-h-13 items-center gap-3 rounded-2xl px-4 py-3 border ${
+        active ? 'bg-rice-white border-brand-green-100' : 'bg-muted/70 border-transparent'
       }`}
     >
       <span className="text-lg leading-none">{emoji}</span>
-      <span className={`text-sm ${active ? 'text-neutral-900' : 'text-neutral-400'}`}>
+      <span className={`text-sm ${active ? 'font-semibold text-soy-ink' : 'text-sesame-gray/65'}`}>
         {label}
         {active && detail ? ` · ${detail}` : ''}
       </span>
@@ -126,33 +124,33 @@ export function MyPageScreen({
           ? error
           : error instanceof Error
             ? error.message
-            : 'Account deletion failed.',
+            : t('계정 삭제에 실패했습니다.', 'Account deletion failed.', 'فشل حذف الحساب.'),
       );
     }
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      <div className="h-14 border-b border-neutral-200 flex items-center px-5 relative flex-shrink-0">
-        <button onClick={onBack} className="absolute left-5">
-          <ArrowLeft className="w-5 h-5 text-neutral-700" />
+    <div className="h-dvh flex flex-col bg-rice-cream">
+      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center px-5 relative flex-shrink-0">
+        <button onClick={onBack} className="absolute start-4 inline-flex size-11 items-center justify-center rounded-full hover:bg-brand-green-50" aria-label={t('이전', 'Back', 'رجوع')}>
+          <ArrowLeft className="size-5 text-soy-ink rtl:rotate-180" />
         </button>
-        <h1 className="font-semibold text-neutral-900 mx-auto">{t('마이페이지', 'My Page', 'صفحتي')}</h1>
+        <h1 className="text-base font-bold text-soy-ink mx-auto">{t('마이페이지', 'My Page', 'صفحتي')}</h1>
       </div>
 
-      <div className="px-5 py-6 border-b border-neutral-200">
+      <div className="px-5 py-6 border-b border-brand-green-100 bg-brand-green-50">
         <div className="flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-neutral-900 flex items-center justify-center">
+          <div className="size-16 rounded-[1.5rem] bg-brand-green-700 flex items-center justify-center shadow-sm">
             <User className="w-8 h-8 text-white" />
           </div>
           <div>
-            <div className="font-semibold text-neutral-900 mb-1">{currentUser?.nickname ?? 'User'}</div>
-            <div className="text-sm text-neutral-600">{currentUser?.email ?? 'user@example.com'}</div>
+            <div className="font-extrabold text-soy-ink mb-1">{currentUser?.nickname ?? t('사용자', 'User', 'مستخدم')}</div>
+            <div className="text-sm text-sesame-gray break-all">{currentUser?.email ?? 'user@example.com'}</div>
           </div>
         </div>
       </div>
 
-      <div className="flex border-b border-neutral-200">
+      <div className="flex border-b border-border-warm bg-rice-white" role="tablist" aria-label={t('마이페이지 메뉴', 'My page sections', 'أقسام صفحتي')}>
         {[
           { value: 'profile', label: t('프로필', 'Profile', 'الملف') },
           { value: 'scan', label: t('스캔 기록', 'Scans', 'عمليات المسح') },
@@ -161,12 +159,14 @@ export function MyPageScreen({
           <button
             key={value}
             onClick={() => setActiveTab(value as TabType)}
-            className={`flex-1 h-12 text-sm font-medium transition-colors relative ${
-              activeTab === value ? 'text-neutral-900' : 'text-neutral-500 hover:text-neutral-700'
+            role="tab"
+            aria-selected={activeTab === value}
+            className={`flex-1 min-h-12 px-1 text-sm font-bold transition-colors relative ${
+              activeTab === value ? 'text-brand-green-700' : 'text-sesame-gray hover:text-soy-ink'
             }`}
           >
             {label}
-            {activeTab === value && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-neutral-900" />}
+            {activeTab === value && <div className="absolute bottom-0 inset-x-3 h-0.5 rounded-full bg-brand-orange-500" />}
           </button>
         ))}
       </div>
@@ -179,24 +179,24 @@ export function MyPageScreen({
                 {/* 언어 */}
                 <section>
                   {sectionHeader(t('언어', 'Language', 'اللغة'), 'language')}
-                  <div className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-neutral-200">
-                    <span className="text-sm text-neutral-900">{currentLanguageLabel}</span>
+                  <div className="flex items-center gap-3 rounded-2xl px-4 py-3 border bg-rice-white border-border-warm">
+                    <span className="text-sm font-semibold text-soy-ink">{currentLanguageLabel}</span>
                   </div>
                 </section>
 
                 {/* 나라 */}
                 <section>
                   {sectionHeader(t('나라', 'Country', 'البلد'), 'country')}
-                  <div className="flex items-center gap-3 rounded-xl px-4 py-3 border bg-white border-neutral-200">
+                  <div className="flex items-center gap-3 rounded-2xl px-4 py-3 border bg-rice-white border-border-warm">
                     {userProfile.nationality ? (
                       <>
                         <span className="text-lg leading-none">{getCountryFlag(userProfile.nationality)}</span>
-                        <span className="text-sm text-neutral-900">
+                        <span className="text-sm font-semibold text-soy-ink">
                           {getCountryName(userProfile.nationality, language)}
                         </span>
                       </>
                     ) : (
-                      <span className="text-sm text-neutral-400">{t('없음', 'None', 'لا شيء')}</span>
+                      <span className="text-sm text-sesame-gray">{t('없음', 'None', 'لا شيء')}</span>
                     )}
                   </div>
                 </section>
@@ -222,10 +222,10 @@ export function MyPageScreen({
 
                     {/* 알레르기 */}
                     <div
-                      className={`rounded-xl px-4 py-3 border ${
+                      className={`rounded-2xl px-4 py-3 border ${
                         userProfile.hasAllergies && userProfile.allergies.length > 0
-                          ? 'bg-white border-neutral-200'
-                          : 'bg-neutral-50 border-transparent'
+                          ? 'bg-rice-white border-brand-green-100'
+                          : 'bg-muted/70 border-transparent'
                       }`}
                     >
                       <div className="flex items-center gap-3 mb-2">
@@ -233,26 +233,26 @@ export function MyPageScreen({
                         <span
                           className={`text-sm ${
                             userProfile.hasAllergies && userProfile.allergies.length > 0
-                              ? 'text-neutral-900'
-                              : 'text-neutral-400'
+                              ? 'font-semibold text-soy-ink'
+                              : 'text-sesame-gray/65'
                           }`}
                         >
                           {t('음식 알레르기', 'Food allergies', 'حساسية الطعام')}
                         </span>
                       </div>
                       {userProfile.hasAllergies && userProfile.allergies.length > 0 ? (
-                        <div className="flex flex-wrap gap-2 pl-8">
+                        <div className="flex flex-wrap gap-2 ps-8">
                           {userProfile.allergies.map((allergy) => (
                             <span
                               key={getAllergyDisplayName(allergy)}
-                              className="px-2 py-1 bg-neutral-100 border border-neutral-200 rounded-md text-xs text-neutral-700"
+                              className="px-2.5 py-1 bg-brand-green-50 border border-brand-green-100 rounded-lg text-xs font-semibold text-brand-green-700"
                             >
                               {getAllergyDisplayName(allergy)}
                             </span>
                           ))}
                         </div>
                       ) : (
-                        <span className="text-sm text-neutral-400 pl-8">{t('없음', 'None', 'لا شيء')}</span>
+                        <span className="text-sm text-sesame-gray ps-8">{t('없음', 'None', 'لا شيء')}</span>
                       )}
                     </div>
                   </div>
@@ -260,12 +260,12 @@ export function MyPageScreen({
               </>
             ) : (
               <div className="py-12 text-center space-y-4">
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-sesame-gray">
                   {t('설정된 프로필이 없습니다', 'No profile set', 'لا يوجد ملف محدد')}
                 </p>
                 <button
                   onClick={() => onEditProfile()}
-                  className="h-12 px-6 bg-neutral-900 text-white text-sm font-medium rounded-xl hover:bg-neutral-800 transition-colors"
+                  className="h-13 px-6 bg-brand-green-700 text-white text-sm font-bold rounded-2xl hover:bg-brand-green-900 transition-colors"
                 >
                   {t('프로필 설정하기', 'Set up profile', 'إعداد الملف')}
                 </button>
@@ -287,7 +287,7 @@ export function MyPageScreen({
             ) : (
               <div className="py-16 text-center">
                 <div className="text-4xl mb-4">📋</div>
-                <p className="text-sm text-neutral-600">
+                <p className="text-sm text-sesame-gray">
                   {t('스캔 기록이 없어요', 'No scan history yet', 'لا يوجد سجل مسح بعد')}
                 </p>
               </div>
@@ -299,14 +299,14 @@ export function MyPageScreen({
           <div className="px-5 py-6 space-y-3">
             <button
               onClick={() => setShowLogoutConfirm(true)}
-              className="w-full h-12 bg-white border border-neutral-300 text-neutral-700 text-sm font-medium rounded-xl hover:bg-neutral-50 transition-colors flex items-center justify-center gap-2"
+              className="w-full h-13 bg-rice-white border border-border-warm text-soy-ink text-sm font-bold rounded-2xl hover:bg-brand-green-50 transition-colors flex items-center justify-center gap-2"
             >
               <LogOut className="w-4 h-4" />
               {t('로그아웃', 'Log out', 'تسجيل الخروج')}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="w-full h-12 border border-red-500 text-red-500 text-sm font-medium rounded-xl hover:bg-red-50 transition-colors"
+              className="w-full h-13 border border-red-400 bg-rice-white text-red-600 text-sm font-bold rounded-2xl hover:bg-red-50 transition-colors"
             >
               {t('회원 탈퇴', 'Delete account', 'حذف الحساب')}
             </button>
@@ -316,23 +316,23 @@ export function MyPageScreen({
 
       {showLogoutConfirm && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowLogoutConfirm(false)} />
-          <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50" style={{ margin: '0 auto', width: '350px' }}>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">{t('로그아웃', 'Log out', 'تسجيل الخروج')}</h3>
-              <p className="text-sm text-neutral-600 mb-6">
+          <div className="fixed inset-0 bg-soy-ink/55 z-40" onClick={() => setShowLogoutConfirm(false)} />
+          <div className="fixed inset-x-5 top-1/2 z-50 mx-auto max-w-[350px] -translate-y-1/2">
+            <div className="bg-rice-white border border-border-warm rounded-[1.5rem] p-6 shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="logout-dialog-title" aria-describedby="logout-dialog-description">
+              <h3 id="logout-dialog-title" className="text-lg font-bold text-soy-ink mb-2">{t('로그아웃', 'Log out', 'تسجيل الخروج')}</h3>
+              <p id="logout-dialog-description" className="text-sm text-sesame-gray mb-6">
                 {t('정말 로그아웃하시겠습니까?', 'Are you sure you want to log out?', 'هل أنت متأكد أنك تريد تسجيل الخروج؟')}
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowLogoutConfirm(false)}
-                  className="flex-1 h-11 bg-neutral-100 text-neutral-700 rounded-xl text-sm font-medium hover:bg-neutral-200 transition-colors"
+                  className="flex-1 h-12 bg-brand-green-50 text-brand-green-700 rounded-2xl text-sm font-bold hover:bg-brand-green-100 transition-colors"
                 >
                   {t('취소', 'Cancel', 'إلغاء')}
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex-1 h-11 bg-neutral-900 text-white rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors"
+                  className="flex-1 h-12 bg-brand-green-700 text-white rounded-2xl text-sm font-bold hover:bg-brand-green-900 transition-colors"
                 >
                   {t('로그아웃', 'Log out', 'تسجيل الخروج')}
                 </button>
@@ -344,30 +344,30 @@ export function MyPageScreen({
 
       {showDeleteConfirm && (
         <>
-          <div className="fixed inset-0 bg-black/50 z-40" onClick={() => setShowDeleteConfirm(false)} />
-          <div className="fixed inset-x-0 top-1/2 -translate-y-1/2 z-50" style={{ margin: '0 auto', width: '350px' }}>
-            <div className="bg-white rounded-2xl p-6 shadow-2xl">
-              <h3 className="text-lg font-semibold text-neutral-900 mb-2">
+          <div className="fixed inset-0 bg-soy-ink/55 z-40" onClick={() => setShowDeleteConfirm(false)} />
+          <div className="fixed inset-x-5 top-1/2 z-50 mx-auto max-w-[350px] -translate-y-1/2">
+            <div className="bg-rice-white border border-border-warm rounded-[1.5rem] p-6 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="delete-dialog-title" aria-describedby="delete-dialog-description">
+              <h3 id="delete-dialog-title" className="text-lg font-bold text-soy-ink mb-2">
                 {t('회원 탈퇴', 'Delete account', 'حذف الحساب')}
               </h3>
-              <p className="text-sm text-neutral-600 mb-4">
+              <p id="delete-dialog-description" className="text-sm text-sesame-gray mb-4">
                 {t(
                   '정말 계정을 삭제하시겠습니까? 모든 데이터가 삭제됩니다.',
                   'Delete your account? All data will be removed.',
                   'هل تريد حذف حسابك؟ سيتم حذف جميع البيانات.',
                 )}
               </p>
-              {deleteError && <p className="text-sm text-red-500 mb-3">{deleteError}</p>}
+              {deleteError && <p className="text-sm text-red-500 mb-3" role="alert">{deleteError}</p>}
               <div className="flex gap-2">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="flex-1 h-11 bg-white border border-neutral-300 rounded-xl text-sm text-neutral-700 hover:bg-neutral-50 transition-colors"
+                  className="flex-1 h-12 bg-rice-white border border-border-warm rounded-2xl text-sm font-bold text-soy-ink hover:bg-brand-green-50 transition-colors"
                 >
                   {t('취소', 'Cancel', 'إلغاء')}
                 </button>
                 <button
                   onClick={handleDeleteAccount}
-                  className="flex-1 h-11 bg-red-500 text-white rounded-xl text-sm font-medium hover:bg-red-600 transition-colors"
+                  className="flex-1 h-12 bg-red-600 text-white rounded-2xl text-sm font-bold hover:bg-red-700 transition-colors"
                 >
                   {t('삭제', 'Delete', 'حذف')}
                 </button>

@@ -1,7 +1,8 @@
 import type { Language, UserAllergy } from './App';
 import { ALLERGY_OPTIONS } from './constants/onboarding';
+import { translateText, type LocalizedText } from './locales';
 
-export type LocalizedText = Record<Language, string>;
+export type { LocalizedText } from './locales';
 export type OwnerCommunicationContentType =
   | 'order'
   | 'ingredient'
@@ -14,6 +15,7 @@ export interface OwnerContent {
   korean: string;
   english: string;
   arabic: string;
+  localized: LocalizedText;
 }
 
 interface OwnerContentParams {
@@ -22,7 +24,14 @@ interface OwnerContentParams {
   allergen: LocalizedText;
 }
 
-export const translate = (language: Language, text: LocalizedText) => text[language];
+export const translate = (language: Language, text: LocalizedText) => translateText(language, text);
+
+const ownerContent = (localized: LocalizedText): OwnerContent => ({
+  korean: localized.ko,
+  english: localized.en,
+  arabic: localized.ar,
+  localized,
+});
 
 export const allergyI18n = {
   fallback: {
@@ -57,19 +66,21 @@ export const getHitTagLabel = (tag: string, language: Language): string => {
 
   if (lower.startsWith('is_')) {
     const code = lower.slice(3);
-    return allergyI18n.names[code]?.[language] ?? HIT_TAG_LABELS[code]?.[language] ?? prettifyTag(tag);
+    const label = allergyI18n.names[code] ?? HIT_TAG_LABELS[code];
+    return label ? translate(language, label) : prettifyTag(tag);
   }
 
   if (lower.startsWith('has_')) {
     const code = lower.slice(4); // 예: unclear_broth
     return (
-      HIT_TAG_LABELS[code]?.[language] ??
-      (code.startsWith('unclear') ? HIT_TAG_LABELS.unclear[language] : undefined) ??
+      (HIT_TAG_LABELS[code] ? translate(language, HIT_TAG_LABELS[code]) : undefined) ??
+      (code.startsWith('unclear') ? translate(language, HIT_TAG_LABELS.unclear) : undefined) ??
       prettifyTag(tag)
     );
   }
 
-  return allergyI18n.names[lower]?.[language] ?? HIT_TAG_LABELS[lower]?.[language] ?? prettifyTag(tag);
+  const label = allergyI18n.names[lower] ?? HIT_TAG_LABELS[lower];
+  return label ? translate(language, label) : prettifyTag(tag);
 };
 
 export const ownerCommunicationI18n = {
@@ -221,35 +232,59 @@ export const ownerCommunicationI18n = {
     },
   },
   content: {
-    order: ({ menuName }: OwnerContentParams): OwnerContent => ({
-      korean: `${menuName.ko} 하나 주세요`,
-      english: `One ${menuName.en}, please`,
-      arabic: `واحد ${menuName.ar} من فضلك`,
+    order: ({ menuName }: OwnerContentParams): OwnerContent => ownerContent({
+      ko: `${menuName.ko} 하나 주세요`,
+      en: `One ${menuName.en}, please`,
+      ar: `واحد ${menuName.ar} من فضلك`,
+      'zh-CN': `请给我一份${translate('zh-CN', menuName)}`,
+      ja: `${translate('ja', menuName)}を一つください`,
+      'zh-TW': `請給我一份${translate('zh-TW', menuName)}`,
+      es: `Un ${translate('es', menuName)}, por favor`,
     }),
-    ingredient: ({ ingredient }: OwnerContentParams): OwnerContent => ({
-      korean: `여기에 ${ingredient.ko}가 들어가 있나요?`,
-      english: `Does this contain ${ingredient.en}?`,
-      arabic: `هل يحتوي هذا على ${ingredient.ar}؟`,
+    ingredient: ({ ingredient }: OwnerContentParams): OwnerContent => ownerContent({
+      ko: `여기에 ${ingredient.ko}가 들어가 있나요?`,
+      en: `Does this contain ${ingredient.en}?`,
+      ar: `هل يحتوي هذا على ${ingredient.ar}؟`,
+      'zh-CN': `这里面含有${translate('zh-CN', ingredient)}吗？`,
+      ja: `これには${translate('ja', ingredient)}が入っていますか？`,
+      'zh-TW': `這裡面含有${translate('zh-TW', ingredient)}嗎？`,
+      es: `¿Esto contiene ${translate('es', ingredient)}?`,
     }),
-    request: ({ allergen }: OwnerContentParams): OwnerContent => ({
-      korean: `저는 ${allergen.ko} 알레르기가 있어요. ${allergen.ko} 빼고 만들어 주실 수 있나요?`,
-      english: `I'm allergic to ${allergen.en}. Can you make it without ${allergen.en}?`,
-      arabic: `لدي حساسية من ${allergen.ar}. هل يمكن تحضيره بدون ${allergen.ar}؟`,
+    request: ({ allergen }: OwnerContentParams): OwnerContent => ownerContent({
+      ko: `저는 ${allergen.ko} 알레르기가 있어요. ${allergen.ko} 빼고 만들어 주실 수 있나요?`,
+      en: `I'm allergic to ${allergen.en}. Can you make it without ${allergen.en}?`,
+      ar: `لدي حساسية من ${allergen.ar}. هل يمكن تحضيره بدون ${allergen.ar}؟`,
+      'zh-CN': `我对${translate('zh-CN', allergen)}过敏。可以不放${translate('zh-CN', allergen)}吗？`,
+      ja: `${translate('ja', allergen)}のアレルギーがあります。${translate('ja', allergen)}抜きで作れますか？`,
+      'zh-TW': `我對${translate('zh-TW', allergen)}過敏。可以不放${translate('zh-TW', allergen)}嗎？`,
+      es: `Soy alérgico/a a ${translate('es', allergen)}. ¿Puede prepararlo sin ${translate('es', allergen)}?`,
     }),
-    spicy: (): OwnerContent => ({
-      korean: '안 맵게 만들어 주실 수 있나요?',
-      english: 'Can you make it not spicy?',
-      arabic: 'هل يمكن جعله غير حار؟',
+    spicy: (): OwnerContent => ownerContent({
+      ko: '안 맵게 만들어 주실 수 있나요?',
+      en: 'Can you make it not spicy?',
+      ar: 'هل يمكن جعله غير حار؟',
+      'zh-CN': '可以做成不辣的吗？',
+      ja: '辛くしないで作れますか？',
+      'zh-TW': '可以做成不辣的嗎？',
+      es: '¿Puede prepararlo sin picante?',
     }),
-    lessSpicy: (): OwnerContent => ({
-      korean: '덜 맵게 만들어 주실 수 있나요?',
-      english: 'Can you make it less spicy?',
-      arabic: 'هل يمكن جعله أقل حدة؟',
+    lessSpicy: (): OwnerContent => ownerContent({
+      ko: '덜 맵게 만들어 주실 수 있나요?',
+      en: 'Can you make it less spicy?',
+      ar: 'هل يمكن جعله أقل حدة؟',
+      'zh-CN': '可以少放一点辣吗？',
+      ja: '辛さを控えめにできますか？',
+      'zh-TW': '可以少放一點辣嗎？',
+      es: '¿Puede prepararlo menos picante?',
     }),
-    moreSpicy: (): OwnerContent => ({
-      korean: '더 맵게 만들어 주실 수 있나요?',
-      english: 'Can you make it more spicy?',
-      arabic: 'هل يمكن جعله أكثر حدة؟',
+    moreSpicy: (): OwnerContent => ownerContent({
+      ko: '더 맵게 만들어 주실 수 있나요?',
+      en: 'Can you make it more spicy?',
+      ar: 'هل يمكن جعله أكثر حدة؟',
+      'zh-CN': '可以做得更辣一点吗？',
+      ja: 'もっと辛くできますか？',
+      'zh-TW': '可以做得更辣一點嗎？',
+      es: '¿Puede prepararlo más picante?',
     }),
   },
 };
@@ -264,11 +299,11 @@ export const getAllergyName = (
   targetLanguage: Language,
 ) => {
   if (!allergy) {
-    return allergyI18n.fallback[targetLanguage];
+    return translate(targetLanguage, allergyI18n.fallback);
   }
 
   if (typeof allergy === 'string') {
-    return allergyI18n.names[allergy]?.[targetLanguage] ?? allergy;
+    return allergyI18n.names[allergy] ? translate(targetLanguage, allergyI18n.names[allergy]) : allergy;
   }
 
   if (targetLanguage === 'ko') {
