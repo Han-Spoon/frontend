@@ -21,7 +21,7 @@ export type OwnerCommunicationType =
   | 'spicy'
   | 'lessSpicy'
   | 'moreSpicy';
-export type OwnerResponseId = 'ok' | 'yes' | 'no' | 'possible' | 'difficult';
+export type OwnerResponseId = 'ok' | 'yes' | 'no' | 'unknown' | 'possible' | 'difficult';
 export type OwnerResponseTone = 'success' | 'caution' | 'danger';
 
 export interface OwnerResponseOption {
@@ -160,15 +160,15 @@ export function OwnerCommunicationSheet({
   const selectedResponse = response ? getOwnerResponseOption(type, response) : null;
 
   const selectedButtonClasses: Record<OwnerResponseTone, string> = {
-    success: 'border-green-500 bg-green-50 text-green-900 shadow-sm',
-    caution: 'border-amber-400 bg-amber-50 text-amber-900 shadow-sm',
-    danger: 'border-red-400 bg-red-50 text-red-900 shadow-sm',
+    success: 'border-status-safe-border bg-status-safe-surface text-status-safe-text shadow-sm',
+    caution: 'border-status-caution-border bg-status-caution-surface text-status-caution-text shadow-sm',
+    danger: 'border-status-danger-border bg-status-danger-surface text-status-danger-text shadow-sm',
   };
 
   const summaryClasses: Record<OwnerResponseTone, string> = {
-    success: 'bg-green-50 border-green-200 text-green-900',
-    caution: 'bg-amber-50 border-amber-200 text-amber-900',
-    danger: 'bg-red-50 border-red-200 text-red-900',
+    success: 'bg-status-safe-surface border-status-safe-border text-status-safe-text',
+    caution: 'bg-status-caution-surface border-status-caution-border text-status-caution-text',
+    danger: 'bg-status-danger-surface border-status-danger-border text-status-danger-text',
   };
 
   const getResponseIcon = (tone: OwnerResponseTone) => {
@@ -184,6 +184,7 @@ export function OwnerCommunicationSheet({
   const handleResponseSelect = (option: OwnerResponseOption) => {
     setResponse(option.id);
     onResponseSelect?.(type, option.id);
+    // TODO: 직원 응답 전용 API가 제공되면 이 선택을 서버에도 저장한다.
   };
 
   const handleSave = async () => {
@@ -210,9 +211,9 @@ export function OwnerCommunicationSheet({
 
   return (
     <>
-      <div className="fixed inset-0 bg-soy-ink/55 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-soy-ink/45" onClick={onClose} />
       <div
-        className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 bg-rice-white rounded-t-[2rem] shadow-2xl max-h-[85dvh] overflow-y-auto animate-slide-up"
+        className="fixed bottom-0 left-1/2 z-50 max-h-[88dvh] w-full max-w-[430px] -translate-x-1/2 overflow-y-auto rounded-t-[1.5rem] border border-border-warm bg-surface-raised shadow-[var(--shadow-float)] animate-slide-up"
         role="dialog"
         aria-modal="true"
         aria-label={translate(language, ownerCommunicationI18n.labels.selectedMenu)}
@@ -224,17 +225,17 @@ export function OwnerCommunicationSheet({
         <div className="px-6 pb-8 pt-6 relative">
           <div className="mb-4 flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-2xl font-extrabold text-soy-ink leading-tight mb-2 break-words">
+              <div className="mb-2 break-words text-2xl font-extrabold leading-tight text-text-primary">
                 {translate(language, content.localized)}
               </div>
-              <div className="text-sm text-sesame-gray break-words">
+              <div className="break-words text-sm text-text-secondary">
                 {language === 'ko' ? content.english : content.korean}
               </div>
             </div>
             {ttsSupported && content.korean && (
               <button
                 onClick={() => speak(content.korean, 'ko-KR')}
-                className="flex-shrink-0 size-11 rounded-full bg-brand-green-700 text-white flex items-center justify-center hover:bg-brand-green-900 transition-colors"
+                className="flex size-11 flex-shrink-0 items-center justify-center rounded-full bg-brand-primary text-white hover:bg-brand-primary-hover"
                 aria-label={t('음성 듣기', 'Play audio', 'تشغيل الصوت')}
               >
                 <Volume2 className="w-5 h-5" />
@@ -242,14 +243,14 @@ export function OwnerCommunicationSheet({
             )}
           </div>
 
-          <div className="mb-6 p-4 bg-brand-green-50 border border-brand-green-100 rounded-2xl">
-            <div className="text-xs font-semibold text-brand-green-700 mb-1">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
-            <div className="font-bold text-soy-ink">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
-            <div className="text-xs text-sesame-gray mt-1">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
+          <div className="mb-6 rounded-xl border border-border-warm bg-surface-subtle p-4">
+            <div className="mb-1 text-xs font-semibold text-brand-primary">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
+            <div className="font-bold text-text-primary">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
+            <div className="mt-1 text-xs text-text-secondary">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
           </div>
 
           <div className="space-y-2 mb-4">
-            <div className="text-xs font-semibold text-sesame-gray mb-3">{translate(language, ownerCommunicationI18n.labels.ownerResponse)}</div>
+            <div className="mb-3 text-xs font-semibold text-text-secondary">{translate(language, ownerCommunicationI18n.labels.ownerResponse)}</div>
             {responseButtons.map((btn) => {
               const selected = response === btn.id;
 
@@ -257,22 +258,22 @@ export function OwnerCommunicationSheet({
                 <button
                   key={btn.id}
                   onClick={() => handleResponseSelect(btn)}
-                  className={`w-full min-h-14 border-2 rounded-2xl flex items-center gap-3 px-4 py-3 transition-colors text-sm font-semibold ${
+                  className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors ${
                     selected
                       ? selectedButtonClasses[btn.tone]
-                      : 'bg-rice-white border-border-warm text-soy-ink hover:border-brand-green-500 hover:bg-brand-green-50'
+                      : 'border-border-warm bg-surface-raised text-text-primary hover:border-brand-primary hover:bg-surface-subtle'
                   }`}
                 >
                   <span
                     className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      selected ? 'bg-white/75' : 'bg-brand-green-50 text-brand-green-700'
+                      selected ? 'bg-white/75' : 'bg-surface-subtle text-brand-primary'
                     }`}
                   >
-                    {selected ? getResponseIcon(btn.tone) : btn.id === 'ok' || btn.id === 'possible' ? '✓' : btn.id === 'yes' ? '!' : '✗'}
+                    {selected ? getResponseIcon(btn.tone) : btn.id === 'ok' || btn.id === 'possible' ? '✓' : btn.id === 'yes' ? '!' : btn.id === 'unknown' ? '?' : '✗'}
                   </span>
                   <span className="min-w-0 text-start leading-tight">
                     <span className="block">{translate(language, btn.label)}</span>
-                    <span className={`block text-xs mt-0.5 ${selected ? 'opacity-75' : 'text-sesame-gray'}`}>
+                    <span className={`mt-0.5 block text-xs ${selected ? 'opacity-75' : 'text-text-secondary'}`}>
                       {language === 'ko' ? btn.label.en : btn.label.ko}
                     </span>
                   </span>
@@ -281,14 +282,24 @@ export function OwnerCommunicationSheet({
             })}
           </div>
 
-          {saveError && <p className="text-xs text-red-500 text-center mb-2">{saveError}</p>}
+          {selectedResponse && type === 'ingredient' && (
+            <div className={`mb-4 rounded-xl border p-3 text-xs leading-5 ${summaryClasses[selectedResponse.tone]}`} role="status">
+              {t(
+                '이번 응답은 향후 재료 가능성 계산을 개선하는 데 활용돼요.',
+                'This response helps improve future ingredient likelihood estimates.',
+                'تساعد هذه الإجابة في تحسين تقديرات احتمال المكونات مستقبلاً.',
+              )}
+            </div>
+          )}
+
+          {saveError && <p className="mb-2 text-center text-xs text-status-danger-text">{saveError}</p>}
           <button
             onClick={handleSave}
             disabled={saved || saving}
-            className={`w-full h-13 rounded-2xl text-sm font-bold transition-colors disabled:cursor-not-allowed ${
+            className={`min-h-12 w-full rounded-xl text-sm font-bold transition-colors disabled:cursor-not-allowed ${
               saved
-                ? 'bg-green-600 text-white'
-                : 'bg-brand-green-700 text-white hover:bg-brand-green-900 disabled:opacity-60'
+                ? 'bg-status-safe text-white'
+                : 'bg-brand-primary text-white hover:bg-brand-primary-hover disabled:opacity-60'
             }`}
           >
             {saved ? (

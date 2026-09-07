@@ -30,8 +30,28 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 3px solid color-mix(in srgb, var(--brand-green-500) 40%, transparent);
+  outline: 3px solid color-mix(in srgb, var(--focus-ring) 42%, transparent);
   outline-offset: 2px;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  transition-duration: 180ms;
+}
+
+.surface-card {
+  background: var(--surface-raised);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.touch-target {
+  min-width: var(--control-height);
+  min-height: var(--control-height);
 }
 
 @media (prefers-reduced-motion: reduce) {
