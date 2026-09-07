@@ -1,4 +1,6 @@
-export type LanguageCode = 'ko' | 'en' | 'ar';
+import type { BackendLanguage } from '../app/locales';
+
+export type LanguageCode = BackendLanguage;
 
 export interface AuthUser {
   id: string;

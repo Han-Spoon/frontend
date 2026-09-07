@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { BookOpenText, LogIn, MessageSquareHeart, TriangleAlert } from 'lucide-react';
+import { Languages, LockKeyhole, LogIn, MessageCircleHeart, ScanLine, ShieldCheck } from 'lucide-react';
 import { GoogleLogin, type CredentialResponse } from '@react-oauth/google';
-import logo from '../../icons/logo.png';
+import logo from '../../assets/brand/han-spoon-logo.svg';
 import type { Language } from '../App';
 import { googleLogin } from '../../api/auth';
+import { createTranslator, LANGUAGE_LOCALES, LANGUAGE_OPTIONS } from '../locales';
 
 interface LoginScreenProps {
   onLogin: (hasProfile: boolean) => void;
@@ -15,15 +16,7 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
-
-  const languageOptions: { value: Language; label: string }[] = [
-    { value: 'ko', label: '한국어' },
-    { value: 'en', label: 'English' },
-    { value: 'ar', label: 'العربية' },
-  ];
+  const t = createTranslator(language);
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     try {
@@ -75,71 +68,105 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white relative">
-      <div className="absolute top-4 right-4 flex items-center gap-2">
-        {languageOptions.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => setLanguage(option.value)}
-            className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
-              language === option.value
-                ? 'bg-neutral-900 text-white border-neutral-900'
-                : 'bg-white text-neutral-600 border-neutral-300 hover:bg-neutral-50'
-            }`}
+    <div className="h-dvh flex flex-col overflow-hidden bg-rice-cream text-soy-ink" aria-busy={isLoading}>
+      <header className="flex items-center justify-between px-6 pt-5">
+        <img src={logo} alt={t('한스푼', 'Han Spoon', 'هان سبون')} className="h-auto w-[132px]" />
+
+        <label className="relative flex h-10 items-center gap-2 rounded-full border border-border-warm bg-rice-white px-3 text-sm font-semibold text-brand-green-900 shadow-[0_4px_16px_rgba(54,70,60,0.06)]">
+          <Languages className="h-4 w-4" aria-hidden="true" />
+          <select
+            aria-label={t('언어 선택', 'Choose language', 'اختر اللغة')}
+            value={language}
+            onChange={(event) => setLanguage(event.target.value as Language)}
+            className="appearance-none bg-transparent pe-4 text-sm font-semibold outline-none"
           >
-            {option.label}
-          </button>
-        ))}
-      </div>
+            {LANGUAGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+          <span className="pointer-events-none absolute end-3 text-[10px] text-brand-green-700">▾</span>
+        </label>
+      </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-8">
-        <div className="mb-2">
-          <div className="w-20 h-20 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4 mx-auto">
-            <img src={logo} alt="한스푼 로고" className="w-14 h-14 object-contain" />
+      <main className="flex-1 overflow-y-auto px-6 pb-5 pt-12">
+        <section>
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-orange-100 px-3 py-1.5 text-xs font-bold text-[#873b17]">
+            <ShieldCheck className="h-4 w-4" aria-hidden="true" />
+            {t('나에게 맞는 한국 음식 찾기', 'Find Korean food that fits you', 'اعثر على الطعام الكوري المناسب لك')}
           </div>
-          <h1 className="text-3xl font-bold text-center mb-2">{t('한 스푼', 'Han Spoon', 'هان سبون')}</h1>
-        </div>
+          <h1 className="max-w-[330px] text-[30px] font-extrabold leading-[1.28] tracking-[-0.025em] text-soy-ink">
+            {t(
+              '낯선 메뉴도,\n안심하고 한 스푼.',
+              'Explore unfamiliar menus,\none safe spoonful at a time.',
+              'استكشف القوائم الجديدة،\nبكل طمأنينة.'
+            ).split('\n').map((line, index, lines) => (
+              <span key={line}>
+                {line}
+                {index < lines.length - 1 && <br />}
+              </span>
+            ))}
+          </h1>
+          <p className="mt-4 max-w-[330px] text-[15px] leading-6 text-sesame-gray">
+            {t(
+              '메뉴판을 찍으면 식이 기준에 맞는 메뉴를 찾고, 필요한 말까지 준비해드려요.',
+              'Scan a menu to find dishes that fit your diet and prepare the words you need.',
+              'امسح القائمة للعثور على أطباق تناسب نظامك الغذائي وتجهيز العبارات التي تحتاجها.'
+            )}
+          </p>
+        </section>
 
-        <p className="text-lg text-neutral-600 text-center mb-20">
-          {t('한국 메뉴판, 더 쉽게 이해하기', 'Understand Korean menus more easily', 'افهم قوائم الطعام الكورية بسهولة أكبر')}
-        </p>
-
-        <div className="space-y-4 mb-16 w-full max-w-xs">
-          <div className="flex items-center gap-3 text-neutral-700">
-            <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0">
-              <BookOpenText className="w-4 h-4" />
+        <section className="mt-8 rounded-[28px] border border-border-warm bg-rice-white p-5 shadow-[0_12px_36px_rgba(54,70,60,0.08)]">
+          <div className="space-y-5">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-green-50 text-brand-green-700">
+                <ScanLine className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-soy-ink">{t('메뉴를 쉽게 이해해요', 'Understand every menu', 'افهم كل قائمة بسهولة')}</p>
+                <p className="mt-0.5 text-[13px] text-sesame-gray">{t('메뉴 번역과 음식 설명', 'Translation and dish details', 'ترجمة وشرح الأطباق')}</p>
+              </div>
             </div>
-            <span className="text-sm">{t('메뉴 번역', 'Menu translation', 'ترجمة القائمة')}</span>
-          </div>
-          <div className="flex items-center gap-3 text-neutral-700">
-            <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0">
-              <TriangleAlert className="w-4 h-4" />
-            </div>
-            <span className="text-sm">{t('알레르기 경고', 'Allergy warnings', 'تنبيهات الحساسية')}</span>
-          </div>
-          <div className="flex items-center gap-3 text-neutral-700">
-            <div className="w-8 h-8 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0">
-              <MessageSquareHeart className="w-4 h-4" />
-            </div>
-            <span className="text-sm">{t('사장님 소통', 'Communicate with staff', 'التواصل مع العاملين')}</span>
-          </div>
-        </div>
-      </div>
 
-      <div className="px-5 pb-8">
-        <div className="w-full flex justify-center mb-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-orange-100 text-[#a34b20]">
+                <ShieldCheck className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-soy-ink">{t('식이 기준을 꼼꼼히 살펴요', 'Check your dietary needs', 'تحقق من احتياجاتك الغذائية')}</p>
+                <p className="mt-0.5 text-[13px] text-sesame-gray">{t('알레르기·채식·종교 기준 안내', 'Allergy, diet, and religious guidance', 'إرشادات الحساسية والنظام الغذائي والدين')}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2fb] text-[#3478b8]">
+                <MessageCircleHeart className="h-5 w-5" aria-hidden="true" />
+              </div>
+              <div>
+                <p className="text-[15px] font-bold text-soy-ink">{t('필요한 말을 바로 전해요', 'Say what you need', 'قل ما تحتاجه بسهولة')}</p>
+                <p className="mt-0.5 text-[13px] text-sesame-gray">{t('식당에서 바로 보여주는 소통 카드', 'Ready-to-show communication cards', 'بطاقات تواصل جاهزة للعرض')}</p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="border-t border-border-warm bg-rice-white/95 px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-4 backdrop-blur">
+        <div className="w-full flex justify-center mb-3">
           {isLoading ? (
             <button
               disabled
-              className="w-full h-14 bg-neutral-900 text-white rounded-xl flex items-center justify-center gap-3 opacity-70"
+              aria-live="polite"
+              className="flex h-14 w-full items-center justify-center gap-3 rounded-2xl bg-brand-green-700 text-white opacity-70"
             >
               <LogIn className="w-5 h-5" />
-              <span className="font-medium">
+              <span className="font-bold">
                 {t('로그인 중...', 'Signing in...', 'جارٍ تسجيل الدخول...')}
               </span>
             </button>
           ) : (
-            <div>
+            <div className="w-full max-w-[320px] overflow-hidden">
               <GoogleLogin
                 onSuccess={handleGoogleSuccess}
                 onError={handleGoogleError}
@@ -147,26 +174,24 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
                 size="large"
                 shape="rectangular"
                 text="signin_with"
+                locale={LANGUAGE_LOCALES[language]}
                 width="320"
               />
             </div>
           )}
         </div>
 
-        {errorMessage && (
-          <p className="text-xs text-red-500 text-center mb-3">
-            {errorMessage}
-          </p>
-        )}
+        {errorMessage && <p className="mb-3 text-center text-xs text-destructive" role="alert">{errorMessage}</p>}
 
-        <p className="text-xs text-neutral-500 text-center px-4">
+        <p className="flex items-center justify-center gap-1.5 px-4 text-center text-xs text-sesame-gray">
+          <LockKeyhole className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           {t(
-            '개인정보와 식단 정보가 안전하게 저장됩니다',
-            'Your personal and diet information is stored securely',
-            'يتم حفظ معلوماتك الشخصية والغذائية بأمان'
+            '개인정보와 식단 정보는 내 프로필에서 관리할 수 있어요',
+            'Manage your personal and diet information in your profile',
+            'يمكنك إدارة معلوماتك الشخصية والغذائية في ملفك الشخصي'
           )}
         </p>
-      </div>
+      </footer>
     </div>
   );
 }

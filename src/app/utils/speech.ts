@@ -1,4 +1,5 @@
 import type { Language } from '../App';
+import { LANGUAGE_LOCALES } from '../locales';
 
 export const ttsSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
 
@@ -38,4 +39,4 @@ export function speak(text: string, lang: string) {
 
 /** 앱 언어 → SpeechSynthesis BCP-47 태그 */
 export const speechLang = (language: Language): string =>
-  language === 'ko' ? 'ko-KR' : language === 'ar' ? 'ar-SA' : 'en-US';
+  language === 'ar' ? 'ar-SA' : LANGUAGE_LOCALES[language];

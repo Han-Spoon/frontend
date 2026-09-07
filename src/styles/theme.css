@@ -2,80 +2,87 @@
 
 :root {
   --font-size: 16px;
-  --background: #ffffff;
-  --foreground: oklch(0.145 0 0);
-  --card: #ffffff;
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: #030213;
-  --primary-foreground: oklch(1 0 0);
-  --secondary: oklch(0.95 0.0058 264.53);
-  --secondary-foreground: #030213;
-  --muted: #ececf0;
-  --muted-foreground: #717182;
-  --accent: #e9ebef;
-  --accent-foreground: #030213;
-  --destructive: #d4183d;
+  --brand-green-900: #0f5139;
+  --brand-green-700: #176b4d;
+  --brand-green-500: #2f8f68;
+  --brand-green-100: #dff2e9;
+  --brand-green-50: #eef8f3;
+  --brand-orange-500: #f4773b;
+  --brand-orange-100: #ffe3d2;
+  --rice-cream: #fff8ea;
+  --rice-white: #fffcf7;
+  --soy-ink: #242621;
+  --sesame-gray: #6d716b;
+  --border-warm: #e7e2d7;
+  --shell-background: #eee8dc;
+
+  --background: var(--rice-cream);
+  --foreground: var(--soy-ink);
+  --card: var(--rice-white);
+  --card-foreground: var(--soy-ink);
+  --popover: var(--rice-white);
+  --popover-foreground: var(--soy-ink);
+  --primary: var(--brand-green-700);
+  --primary-foreground: #ffffff;
+  --secondary: var(--brand-green-50);
+  --secondary-foreground: var(--brand-green-900);
+  --muted: #f1eee6;
+  --muted-foreground: var(--sesame-gray);
+  --accent: var(--brand-orange-100);
+  --accent-foreground: #743111;
+  --destructive: #c83c35;
   --destructive-foreground: #ffffff;
-  --border: rgba(0, 0, 0, 0.1);
+  --border: var(--border-warm);
   --input: transparent;
-  --input-background: #f3f3f5;
-  --switch-background: #cbced4;
+  --input-background: #f6f2e9;
+  --switch-background: #c9d8d0;
   --font-weight-medium: 500;
   --font-weight-normal: 400;
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.646 0.222 41.116);
-  --chart-2: oklch(0.6 0.118 184.704);
-  --chart-3: oklch(0.398 0.07 227.392);
-  --chart-4: oklch(0.828 0.189 84.429);
-  --chart-5: oklch(0.769 0.188 70.08);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: #030213;
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --ring: var(--brand-green-500);
+  --chart-1: #176b4d;
+  --chart-2: #f4773b;
+  --chart-3: #3478b8;
+  --chart-4: #b56a00;
+  --chart-5: #7c68a8;
+  --radius: 0.875rem;
+  --sidebar: var(--rice-white);
+  --sidebar-foreground: var(--soy-ink);
+  --sidebar-primary: var(--brand-green-700);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--brand-green-50);
+  --sidebar-accent-foreground: var(--brand-green-900);
+  --sidebar-border: var(--border-warm);
+  --sidebar-ring: var(--brand-green-500);
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.145 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.145 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.985 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.396 0.141 25.723);
-  --destructive-foreground: oklch(0.637 0.237 25.331);
-  --border: oklch(0.269 0 0);
-  --input: oklch(0.269 0 0);
-  --ring: oklch(0.439 0 0);
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --chart-1: oklch(0.488 0.243 264.376);
-  --chart-2: oklch(0.696 0.17 162.48);
-  --chart-3: oklch(0.769 0.188 70.08);
-  --chart-4: oklch(0.627 0.265 303.9);
-  --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(0.269 0 0);
-  --sidebar-ring: oklch(0.439 0 0);
+  --background: #101b15;
+  --foreground: #f8f6ef;
+  --card: #17261e;
+  --card-foreground: #f8f6ef;
+  --popover: #17261e;
+  --popover-foreground: #f8f6ef;
+  --primary: #72c6a0;
+  --primary-foreground: #0c261a;
+  --secondary: #20392c;
+  --secondary-foreground: #e9f6ef;
+  --muted: #27352e;
+  --muted-foreground: #b8c1bb;
+  --accent: #65351f;
+  --accent-foreground: #ffe4d4;
+  --destructive: #e66a61;
+  --destructive-foreground: #220706;
+  --border: #35463d;
+  --input: #27352e;
+  --ring: #72c6a0;
+  --sidebar: #17261e;
+  --sidebar-foreground: #f8f6ef;
+  --sidebar-primary: #72c6a0;
+  --sidebar-primary-foreground: #0c261a;
+  --sidebar-accent: #20392c;
+  --sidebar-accent-foreground: #e9f6ef;
+  --sidebar-border: #35463d;
+  --sidebar-ring: #72c6a0;
 }
 
 @theme inline {
@@ -117,6 +124,18 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+  --color-brand-green-900: var(--brand-green-900);
+  --color-brand-green-700: var(--brand-green-700);
+  --color-brand-green-500: var(--brand-green-500);
+  --color-brand-green-100: var(--brand-green-100);
+  --color-brand-green-50: var(--brand-green-50);
+  --color-brand-orange-500: var(--brand-orange-500);
+  --color-brand-orange-100: var(--brand-orange-100);
+  --color-rice-cream: var(--rice-cream);
+  --color-rice-white: var(--rice-white);
+  --color-soy-ink: var(--soy-ink);
+  --color-sesame-gray: var(--sesame-gray);
+  --color-border-warm: var(--border-warm);
 }
 
 @layer base {
@@ -126,12 +145,11 @@
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-sans);
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
   }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
 
   html {
     font-size: var(--font-size);
@@ -139,37 +157,27 @@
 
   h1 {
     font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 700;
+    line-height: 1.35;
   }
 
   h2 {
     font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 700;
+    line-height: 1.4;
   }
 
   h3 {
     font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
+    font-weight: 700;
+    line-height: 1.4;
   }
 
-  h4 {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  label {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
+  h4,
+  label,
   button {
     font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
+    font-weight: 600;
     line-height: 1.5;
   }
 
@@ -193,4 +201,20 @@
 
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
+}
+
+@keyframes scan-line {
+  0%,
+  100% {
+    top: 12%;
+    opacity: 0.45;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+}
+
+.animate-scan-line {
+  animation: scan-line 2.4s ease-in-out infinite;
 }

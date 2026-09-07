@@ -12,8 +12,9 @@ import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
+import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, type Language } from './locales';
 
-export type Language = 'ko' | 'en' | 'ar';
+export type { Language } from './locales';
 
 export interface UserAllergy {
   allergy_name_ko: string;
@@ -80,9 +81,7 @@ export interface HistoryItem {
 }
 
 const formatHistoryTitle = (language: Language, date: Date) => {
-  const locale = language === 'ko' ? 'ko-KR' : language === 'ar' ? 'ar' : 'en-US';
-
-  return new Intl.DateTimeFormat(locale, {
+  return new Intl.DateTimeFormat(LANGUAGE_LOCALES[language], {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
@@ -93,19 +92,31 @@ const formatHistoryTitle = (language: Language, date: Date) => {
 
 export default function App() {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState<Language>('ko');
+  const [language, setLanguage] = useState<Language>(() => {
+    const saved = localStorage.getItem('han-spoon-language');
+    return isLanguage(saved) ? saved : 'ko';
+  });
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<MenuAnalysis[]>([]);
   const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
 
+  useEffect(() => {
+    document.documentElement.lang = language;
+    document.documentElement.dir = language === 'ar' ? 'rtl' : 'ltr';
+    localStorage.setItem('han-spoon-language', language);
+  }, [language]);
+
   const loadCurrentUser = async () => {
     try {
       const user = await getMe();
       setCurrentUser(user);
-      // 언어 출처는 users 테이블(GET /users/me). 앱 언어를 저장된 값과 동기화한다.
-      if (user.languageCode === 'ko' || user.languageCode === 'en' || user.languageCode === 'ar') {
+      // 신규 언어는 백엔드 enum 확장 전까지 로컬 선택을 우선 보존한다.
+      const locallySelected = localStorage.getItem('han-spoon-language');
+      if (isLanguage(locallySelected) && !isBackendLanguage(locallySelected)) {
+        setLanguage(locallySelected);
+      } else if (isLanguage(user.languageCode)) {
         setLanguage(user.languageCode);
       }
     } catch (error) {
@@ -202,10 +213,12 @@ export default function App() {
 
   const handleLanguageChange = async (languageValue: Language) => {
     setLanguage(languageValue);
+    localStorage.setItem('han-spoon-language', languageValue);
 
     try {
-      await updateMe({ languageCode: languageValue });
-      setCurrentUser((prev) => (prev ? { ...prev, languageCode: languageValue } : prev));
+      const backendLanguage = toBackendLanguage(languageValue);
+      await updateMe({ languageCode: backendLanguage });
+      setCurrentUser((prev) => (prev ? { ...prev, languageCode: backendLanguage } : prev));
     } catch (error) {
       console.error('Language update failed:', error);
     }
@@ -214,7 +227,7 @@ export default function App() {
   const handleProfileSave = async (profile: UserProfile) => {
     const payload: UserProfilePayload = {
       nationality: profile.nationality.toUpperCase(),
-      languageCode: profile.languageCode,
+      languageCode: toBackendLanguage(profile.languageCode),
       isFirstTime: profile.isFirstTime,
       isVegan: profile.isVegan,
       veganType: profile.isVegan ? profile.veganType ?? null : null,
@@ -245,6 +258,7 @@ export default function App() {
     const wasEdit = Boolean(userProfile);
     setUserProfile(profile);
     setLanguage(profile.languageCode);
+    localStorage.setItem('han-spoon-language', profile.languageCode);
     await loadCurrentUser();
     // 편집(기존 프로필)이면 마이페이지로, 신규 온보딩이면 홈으로.
     navigate(wasEdit ? '/mypage' : '/home');
@@ -263,8 +277,8 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 flex items-center justify-center">
-      <div className="mobile-container w-[390px] min-h-screen bg-white shadow-xl relative overflow-hidden">
+    <div className="min-h-dvh bg-[var(--shell-background)] flex items-center justify-center sm:px-6">
+      <div className="mobile-container w-full max-w-[430px] min-h-dvh bg-rice-cream shadow-[0_24px_80px_rgba(41,54,46,0.16)] relative overflow-hidden sm:border-x sm:border-border-warm">
         <Routes>
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route

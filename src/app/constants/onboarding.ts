@@ -1,6 +1,4 @@
-import type { Language } from '../App';
-
-export type LocalizedText = Record<Language, string>;
+import type { Language, LocalizedText } from '../locales';
 
 export interface CodedOption {
   /** 백엔드 enum 코드값 (그대로 API로 전송) */

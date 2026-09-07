@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX, Volume2 } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
-import logo from '../../icons/logo.png';
+import { createTranslator, LANGUAGE_LOCALES, translateText } from '../locales';
+import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
 import { getHitTagLabel } from '../i18n';
 import { getMenuMeaning, getMenuPronunciation } from '../constants/menuNames';
@@ -104,11 +105,11 @@ export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-neutral-100 text-neutral-400">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-brand-green-50 text-sesame-gray">
       <img
         src={logo}
         alt={imageAlt}
-        className="w-12 h-12 object-contain opacity-40"
+        className="w-28 h-auto object-contain opacity-40"
       />
       <span className="text-xs font-medium">
         {t('이미지 없음', 'No image', 'لا توجد صورة')}
@@ -124,9 +125,16 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
   const menuList = Array.isArray(menus) ? menus : [];
 
-  const t = (ko: string, en: string, ar: string) => (
-    language === 'ko' ? ko : language === 'ar' ? ar : en
-  );
+  const t = createTranslator(language);
+  const formatPrice = (price: string) => {
+    const value = Number(price);
+    if (!Number.isFinite(value)) return price;
+    return new Intl.NumberFormat(LANGUAGE_LOCALES[language], {
+      style: 'currency',
+      currency: 'KRW',
+      maximumFractionDigits: 0,
+    }).format(value);
+  };
   const responseKey = (menuId: string, type: OwnerCommunicationType) => `${menuId}:${type}`;
 
   const actionLabels: Record<CardActionType, { ko: string; en: string; ar: string }> = {
@@ -278,7 +286,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
   const renderRiskBadge = (menu: MenuAnalysis) => {
     if (menu.riskLevel === 'danger') {
       return (
-        <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-400 text-white rounded-full text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
           <OctagonX className="w-3 h-3" />
           {t('위험', 'Danger', 'خطر')}
         </span>
@@ -287,18 +295,63 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
 
     if (menu.riskLevel === 'caution') {
       return (
-        <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-400 text-white rounded-full text-xs font-semibold">
+        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
           <AlertTriangle className="w-3 h-3" />
-          {t('확인 필요', 'Check', 'تحقق')}
+          {t('주의', 'Caution', 'تنبيه')}
         </span>
       );
     }
 
     return (
-      <span className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-500 text-white rounded-full text-xs font-semibold">
+      <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-bold text-green-800">
         <CheckCircle2 className="w-3 h-3" />
         {t('안전', 'Safe', 'آمن')}
       </span>
+    );
+  };
+
+  const renderRiskGuidance = (menu: MenuAnalysis) => {
+    if (menu.riskLevel === 'danger') {
+      return (
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-900">
+          <OctagonX className="mt-0.5 size-4 shrink-0 text-red-600" aria-hidden="true" />
+          <p className="text-sm font-semibold leading-5">
+            {t(
+              '식이 기준과 맞지 않아 피하는 게 좋아요',
+              'This dish may not fit your dietary needs, so it is best to avoid it.',
+              'قد لا يناسب هذا الطبق احتياجاتك الغذائية، لذا يُفضّل تجنبه.',
+            )}
+          </p>
+        </div>
+      );
+    }
+
+    if (menu.riskLevel === 'caution') {
+      return (
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden="true" />
+          <p className="text-sm font-semibold leading-5">
+            {t(
+              '재료나 조리법을 한 번 더 확인해 주세요',
+              'Please check the ingredients or cooking method before ordering.',
+              'يرجى التحقق من المكونات أو طريقة التحضير قبل الطلب.',
+            )}
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-green-200 bg-green-50 px-3.5 py-3 text-green-950">
+        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />
+        <p className="text-sm font-semibold leading-5">
+          {t(
+            '현재 확인된 정보로는 안심하고 선택해도 좋아요',
+            'Based on the information available, this dish should suit your needs.',
+            'وفقًا للمعلومات المتاحة، يمكنك اختيار هذا الطبق باطمئنان.',
+          )}
+        </p>
+      </div>
     );
   };
 
@@ -323,10 +376,10 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     }
 
     if (primary) {
-      return 'bg-neutral-900 border-neutral-900 text-white hover:bg-neutral-800';
+      return 'bg-brand-green-700 border-brand-green-700 text-white hover:bg-brand-green-900';
     }
 
-    return 'bg-white border-neutral-300 text-neutral-700 hover:bg-neutral-50 hover:border-neutral-400';
+    return 'bg-rice-white border-border-warm text-soy-ink hover:bg-brand-green-50 hover:border-brand-green-500';
   };
 
   const renderActionButtonLabel = (menu: MenuAnalysis, type: CardActionType) => {
@@ -337,7 +390,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     if (!response) {
       return (
         <span className="block leading-tight">
-          <span className="block text-[14px]">{t(label.ko, label.en, label.ar)}</span>
+          <span className="block text-[14px]">{translateText(language, label)}</span>
         </span>
       );
     }
@@ -345,55 +398,67 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
     return (
       <span className="block leading-tight">
         <span className="block text-[10px] font-medium opacity-70">
-          {t(label.ko, label.en, label.ar)}
+          {translateText(language, label)}
         </span>
-        <span className="block mt-1">{t(response.label.ko, response.label.en, response.label.ar)}</span>
+        <span className="block mt-1">{translateText(language, response.label)}</span>
         <span className="block text-[11px] opacity-80 mt-0.5">{language === 'ko' ? response.label.en : response.label.ko}</span>
       </span>
     );
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white relative">
-      <div className="h-14 border-b border-neutral-200 flex items-center px-5 relative flex-shrink-0">
-        <button onClick={onBack} className="absolute left-5">
-          <ArrowLeft className="w-5 h-5 text-neutral-700" />
+    <div className="h-dvh flex flex-col bg-rice-cream relative">
+      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center px-5 relative flex-shrink-0">
+        <button
+          onClick={onBack}
+          className="absolute start-4 inline-flex size-11 items-center justify-center rounded-full text-soy-ink transition-colors hover:bg-brand-green-50"
+          aria-label={t('이전', 'Back', 'رجوع')}
+        >
+          <ArrowLeft className="size-5 rtl:rotate-180" />
         </button>
-        <h1 className="font-semibold text-neutral-900 mx-auto">{t('분석 결과', 'Results', 'نتائج التحليل')}</h1>
+        <h1 className="text-base font-bold text-soy-ink mx-auto">{t('분석 결과', 'Results', 'نتائج التحليل')}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="px-5 py-4 bg-neutral-50 border-b border-neutral-200">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-neutral-600">{t(`총 ${menuList.length}개 메뉴 인식`, `Detected ${menuList.length} items`, `تم التعرف على ${menuList.length} عناصر`)}</span>
+        <div className="px-5 pt-6 pb-5 bg-brand-green-50 border-b border-brand-green-100">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="mb-1 text-xs font-bold tracking-[0.08em] text-brand-green-700">
+                {t('SCAN COMPLETE', 'SCAN COMPLETE', 'اكتمل المسح')}
+              </p>
+              <span className="text-lg font-extrabold text-soy-ink">{t(`총 ${menuList.length}개 메뉴 인식`, `Detected ${menuList.length} items`, `تم التعرف على ${menuList.length} عناصر`)}</span>
+            </div>
+            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rice-white text-brand-green-700 shadow-sm">
+              <CheckCircle2 className="size-6" aria-hidden="true" />
+            </div>
           </div>
         </div>
 
-        <div className="px-5 py-4 flex gap-2">
+        <div className="flex gap-2 overflow-x-auto px-5 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
           {[
-            { value: 'all', label: t('전체', 'All', 'الكل') },
-            { value: 'safe', label: t('안전', 'Safe', 'آمن') },
-            { value: 'caution', label: t('확인 필요', 'Check', 'تحقق') },
-            { value: 'danger', label: t('위험', 'Danger', 'خطر') },
-          ].map(({ value, label }) => (
+            { value: 'all', label: t('전체', 'All', 'الكل'), count: menuList.length },
+            { value: 'safe', label: t('안전', 'Safe', 'آمن'), count: safeCount },
+            { value: 'caution', label: t('주의', 'Caution', 'تنبيه'), count: cautionCount },
+            { value: 'danger', label: t('위험', 'Danger', 'خطر'), count: dangerCount },
+          ].map(({ value, label, count }) => (
             <button
               key={value}
               onClick={() => setFilter(value as FilterType)}
-              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+              className={`min-h-10 shrink-0 px-4 py-2 rounded-full border text-sm font-bold whitespace-nowrap transition-colors ${
                 filter === value
-                  ? 'bg-neutral-900 text-white'
-                  : 'bg-white border border-neutral-300 text-neutral-700 hover:border-neutral-400'
+                  ? 'bg-brand-green-700 border-brand-green-700 text-white shadow-sm'
+                  : 'bg-rice-white border-border-warm text-sesame-gray hover:border-brand-green-500'
               }`}
             >
-              {label}
+              {label} <span className="opacity-70">{count}</span>
             </button>
           ))}
         </div>
 
-        <div className="px-5 pb-20 space-y-3">
+        <div className="px-5 pb-8 space-y-4">
           {filteredMenus.map((menu) => (
-            <div key={menu.id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden">
-              <div className="w-full h-40 bg-neutral-100">
+            <article key={menu.id} className="bg-rice-white border border-border-warm rounded-[1.5rem] overflow-hidden shadow-[0_8px_28px_rgba(54,61,57,0.07)]">
+              <div className="w-full h-44 bg-brand-green-50">
                 <MenuImage
                   menu={menu}
                   language={language}
@@ -402,44 +467,46 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                 />
               </div>
 
-              <div className="p-4">
-                <div className="flex items-start justify-between mb-2">
+              <div className="p-4.5">
+                <div className="flex items-start justify-between gap-3 mb-3">
                   <div className="min-w-0 flex-1">
-                    <h3 className="font-semibold text-neutral-900 mb-1">
+                    <h3 className="text-lg font-extrabold tracking-[-0.015em] text-soy-ink mb-1">
                       {getMenuName(menu)}
-                      {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ml-1">🌶️</span>}
+                      {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ms-1">🌶️</span>}
                     </h3>
                     {getMenuSubName(menu) && (
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <span className="text-sm text-neutral-500 min-w-0 break-words">{getMenuSubName(menu)}</span>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        <span className="text-sm text-sesame-gray min-w-0 break-words">{getMenuSubName(menu)}</span>
                         {ttsSupported && (
                           <button
                             onClick={() => speak(menu.menuName, 'ko-KR')}
-                            className="flex-shrink-0 w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center text-neutral-500 hover:bg-neutral-200 transition-colors"
+                            className="flex-shrink-0 size-8 rounded-full bg-brand-green-50 flex items-center justify-center text-brand-green-700 hover:bg-brand-green-100 transition-colors"
                             aria-label={t('음성 듣기', 'Play audio', 'تشغيل الصوت')}
                           >
-                            <Volume2 className="w-3.5 h-3.5" />
+                            <Volume2 className="size-4" />
                           </button>
                         )}
                       </div>
                     )}
                   </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0 ml-3">
+                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
                     {renderRiskBadge(menu)}
                     {menu.price && (
-                      <span className="text-sm font-medium text-neutral-900">{Number(menu.price).toLocaleString()}원</span>
+                      <span className="text-sm font-bold text-soy-ink">{formatPrice(menu.price)}</span>
                     )}
                   </div>
                 </div>
 
-                <p className="text-sm text-neutral-600 mb-3">
+                <p className="text-sm leading-relaxed text-sesame-gray mb-4">
                   {getMenuMeaning(menu.menuName, language) && (
-                    <span className="font-medium text-neutral-800">
+                    <span className="font-bold text-soy-ink">
                       {getMenuMeaning(menu.menuName, language)}.{' '}
                     </span>
                   )}
                   {getDescription(menu)}
                 </p>
+
+                {renderRiskGuidance(menu)}
 
                 {(() => {
                   const dietTags = getDietTags(menu);
@@ -454,20 +521,20 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   const ingredientClass =
                     menu.riskLevel === 'danger' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700';
                   return (
-                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                    <div className="flex items-center gap-2 mb-4 flex-wrap">
                       {dietTags.map((tag) => (
                         <span 
                           key={tag.key} 
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${tag.className}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${tag.className}`}
                         >
                           {tag.key === 'spicy' ? <Flame className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                          {t(tag.label.ko, tag.label.en, tag.label.ar)}
+                          {translateText(language, tag.label)}
                         </span>
                       ))}
                       {ingredientTags.map((label) => (
                         <span
                           key={`ing-${label}`}
-                          className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${ingredientClass}`}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${ingredientClass}`}
                         >
                           <AlertTriangle className="w-3 h-3" />
                           {label === 'fish' ? '생선' : label}
@@ -480,7 +547,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                 <div className={`grid gap-2 ${menu.riskLevel !== 'safe' || isSpicyMenu(menu) ? 'grid-cols-2' : 'grid-cols-1'}`}>
                   <button
                     onClick={() => openSheet(menu, 'order')}
-                    className={`min-h-12 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${
+                    className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${
                       menu.riskLevel !== 'safe' || isSpicyMenu(menu) ? 'col-span-2' : ''
                     } ${getActionButtonClasses(menu, 'order', true)}`}
                   >
@@ -490,13 +557,13 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                     <>
                       <button
                         onClick={() => openSheet(menu, 'ingredient')}
-                        className={`min-h-12 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${getActionButtonClasses(menu, 'ingredient')}`}
+                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'ingredient')}`}
                       >
                         {renderActionButtonLabel(menu, 'ingredient')}
                       </button>
                       <button
                         onClick={() => openSheet(menu, 'request')}
-                        className={`min-h-12 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${getActionButtonClasses(menu, 'request')}`}
+                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'request')}`}
                       >
                         {renderActionButtonLabel(menu, 'request')}
                       </button>
@@ -506,13 +573,13 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                     <>
                       <button
                         onClick={() => openSheet(menu, 'lessSpicy')}
-                        className={`min-h-12 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${getActionButtonClasses(menu, 'lessSpicy')}`}
+                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'lessSpicy')}`}
                       >
                         {renderActionButtonLabel(menu, 'lessSpicy')}
                       </button>
                       <button
                         onClick={() => openSheet(menu, 'moreSpicy')}
-                        className={`min-h-12 rounded-xl border px-3 py-2 text-xs font-semibold transition-colors ${getActionButtonClasses(menu, 'moreSpicy')}`}
+                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'moreSpicy')}`}
                       >
                         {renderActionButtonLabel(menu, 'moreSpicy')}
                       </button>
@@ -520,18 +587,18 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   )}
                 </div>
               </div>
-            </div>
+            </article>
           ))}
         </div>
 
         {safeCount > 0 && (cautionCount + dangerCount) > 0 && (
           <div className="px-5 pb-6">
-            <h3 className="text-sm font-medium text-neutral-900 mb-3">{t('같은 식당 내 안전 메뉴', 'Other safe menu items', 'أطباق آمنة أخرى في نفس المطعم')}</h3>
+            <h3 className="text-sm font-bold text-soy-ink mb-3">{t('함께 찾은 안심 메뉴', 'Other suitable dishes we found', 'أطباق أخرى مناسبة وجدناها')}</h3>
             <div className="space-y-2">
               {menuList.filter((m) => m.riskLevel === 'safe').slice(0, 2).map((menu) => (
-                <div key={menu.id} className="p-3 bg-green-50 border border-green-200 rounded-xl">
+                <div key={menu.id} className="p-4 bg-green-50 border border-green-200 rounded-2xl">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-green-900">{getMenuName(menu)}</span>
+                    <span className="text-sm font-bold text-green-900">{getMenuName(menu)}</span>
                     <CheckCircle2 className="w-4 h-4 text-green-600" />
                   </div>
                 </div>
@@ -541,10 +608,10 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
         )}
       </div>
 
-      <div className="border-t border-neutral-200 px-5 py-4 bg-white flex-shrink-0">
+      <div className="border-t border-border-warm px-5 py-4 bg-rice-white/95 flex-shrink-0">
         <button
           onClick={onRescan}
-          className="w-full h-12 bg-white border border-neutral-300 text-neutral-700 text-sm font-medium rounded-xl hover:bg-neutral-50 transition-colors"
+          className="w-full h-13 bg-rice-white border border-brand-green-700 text-brand-green-700 text-sm font-bold rounded-2xl hover:bg-brand-green-50 transition-colors"
         >
           {t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}
         </button>

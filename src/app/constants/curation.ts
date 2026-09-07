@@ -1,5 +1,5 @@
 import type { Language } from '../App';
-import type { LocalizedText } from '../i18n';
+import { translateText, type LocalizedText } from '../locales';
 
 /**
  * 큐레이션 이미지 = Wikimedia Commons 무료 직링크(핫링크 허용·CDN). blob 불필요.
@@ -18,7 +18,9 @@ export const CURATION_TAGS: { key: CurationTag; label: LocalizedText }[] = [
 ];
 
 export const tagLabel = (key: CurationTag, language: Language) =>
-  CURATION_TAGS.find((t) => t.key === key)?.label[language] ?? key;
+  CURATION_TAGS.find((t) => t.key === key)?.label
+    ? translateText(language, CURATION_TAGS.find((t) => t.key === key)!.label)
+    : key;
 
 export interface CurationArticle {
   id: string;

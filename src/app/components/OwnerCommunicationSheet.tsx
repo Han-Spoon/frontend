@@ -12,6 +12,7 @@ import {
   type LocalizedText,
   type OwnerContent,
 } from '../i18n';
+import { createTranslator } from '../locales';
 
 export type OwnerCommunicationType =
   | 'order'
@@ -66,6 +67,7 @@ export function OwnerCommunicationSheet({
   const [saved, setSaved] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
+  const t = createTranslator(language);
 
   // 시트 카드 종류 → 백엔드 CardType (order/ingredient_check/exclude)
   const toCardType = (sheetType: OwnerCommunicationType): CardType => {
@@ -82,7 +84,15 @@ export function OwnerCommunicationSheet({
         .filter(Boolean)
         .filter((label) => !HIDDEN_OWNER_CONTENT_LABELS.has(label.trim().toLowerCase()))),
     ).join(', ');
-  const flaggedLabels = { ko: flaggedFor('ko'), en: flaggedFor('en'), ar: flaggedFor('ar') };
+  const flaggedLabels: LocalizedText = {
+    ko: flaggedFor('ko'),
+    en: flaggedFor('en'),
+    ar: flaggedFor('ar'),
+    'zh-CN': flaggedFor('zh-CN'),
+    ja: flaggedFor('ja'),
+    'zh-TW': flaggedFor('zh-TW'),
+    es: flaggedFor('es'),
+  };
 
   const getContent = (): OwnerContent => {
     const menuName = {
@@ -102,7 +112,7 @@ export function OwnerCommunicationSheet({
       case 'ingredient': {
         // 이 메뉴의 플래그된 재료(hits + ownerCard.flag)를 언어별로 나열.
         const ingredient = flaggedLabels.ko
-          ? { ko: flaggedLabels.ko, en: flaggedLabels.en, ar: flaggedLabels.ar }
+          ? flaggedLabels
           : ownerCommunicationI18n.ingredients.generic;
 
         return formatOwnerCommunicationContent(type, {
@@ -115,11 +125,15 @@ export function OwnerCommunicationSheet({
         // 플래그된 재료가 있으면 그걸, 없으면 사용자 알레르기 첫 항목으로 폴백.
         const fallbackAllergy = userProfile?.allergies[0];
         const allergen = flaggedLabels.ko
-          ? { ko: flaggedLabels.ko, en: flaggedLabels.en, ar: flaggedLabels.ar }
-          : {
+          ? flaggedLabels
+            : {
               ko: getAllergyName(fallbackAllergy, 'ko'),
               en: getAllergyName(fallbackAllergy, 'en'),
               ar: getAllergyName(fallbackAllergy, 'ar'),
+              'zh-CN': getAllergyName(fallbackAllergy, 'zh-CN'),
+              ja: getAllergyName(fallbackAllergy, 'ja'),
+              'zh-TW': getAllergyName(fallbackAllergy, 'zh-TW'),
+              es: getAllergyName(fallbackAllergy, 'es'),
             };
 
         return formatOwnerCommunicationContent(type, {
@@ -137,7 +151,7 @@ export function OwnerCommunicationSheet({
           allergen: emptyText,
         });
       default:
-        return { korean: '', english: '', arabic: '' };
+        return { korean: '', english: '', arabic: '', localized: emptyText };
     }
   };
 
@@ -188,13 +202,7 @@ export function OwnerCommunicationSheet({
       }, 1000);
     } catch (error) {
       console.error('Card save failed:', error);
-      setSaveError(
-        language === 'ko'
-          ? '저장에 실패했어요. 다시 시도해 주세요.'
-          : language === 'ar'
-            ? 'فشل الحفظ. يرجى المحاولة مرة أخرى.'
-            : 'Failed to save. Please try again.',
-      );
+      setSaveError(t('저장에 실패했어요. 다시 시도해 주세요.', 'Failed to save. Please try again.', 'فشل الحفظ. يرجى المحاولة مرة أخرى.'));
     } finally {
       setSaving(false);
     }
@@ -202,47 +210,46 @@ export function OwnerCommunicationSheet({
 
   return (
     <>
-      <div className="fixed inset-0 bg-black/50 z-40" onClick={onClose} />
+      <div className="fixed inset-0 bg-soy-ink/55 z-40" onClick={onClose} />
       <div
-        className="fixed inset-x-0 bottom-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[80vh] overflow-y-auto animate-slide-up"
-        style={{
-          left: 'calc(50% - 195px)',
-          width: '390px',
-        }}
+        className="fixed bottom-0 left-1/2 z-50 w-full max-w-[430px] -translate-x-1/2 bg-rice-white rounded-t-[2rem] shadow-2xl max-h-[85dvh] overflow-y-auto animate-slide-up"
+        role="dialog"
+        aria-modal="true"
+        aria-label={translate(language, ownerCommunicationI18n.labels.selectedMenu)}
       >
         <div className="pt-3 pb-2 flex justify-center">
-          <div className="w-12 h-1 bg-neutral-300 rounded-full" />
+          <div className="w-12 h-1 bg-border-warm rounded-full" />
         </div>
 
         <div className="px-6 pb-8 pt-6 relative">
           <div className="mb-4 flex items-start gap-3">
             <div className="min-w-0 flex-1">
-              <div className="text-2xl font-bold text-neutral-900 leading-tight mb-2 break-words">
-                {language === 'ko' ? content.korean : language === 'ar' ? content.arabic : content.english}
+              <div className="text-2xl font-extrabold text-soy-ink leading-tight mb-2 break-words">
+                {translate(language, content.localized)}
               </div>
-              <div className="text-sm text-neutral-500 break-words">
+              <div className="text-sm text-sesame-gray break-words">
                 {language === 'ko' ? content.english : content.korean}
               </div>
             </div>
             {ttsSupported && content.korean && (
               <button
                 onClick={() => speak(content.korean, 'ko-KR')}
-                className="flex-shrink-0 w-11 h-11 rounded-full bg-neutral-900 text-white flex items-center justify-center hover:bg-neutral-800 transition-colors"
-                aria-label={language === 'ko' ? '음성 듣기' : language === 'ar' ? 'تشغيل الصوت' : 'Play audio'}
+                className="flex-shrink-0 size-11 rounded-full bg-brand-green-700 text-white flex items-center justify-center hover:bg-brand-green-900 transition-colors"
+                aria-label={t('음성 듣기', 'Play audio', 'تشغيل الصوت')}
               >
                 <Volume2 className="w-5 h-5" />
               </button>
             )}
           </div>
 
-          <div className="mb-6 p-4 bg-neutral-50 rounded-xl">
-            <div className="text-xs text-neutral-500 mb-1">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
-            <div className="font-medium text-neutral-900">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
-            <div className="text-xs text-neutral-500 mt-1">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
+          <div className="mb-6 p-4 bg-brand-green-50 border border-brand-green-100 rounded-2xl">
+            <div className="text-xs font-semibold text-brand-green-700 mb-1">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
+            <div className="font-bold text-soy-ink">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
+            <div className="text-xs text-sesame-gray mt-1">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
           </div>
 
           <div className="space-y-2 mb-4">
-            <div className="text-xs text-neutral-600 mb-3">{translate(language, ownerCommunicationI18n.labels.ownerResponse)}</div>
+            <div className="text-xs font-semibold text-sesame-gray mb-3">{translate(language, ownerCommunicationI18n.labels.ownerResponse)}</div>
             {responseButtons.map((btn) => {
               const selected = response === btn.id;
 
@@ -250,22 +257,22 @@ export function OwnerCommunicationSheet({
                 <button
                   key={btn.id}
                   onClick={() => handleResponseSelect(btn)}
-                  className={`w-full min-h-14 border-2 rounded-xl flex items-center gap-3 px-4 py-3 transition-colors text-sm font-medium ${
+                  className={`w-full min-h-14 border-2 rounded-2xl flex items-center gap-3 px-4 py-3 transition-colors text-sm font-semibold ${
                     selected
                       ? selectedButtonClasses[btn.tone]
-                      : 'bg-white border-neutral-300 text-neutral-900 hover:border-neutral-900 hover:bg-neutral-50'
+                      : 'bg-rice-white border-border-warm text-soy-ink hover:border-brand-green-500 hover:bg-brand-green-50'
                   }`}
                 >
                   <span
                     className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      selected ? 'bg-white/75' : 'bg-neutral-100 text-neutral-700'
+                      selected ? 'bg-white/75' : 'bg-brand-green-50 text-brand-green-700'
                     }`}
                   >
                     {selected ? getResponseIcon(btn.tone) : btn.id === 'ok' || btn.id === 'possible' ? '✓' : btn.id === 'yes' ? '!' : '✗'}
                   </span>
-                  <span className="min-w-0 text-left leading-tight">
+                  <span className="min-w-0 text-start leading-tight">
                     <span className="block">{translate(language, btn.label)}</span>
-                    <span className={`block text-xs mt-0.5 ${selected ? 'opacity-75' : 'text-neutral-500'}`}>
+                    <span className={`block text-xs mt-0.5 ${selected ? 'opacity-75' : 'text-sesame-gray'}`}>
                       {language === 'ko' ? btn.label.en : btn.label.ko}
                     </span>
                   </span>
@@ -278,10 +285,10 @@ export function OwnerCommunicationSheet({
           <button
             onClick={handleSave}
             disabled={saved || saving}
-            className={`w-full h-12 rounded-xl text-sm font-medium transition-colors disabled:cursor-not-allowed ${
+            className={`w-full h-13 rounded-2xl text-sm font-bold transition-colors disabled:cursor-not-allowed ${
               saved
                 ? 'bg-green-600 text-white'
-                : 'bg-neutral-100 text-neutral-700 hover:bg-neutral-200 disabled:opacity-60'
+                : 'bg-brand-green-700 text-white hover:bg-brand-green-900 disabled:opacity-60'
             }`}
           >
             {saved ? (
@@ -290,7 +297,7 @@ export function OwnerCommunicationSheet({
                 {translate(language, ownerCommunicationI18n.labels.saved)}
               </span>
             ) : saving ? (
-              language === 'ko' ? '저장 중...' : language === 'ar' ? 'جارٍ الحفظ...' : 'Saving...'
+              t('저장 중...', 'Saving...', 'جارٍ الحفظ...')
             ) : (
               translate(language, ownerCommunicationI18n.labels.saveFavorite)
             )}
