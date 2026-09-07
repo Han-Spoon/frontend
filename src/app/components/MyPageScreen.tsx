@@ -138,7 +138,7 @@ export function MyPageScreen({
         <h1 className="text-base font-bold text-soy-ink mx-auto">{t('마이페이지', 'My Page', 'صفحتي')}</h1>
       </div>
 
-      <div className="px-5 py-6 border-b border-brand-green-100 bg-brand-green-50">
+      <div className="border-b border-border-warm bg-surface-subtle px-5 py-6">
         <div className="flex items-center gap-4">
           <div className="size-16 rounded-[1.5rem] bg-brand-green-700 flex items-center justify-center shadow-sm">
             <User className="w-8 h-8 text-white" />
@@ -166,7 +166,7 @@ export function MyPageScreen({
             }`}
           >
             {label}
-            {activeTab === value && <div className="absolute bottom-0 inset-x-3 h-0.5 rounded-full bg-brand-orange-500" />}
+            {activeTab === value && <div className="absolute bottom-0 inset-x-3 h-0.5 rounded-full bg-brand-primary" />}
           </button>
         ))}
       </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { Camera, ChevronDown, CircleDashed, Database, Loader2, ScanText, Search, ShieldCheck, Users } from 'lucide-react';
 import { getScanResult, mapMenuResult, normalizeScanStatus, startScan } from '../../api/scan';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 import { createTranslator } from '../locales';
@@ -17,28 +17,19 @@ const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_MS = 300000;
 
 export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
-  const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [showDetails, setShowDetails] = useState(false);
 
   const t = createTranslator(language);
 
   const steps = [
-    t('메뉴판 이미지를 읽고 있어요', 'Scanning menu image', 'جار قراءة صورة القائمة'),
-    t('메뉴를 찾고 있어요', 'Finding menus', 'جار البحث عن الأطباق'),
-    t('식단 정보를 확인하고 있어요', 'Checking diet info', 'جار التحقق من معلومات النظام الغذائي'),
-    t('알레르기와 식단 조건을 비교하고 있어요', 'Comparing allergies and diet conditions', 'جار مقارنة الحساسية وشروط النظام الغذائي'),
+    { icon: ScanText, label: t('메뉴 이름과 설명을 읽고 있어요', 'Reading menu names and descriptions', 'جار قراءة أسماء الأطباق وأوصافها') },
+    { icon: Search, label: t('조리법과 재료 정보를 찾고 있어요', 'Finding cooking and ingredient information', 'جار البحث عن معلومات الطهي والمكونات') },
+    { icon: Database, label: t('육수와 소스 속 숨은 재료도 확인하고 있어요', 'Checking hidden ingredients in broths and sauces', 'جار التحقق من المكونات المخفية في المرق والصلصات') },
+    { icon: ShieldCheck, label: t('내 식단 기준과 비교하고 있어요', 'Comparing with your dietary profile', 'جار المقارنة مع ملفك الغذائي') },
   ];
-
-  // 로딩 단계 애니메이션 (분석 중일 때만)
-  useEffect(() => {
-    if (phase !== 'analyzing') return;
-    const timer = setInterval(() => {
-      setStep((prev) => Math.min(prev + 1, steps.length - 1));
-    }, 1500);
-    return () => clearInterval(timer);
-  }, [phase, steps.length]);
 
   useEffect(() => {
     if (!image) return;
@@ -49,7 +40,6 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
     const run = async () => {
       setPhase('analyzing');
       setErrorMessage(null);
-      setStep(0);
 
       if (!image.storage?.key) {
         setErrorMessage(t(
@@ -124,13 +114,13 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
   // 재촬영 안내 (needs_retake)
   if (phase === 'retake') {
     return (
-      <div className="h-dvh flex flex-col bg-rice-cream">
-        <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-center px-5 relative flex-shrink-0">
+      <div className="flex h-dvh flex-col bg-surface-base">
+        <div className="relative flex h-16 flex-shrink-0 items-center justify-center border-b border-border-warm bg-surface-raised/95 px-5">
           <h1 className="text-base font-bold text-soy-ink">{t('다시 촬영이 필요해요', 'Retake needed', 'يلزم إعادة التصوير')}</h1>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center px-8 text-center">
-          <div className="size-20 rounded-[1.75rem] bg-brand-orange-100 flex items-center justify-center mb-6 shadow-sm">
-            <Camera className="size-8 text-brand-orange-500" />
+          <div className="mb-6 flex size-16 items-center justify-center rounded-2xl border border-border-warm bg-surface-raised shadow-[var(--shadow-card)]">
+            <Camera className="size-7 text-brand-accent" />
           </div>
           <p className="max-w-xs text-lg font-bold leading-relaxed text-soy-ink">
             {t('가이드라인에 맞춰 촬영해주세요', 'Please take the photo following the guideline.', 'يرجى التقاط الصورة وفقًا للإرشادات.')}
@@ -139,7 +129,7 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
         <div className="border-t border-border-warm bg-rice-white/95 px-5 py-4 flex-shrink-0">
           <button
             onClick={onCancel}
-            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm hover:bg-brand-green-900 transition-colors"
+            className="min-h-12 w-full rounded-xl bg-brand-primary font-bold text-white shadow-sm hover:bg-brand-primary-hover"
           >
             {t('다시 촬영', 'Retake', 'إعادة التصوير')}
           </button>
@@ -149,63 +139,76 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
   }
 
   return (
-    <div className="h-dvh flex flex-col bg-rice-cream">
-      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center justify-center px-5 relative flex-shrink-0">
+    <div className="flex h-dvh flex-col bg-surface-base">
+      <div className="relative flex h-16 flex-shrink-0 items-center justify-center border-b border-border-warm bg-surface-raised/95 px-5">
         <h1 className="text-base font-bold text-soy-ink">{t('메뉴판 분석 중', 'Analyzing menu', 'جار تحليل القائمة')}</h1>
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-5 py-7">
-        <div className="relative w-full max-w-xs aspect-[4/3] bg-rice-white rounded-[1.75rem] mb-8 overflow-hidden border border-border-warm shadow-[0_14px_38px_rgba(23,107,77,0.12)]">
+      <div className="flex-1 overflow-y-auto px-5 py-6">
+        <div className="relative mx-auto mb-5 aspect-[16/9] w-full max-w-xs overflow-hidden rounded-[var(--radius-card)] border border-border-warm bg-surface-raised shadow-[var(--shadow-card)]">
           {image ? (
             <img src={image.previewUrl} alt={t('분석 중인 메뉴판', 'Menu being analyzed', 'القائمة قيد التحليل')} className="w-full h-full object-cover" />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-sesame-gray">
+            <div className="flex size-full items-center justify-center text-text-secondary">
               <span className="text-6xl">📋</span>
             </div>
           )}
           {phase === 'analyzing' && (
-            <div className="animate-scan-line pointer-events-none absolute inset-x-5 top-[12%] h-0.5 rounded-full bg-brand-orange-500 shadow-[0_0_14px_rgba(244,119,59,0.8)]" aria-hidden="true" />
+            <div className="animate-scan-line pointer-events-none absolute inset-x-5 top-[12%] h-0.5 rounded-full bg-brand-primary shadow-[0_0_12px_rgba(23,100,73,0.35)]" aria-hidden="true" />
           )}
         </div>
 
-        <div className="w-full max-w-xs">
+        <div className="mx-auto w-full max-w-sm">
           {phase === 'analyzing' ? (
             <>
-              <div className="mb-6">
-                <Loader2 className="size-10 text-brand-green-700 animate-spin mx-auto mb-4" />
-                <p className="min-h-12 text-center text-base font-bold leading-relaxed text-soy-ink">{steps[step]}</p>
+              <div className="mb-4 text-center">
+                <Loader2 className="mx-auto mb-3 size-7 animate-spin text-brand-primary" />
+                <p className="text-base font-extrabold text-text-primary">{t('필요한 정보를 차근차근 확인하고 있어요', 'We are carefully checking the information', 'نتحقق من المعلومات بعناية')}</p>
+                <p className="mt-1 text-xs leading-5 text-text-secondary">{t('실제 완료 시점은 분석 결과가 준비되면 알려드려요.', 'We will let you know when the actual analysis is ready.', 'سنخبرك عندما يصبح التحليل الفعلي جاهزًا.')}</p>
               </div>
-              <div className="flex items-center justify-center gap-2 mb-8">
-                {steps.map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-1 rounded-full transition-all ${
-                      i <= step ? 'w-8 bg-brand-green-700' : 'w-1 bg-border-warm'
-                    }`}
-                  />
+              <ol className="space-y-2 rounded-[var(--radius-card)] border border-border-warm bg-surface-raised p-3 shadow-[var(--shadow-card)]">
+                {steps.map(({ icon: Icon, label }, index) => (
+                  <li key={label} className="flex min-h-11 items-center gap-3 rounded-xl px-2 py-2">
+                    <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-surface-subtle text-brand-primary"><Icon className="size-4" aria-hidden="true" /></span>
+                    <span className="min-w-0 flex-1 text-sm font-semibold leading-5 text-text-primary">{label}</span>
+                    <span className="text-xs font-bold tabular-nums text-text-tertiary">{index + 1}</span>
+                  </li>
                 ))}
-              </div>
+              </ol>
+
+              <button onClick={() => setShowDetails((current) => !current)} aria-expanded={showDetails} className="mt-3 flex min-h-11 w-full items-center justify-between rounded-xl border border-border-warm bg-surface-raised px-3.5 text-sm font-bold text-text-secondary hover:bg-surface-subtle">
+                <span>{t('분석 과정 자세히 보기', 'See how analysis works', 'عرض تفاصيل عملية التحليل')}</span>
+                <ChevronDown className={`size-4 transition-transform ${showDetails ? 'rotate-180' : ''}`} />
+              </button>
+              {showDetails && (
+                <div className="mt-2 rounded-xl border border-border-warm bg-surface-subtle p-4 text-xs leading-5 text-text-secondary">
+                  <div className="mb-2 flex items-center gap-2 font-extrabold text-text-primary"><CircleDashed className="size-4 text-brand-primary" />{t('기술을 쉬운 말로 설명해요', 'The technology, in plain language', 'شرح التقنية بلغة بسيطة')}</div>
+                  <p>{t('OCR로 글자를 읽고 메뉴판 문맥을 살핀 뒤, 조리 정보와 검색 근거를 모아 육수·소스의 구성 재료까지 확인해요. 마지막으로 기존 직원 응답 기록과 내 식단 프로필을 비교해 결과를 정리합니다.', 'We read text with OCR, use menu context and cooking references, inspect compound ingredients such as broths and sauces, then organize the supplied result using staff records and your dietary profile.', 'نقرأ النص بتقنية OCR ونستخدم سياق القائمة ومراجع الطهي، ثم نفحص المكونات المركبة مثل المرق والصلصات وننظم النتيجة بالاستناد إلى سجلات الموظفين وملفك الغذائي.')}</p>
+                  <p className="mt-2 flex gap-2"><Users className="mt-0.5 size-4 shrink-0" />{t('현재 백엔드는 세부 단계별 진행 상태를 제공하지 않아 가짜 퍼센트는 표시하지 않아요.', 'The backend does not provide live stage progress, so no artificial percentage is shown.', 'لا توفر الواجهة الخلفية تقدّمًا مباشرًا للمراحل، لذلك لا نعرض نسبة مئوية مصطنعة.')}</p>
+                  {/* TODO: 백엔드가 실제 단계 상태를 제공하면 각 항목의 완료/진행 상태와 연결한다. */}
+                </div>
+              )}
             </>
           ) : (
-            <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 p-4">
-              <p className="text-sm text-red-700 text-center">{errorMessage}</p>
+            <div className="mb-6 rounded-xl border border-status-danger-border bg-status-danger-surface p-4">
+              <p className="text-center text-sm text-status-danger-text">{errorMessage}</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="border-t border-border-warm bg-rice-white/95 px-5 py-4 flex-shrink-0 space-y-2">
+      <div className="flex-shrink-0 space-y-2 border-t border-border-warm bg-surface-raised/95 px-5 py-3">
         {phase === 'failed' && (
           <button
             onClick={() => setAttempt((a) => a + 1)}
-            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold shadow-sm hover:bg-brand-green-900 transition-colors"
+            className="min-h-12 w-full rounded-xl bg-brand-primary font-bold text-white shadow-sm hover:bg-brand-primary-hover"
           >
             {t('다시 시도', 'Retry', 'إعادة المحاولة')}
           </button>
         )}
         <button
           onClick={onCancel}
-          className="w-full h-12 text-sm font-semibold text-sesame-gray hover:text-soy-ink transition-colors"
+          className="min-h-11 w-full text-sm font-semibold text-text-secondary hover:text-text-primary"
         >
           {t('취소', 'Cancel', 'إلغاء')}
         </button>

@@ -131,7 +131,7 @@ export function CardsScreen({ language, onMyPage }: CardsScreenProps) {
                 <button
                   key={phrase.ko}
                   onClick={() => setSelected(phrase)}
-                  className="min-h-14 w-full text-start p-3 bg-brand-green-50 rounded-2xl hover:bg-brand-green-100 transition-colors"
+                  className="min-h-14 w-full rounded-xl bg-surface-subtle p-3 text-start hover:bg-surface-interactive"
                 >
                   <div className="text-sm font-semibold text-soy-ink leading-snug">{localized(phrase)}</div>
                   {koSub(phrase) && <div className="text-xs text-sesame-gray leading-snug mt-0.5">{koSub(phrase)}</div>}

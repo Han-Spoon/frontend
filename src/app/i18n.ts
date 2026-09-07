@@ -91,7 +91,7 @@ export const ownerCommunicationI18n = {
       ar: 'الطبق المحدد',
     },
     ownerResponse: {
-      ko: '사장님 응답',
+      ko: '직원 응답',
       en: 'Owner response',
       ar: 'رد العاملين',
     },
@@ -136,6 +136,15 @@ export const ownerCommunicationI18n = {
           ar: 'لا، لا يحتوي على ذلك',
         },
         tone: 'success',
+      },
+      {
+        id: 'unknown',
+        label: {
+          ko: '잘 모르겠어요',
+          en: "I'm not sure",
+          ar: 'لست متأكدًا',
+        },
+        tone: 'caution',
       },
     ],
     request: [

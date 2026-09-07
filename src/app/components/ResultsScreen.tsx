@@ -1,19 +1,47 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, Flame, AlertTriangle, CheckCircle2, OctagonX, Volume2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  ArrowLeft,
+  ChevronDown,
+  ChevronRight,
+  CircleHelp,
+  ExternalLink,
+  Flame,
+  Info,
+  ListChecks,
+  MessageSquareText,
+  SearchX,
+  ShieldCheck,
+  Sparkles,
+  Volume2,
+} from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
 import { createTranslator, LANGUAGE_LOCALES, translateText } from '../locales';
 import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
-import { getHitTagLabel } from '../i18n';
 import { getMenuMeaning, getMenuPronunciation } from '../constants/menuNames';
+import { CURATION_ARTICLES } from '../constants/curation';
 import { speak, ttsSupported } from '../utils/speech';
 import {
   getOwnerResponseOption,
   OwnerCommunicationSheet,
   type OwnerCommunicationType,
   type OwnerResponseId,
-  type OwnerResponseTone,
 } from './OwnerCommunicationSheet';
+import {
+  ConfidenceBadge,
+  EvidenceSection,
+  ResultCount,
+  RiskBadge,
+  StatusGuidance,
+} from './results/ResultEvidence';
+import {
+  buildMenuResultViewModel,
+  CONFIDENCE_LABELS,
+  getProfileSummary,
+  LIKELIHOOD_LABELS,
+  localizeMenuText,
+} from '../results/resultViewModel';
 
 interface ResultsScreenProps {
   language: Language;
@@ -25,107 +53,111 @@ interface ResultsScreenProps {
 
 interface MenuImageProps {
   menu: MenuAnalysis;
-  language: Language;
-  getMenuName: (menu: MenuAnalysis) => string;
+  translatedName: string;
   t: (ko: string, en: string, ar: string) => string;
 }
 
-type FilterType = 'all' | 'safe' | 'caution' | 'danger';
-type CardActionType = Exclude<OwnerCommunicationType, 'spicy'>;
-type DietTag = {
-  key: string;
-  label: { ko: string; en: string; ar: string };
-  className: string;
+type FilterType = 'all' | MenuAnalysis['riskLevel'];
+
+const cardBorderClasses: Record<MenuAnalysis['riskLevel'], string> = {
+  safe: 'border-s-status-safe',
+  caution: 'border-s-status-caution',
+  danger: 'border-s-status-danger',
 };
 
-const HIDDEN_RISK_REASON_LABELS = new Set([
-  'unknown menu',
-  'unknown remain',
-  'hidden animal',
-]);
+function getTranslatedMenuName(menu: MenuAnalysis, language: Language) {
+  if (language === 'ko') return menu.menuNameEn || menu.menuName;
+  if (language === 'ar') return menu.menuNameAr ?? menu.menuNameEn ?? menu.menuName;
+  return menu.menuNameEn || menu.menuName;
+}
 
-const asStringList = (value?: string[] | null) => (Array.isArray(value) ? value : []);
+function getDescription(menu: MenuAnalysis, language: Language) {
+  if (language === 'ko') return menu.description;
+  if (language === 'ar') return menu.descriptionAr ?? menu.descriptionEn ?? menu.description;
+  return menu.descriptionEn ?? menu.description;
+}
 
-export function MenuImage({ menu, getMenuName, t }: MenuImageProps) {
+export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
   const [isDefaultImage, setIsDefaultImage] = useState(!menu.image);
 
   useEffect(() => {
-    let isMounted = true;
-
+    let mounted = true;
     async function resolveImage() {
-      console.log('[MenuImage] menu:', menu);
-
-      // 1. menu.image가 있으면 그대로 사용
       if (menu.image) {
-        console.log('[MenuImage] image URL:', menu.image);
         setResolvedImage(menu.image);
         setIsDefaultImage(false);
         return;
       }
-
-      // 2. menu.image가 없으면 메뉴명과 같은 참고 이미지 탐색
-      const fileNameWithoutExt = menu.menuName;
-      const referenceImageUrl = await findMenuImageByName(fileNameWithoutExt);
-
-      if (!isMounted) return;
-
-      // 3. 참고 이미지가 있으면 해당 이미지 사용
-      if (referenceImageUrl) {
-        console.log('[MenuImage] image URL:', referenceImageUrl);
-        setResolvedImage(referenceImageUrl);
-        setIsDefaultImage(false);
-        return;
-      }
-
-      // 4. 없으면 기본 이미지 사용
-      setResolvedImage(null);
-      setIsDefaultImage(true);
+      const referenceImageUrl = await findMenuImageByName(menu.menuName);
+      if (!mounted) return;
+      setResolvedImage(referenceImageUrl);
+      setIsDefaultImage(!referenceImageUrl);
     }
-
-    resolveImage();
-
+    void resolveImage();
     return () => {
-      isMounted = false;
+      mounted = false;
     };
-  }, [menu, getMenuName]);
-
-  const imageAlt = isDefaultImage
-    ? t('기본 메뉴 이미지', 'Default menu image', 'صورة قائمة افتراضية')
-    : getMenuName(menu);
+  }, [menu.image, menu.menuName]);
 
   if (resolvedImage) {
-    return (
-      <img
-        src={resolvedImage}
-        alt={imageAlt}
-        className="w-full h-full object-cover"
-      />
-    );
+    return <img src={resolvedImage} alt={translatedName} className="size-full object-cover" />;
   }
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-brand-green-50 text-sesame-gray">
-      <img
-        src={logo}
-        alt={imageAlt}
-        className="w-28 h-auto object-contain opacity-40"
-      />
-      <span className="text-xs font-medium">
-        {t('이미지 없음', 'No image', 'لا توجد صورة')}
-      </span>
+    <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-subtle text-text-tertiary">
+      <img src={logo} alt={isDefaultImage ? t('기본 메뉴 이미지', 'Default menu image', 'صورة قائمة افتراضية') : translatedName} className="w-20 opacity-35" />
+      <span className="text-[11px] font-semibold">{t('참고 이미지 없음', 'No reference image', 'لا توجد صورة مرجعية')}</span>
     </div>
   );
 }
 
 export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }: ResultsScreenProps) {
+  const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [selectedMenu, setSelectedMenu] = useState<MenuAnalysis | null>(null);
   const [sheetType, setSheetType] = useState<OwnerCommunicationType | null>(null);
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
-  const menuList = Array.isArray(menus) ? menus : [];
-
   const t = createTranslator(language);
+  const menuList = Array.isArray(menus) ? menus : [];
+  const profileSummary = getProfileSummary(userProfile, language);
+
+  const counts = useMemo(() => ({
+    safe: menuList.filter((menu) => menu.riskLevel === 'safe').length,
+    caution: menuList.filter((menu) => menu.riskLevel === 'caution').length,
+    danger: menuList.filter((menu) => menu.riskLevel === 'danger').length,
+  }), [menuList]);
+  const filteredMenus = filter === 'all'
+    ? menuList
+    : menuList.filter((menu) => menu.riskLevel === filter);
+
+  const responseKey = (menuId: string, type: OwnerCommunicationType) => `${menuId}:${type}`;
+  const getStoredResponse = (menu: MenuAnalysis, type: OwnerCommunicationType) =>
+    ownerResponses[responseKey(menu.id, type)] ?? null;
+  const openSheet = (menu: MenuAnalysis, type: OwnerCommunicationType) => {
+    setSelectedMenu(menu);
+    setSheetType(type);
+  };
+  const closeSheet = () => {
+    setSelectedMenu(null);
+    setSheetType(null);
+  };
+  const handleOwnerResponseSelect = (type: OwnerCommunicationType, responseId: OwnerResponseId) => {
+    if (!selectedMenu) return;
+    setOwnerResponses((current) => ({
+      ...current,
+      [responseKey(selectedMenu.id, type)]: responseId,
+    }));
+  };
+  const toggleExpanded = (menuId: string) => {
+    setExpandedIds((current) => {
+      const next = new Set(current);
+      if (next.has(menuId)) next.delete(menuId);
+      else next.add(menuId);
+      return next;
+    });
+  };
   const formatPrice = (price: string) => {
     const value = Number(price);
     if (!Number.isFinite(value)) return price;
@@ -135,487 +167,230 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
       maximumFractionDigits: 0,
     }).format(value);
   };
-  const responseKey = (menuId: string, type: OwnerCommunicationType) => `${menuId}:${type}`;
-
-  const actionLabels: Record<CardActionType, { ko: string; en: string; ar: string }> = {
-    order: { ko: '주문 카드', en: 'Order card', ar: 'بطاقة الطلب' },
-    ingredient: { ko: '재료 확인', en: 'Check ingredients', ar: 'تحقق من المكونات' },
-    request: { ko: '빼고 요청', en: 'Request removal', ar: 'طلب الإزالة' },
-    lessSpicy: { ko: '덜맵게 요청', en: 'Less spicy', ar: 'أقل حدة' },
-    moreSpicy: { ko: '더맵게 요청', en: 'More spicy', ar: 'أكثر حدة' },
-  };
-
-  const responseButtonClasses: Record<OwnerResponseTone, string> = {
-    success: 'bg-green-50 border-green-300 text-green-900 hover:bg-green-100',
-    caution: 'bg-orange-50 border-orange-300 text-orange-900 hover:bg-orange-100',
-    danger: 'bg-red-50 border-red-300 text-red-900 hover:bg-red-100',
-  };
-
-  const religionWarningLabels: Record<string, DietTag['label']> = {
-    halal: { ko: '할랄 주의', en: 'Halal caution', ar: 'تنبيه حلال' },
-    kosher: { ko: '코셔 주의', en: 'Kosher caution', ar: 'تنبيه كوشير' },
-    hindu: { ko: '힌두 주의', en: 'Hindu caution', ar: 'تنبيه هندوسي' },
-  };
-
-  const veganWarningLabels: Record<string, DietTag['label']> = {
-    vegan: { ko: '비건 주의', en: 'Vegan caution', ar: 'تنبيه نباتي صارم' },
-    lacto: { ko: '락토 주의', en: 'Lacto caution', ar: 'تنبيه لاكتو' },
-    ovo: { ko: '오보 주의', en: 'Ovo caution', ar: 'تنبيه أوفو' },
-    lacto_ovo: { ko: '락토 오보 주의', en: 'Lacto-Ovo caution', ar: 'تنبيه لاكتو أوفو' },
-    pesco: { ko: '페스코 주의', en: 'Pesco caution', ar: 'تنبيه بيسكو' },
-  };
-
-  const normalizeReligionType = (value?: string | null) => {
-    const normalized = value?.trim().toLowerCase();
-    const aliases: Record<string, string> = {
-      halal: 'halal',
-      '할랄': 'halal',
-      kosher: 'kosher',
-      '코셔': 'kosher',
-      hindu: 'hindu',
-      '힌두': 'hindu',
-    };
-
-    return normalized ? aliases[normalized] : undefined;
-  };
-
-  const normalizeVeganType = (value?: string | null) => {
-    const normalized = value?.trim().toLowerCase().replace(/-/g, '_');
-    const aliases: Record<string, string> = {
-      vegan: 'vegan',
-      '비건': 'vegan',
-      lacto: 'lacto',
-      '락토': 'lacto',
-      ovo: 'ovo',
-      '오보': 'ovo',
-      lacto_ovo: 'lacto_ovo',
-      lactoovo: 'lacto_ovo',
-      '락토오보': 'lacto_ovo',
-      '락토 오보': 'lacto_ovo',
-      pesco: 'pesco',
-      '페스코': 'pesco',
-    };
-
-    return normalized ? aliases[normalized] : undefined;
-  };
-
-  const filteredMenus = menuList.filter((menu) => {
-    if (filter === 'all') return true;
-    return menu.riskLevel === filter;
-  });
-
-  const safeCount = menuList.filter((m) => m.riskLevel === 'safe').length;
-  const cautionCount = menuList.filter((m) => m.riskLevel === 'caution').length;
-  const dangerCount = menuList.filter((m) => m.riskLevel === 'danger').length;
-
-  const openSheet = (menu: MenuAnalysis, type: OwnerCommunicationType) => {
-    setSelectedMenu(menu);
-    setSheetType(type);
-  };
-
-  const closeSheet = () => {
-    setSheetType(null);
-    setSelectedMenu(null);
-  };
-
-  // 메인: 항상 한국어 메뉴명
-  const getMenuName = (menu: MenuAnalysis) => menu.menuName;
-  // 회색 보조줄: 사용자 언어 발음(en=로마자, ar=아랍 음역). ko는 빈 값.
-  const getMenuSubName = (menu: MenuAnalysis) => getMenuPronunciation(menu.menuName, language);
-  const getDescription = (menu: MenuAnalysis) =>
-    language === 'ko'
-      ? menu.description
-      : language === 'ar'
-        ? menu.descriptionAr ?? menu.descriptionEn ?? menu.description
-        : menu.descriptionEn ?? menu.description;
-  const getRiskReasons = (menu: MenuAnalysis) =>
-    language === 'ko'
-      ? asStringList(menu.riskReasons)
-      : language === 'ar'
-        ? asStringList(menu.riskReasonsAr ?? menu.riskReasonsEn ?? menu.riskReasons)
-        : asStringList(menu.riskReasonsEn ?? menu.riskReasons);
-  const getImageAlt = (menu: MenuAnalysis) => (
-    menu.image
-      ? getMenuName(menu)
-      : t('기본 메뉴 이미지', 'Default menu image', 'صورة قائمة افتراضية')
-  );
-
-  const isSpicyMenu = (menu: MenuAnalysis) => menu.isSpicy || menu.is_spicy === true;
-  const isAlcoholMenu = (menu: MenuAnalysis) => menu.isAlcohol === true || menu.is_alcohol === true;
-
-  const getDietTags = (menu: MenuAnalysis): DietTag[] => {
-    const tags: DietTag[] = [];
-    const religionType = normalizeReligionType(userProfile?.religionType);
-    const veganType = normalizeVeganType(userProfile?.veganType);
-
-    if (religionType && religionWarningLabels[religionType]) {
-      tags.push({
-        key: `religion-${religionType}`,
-        label: religionWarningLabels[religionType],
-        className: 'bg-amber-50 text-amber-700',
-      });
-    }
-
-    if (veganType && veganWarningLabels[veganType]) {
-      tags.push({
-        key: `vegan-${veganType}`,
-        label: veganWarningLabels[veganType],
-        className: 'bg-amber-50 text-amber-700',
-      });
-    }
-
-    if (userProfile?.noSpicy && isSpicyMenu(menu)) {
-      tags.push({
-        key: 'spicy',
-        label: { ko: '매운 음식', en: 'Spicy food', ar: 'طعام حار' },
-        className: 'bg-amber-50 text-amber-700',
-      });
-    }
-
-    if (userProfile?.noAlcohol && isAlcoholMenu(menu)) {
-      tags.push({
-        key: 'alcohol',
-        label: { ko: '알코올', en: 'Alcohol', ar: 'كحول' },
-        className: 'bg-amber-50 text-amber-700',
-      });
-    }
-
-    return tags;
-  };
-
-  const renderRiskBadge = (menu: MenuAnalysis) => {
-    if (menu.riskLevel === 'danger') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-bold text-red-700">
-          <OctagonX className="w-3 h-3" />
-          {t('위험', 'Danger', 'خطر')}
-        </span>
-      );
-    }
-
-    if (menu.riskLevel === 'caution') {
-      return (
-        <span className="inline-flex items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-800">
-          <AlertTriangle className="w-3 h-3" />
-          {t('주의', 'Caution', 'تنبيه')}
-        </span>
-      );
-    }
-
-    return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-3 py-1.5 text-xs font-bold text-green-800">
-        <CheckCircle2 className="w-3 h-3" />
-        {t('안전', 'Safe', 'آمن')}
-      </span>
-    );
-  };
-
-  const renderRiskGuidance = (menu: MenuAnalysis) => {
-    if (menu.riskLevel === 'danger') {
-      return (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 px-3.5 py-3 text-red-900">
-          <OctagonX className="mt-0.5 size-4 shrink-0 text-red-600" aria-hidden="true" />
-          <p className="text-sm font-semibold leading-5">
-            {t(
-              '식이 기준과 맞지 않아 피하는 게 좋아요',
-              'This dish may not fit your dietary needs, so it is best to avoid it.',
-              'قد لا يناسب هذا الطبق احتياجاتك الغذائية، لذا يُفضّل تجنبه.',
-            )}
-          </p>
-        </div>
-      );
-    }
-
-    if (menu.riskLevel === 'caution') {
-      return (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-200 bg-amber-50 px-3.5 py-3 text-amber-950">
-          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-700" aria-hidden="true" />
-          <p className="text-sm font-semibold leading-5">
-            {t(
-              '재료나 조리법을 한 번 더 확인해 주세요',
-              'Please check the ingredients or cooking method before ordering.',
-              'يرجى التحقق من المكونات أو طريقة التحضير قبل الطلب.',
-            )}
-          </p>
-        </div>
-      );
-    }
-
-    return (
-      <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-green-200 bg-green-50 px-3.5 py-3 text-green-950">
-        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-green-700" aria-hidden="true" />
-        <p className="text-sm font-semibold leading-5">
-          {t(
-            '현재 확인된 정보로는 안심하고 선택해도 좋아요',
-            'Based on the information available, this dish should suit your needs.',
-            'وفقًا للمعلومات المتاحة، يمكنك اختيار هذا الطبق باطمئنان.',
-          )}
-        </p>
-      </div>
-    );
-  };
-
-  const getStoredResponse = (menu: MenuAnalysis, type: OwnerCommunicationType) =>
-    ownerResponses[responseKey(menu.id, type)] ?? null;
-
-  const handleOwnerResponseSelect = (type: OwnerCommunicationType, responseId: OwnerResponseId) => {
-    if (!selectedMenu) return;
-
-    setOwnerResponses((prev) => ({
-      ...prev,
-      [responseKey(selectedMenu.id, type)]: responseId,
-    }));
-  };
-
-  const getActionButtonClasses = (menu: MenuAnalysis, type: CardActionType, primary = false) => {
-    const responseId = getStoredResponse(menu, type);
-    const response = responseId ? getOwnerResponseOption(type, responseId) : null;
-
-    if (response) {
-      return responseButtonClasses[response.tone];
-    }
-
-    if (primary) {
-      return 'bg-brand-green-700 border-brand-green-700 text-white hover:bg-brand-green-900';
-    }
-
-    return 'bg-rice-white border-border-warm text-soy-ink hover:bg-brand-green-50 hover:border-brand-green-500';
-  };
-
-  const renderActionButtonLabel = (menu: MenuAnalysis, type: CardActionType) => {
-    const label = actionLabels[type];
-    const responseId = getStoredResponse(menu, type);
-    const response = responseId ? getOwnerResponseOption(type, responseId) : null;
-
-    if (!response) {
-      return (
-        <span className="block leading-tight">
-          <span className="block text-[14px]">{translateText(language, label)}</span>
-        </span>
-      );
-    }
-
-    return (
-      <span className="block leading-tight">
-        <span className="block text-[10px] font-medium opacity-70">
-          {translateText(language, label)}
-        </span>
-        <span className="block mt-1">{translateText(language, response.label)}</span>
-        <span className="block text-[11px] opacity-80 mt-0.5">{language === 'ko' ? response.label.en : response.label.ko}</span>
-      </span>
-    );
-  };
 
   return (
-    <div className="h-dvh flex flex-col bg-rice-cream relative">
-      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center px-5 relative flex-shrink-0">
-        <button
-          onClick={onBack}
-          className="absolute start-4 inline-flex size-11 items-center justify-center rounded-full text-soy-ink transition-colors hover:bg-brand-green-50"
-          aria-label={t('이전', 'Back', 'رجوع')}
-        >
+    <div className="relative flex h-dvh flex-col bg-surface-base text-text-primary">
+      <header className="flex h-16 shrink-0 items-center border-b border-border-warm bg-surface-raised/95 px-5 backdrop-blur">
+        <button onClick={onBack} className="touch-target absolute start-3 inline-flex items-center justify-center rounded-full hover:bg-surface-subtle" aria-label={t('이전', 'Back', 'رجوع')}>
           <ArrowLeft className="size-5 rtl:rotate-180" />
         </button>
-        <h1 className="text-base font-bold text-soy-ink mx-auto">{t('분석 결과', 'Results', 'نتائج التحليل')}</h1>
-      </div>
+        <h1 className="mx-auto text-base font-extrabold">{t('스캔 결과', 'Scan results', 'نتائج المسح')}</h1>
+      </header>
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="px-5 pt-6 pb-5 bg-brand-green-50 border-b border-brand-green-100">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="mb-1 text-xs font-bold tracking-[0.08em] text-brand-green-700">
-                {t('SCAN COMPLETE', 'SCAN COMPLETE', 'اكتمل المسح')}
-              </p>
-              <span className="text-lg font-extrabold text-soy-ink">{t(`총 ${menuList.length}개 메뉴 인식`, `Detected ${menuList.length} items`, `تم التعرف على ${menuList.length} عناصر`)}</span>
+      <main className="flex-1 overflow-y-auto" aria-live="polite">
+        <section className="border-b border-border-warm bg-surface-raised px-5 pb-5 pt-6">
+          <p className="mb-1 text-xs font-extrabold tracking-[0.08em] text-brand-primary">{t('분석 완료', 'ANALYSIS COMPLETE', 'اكتمل التحليل')}</p>
+          <h2 className="text-[22px] font-extrabold tracking-[-0.02em]">
+            {t(`메뉴 ${menuList.length}개를 확인했어요`, `${menuList.length} menu items checked`, `تم فحص ${menuList.length} عناصر`)}
+          </h2>
+
+          <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
+            <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
+              <ShieldCheck className="size-4 text-brand-primary" aria-hidden="true" />
+              {t('적용된 내 식단 프로필', 'Applied dietary profile', 'الملف الغذائي المطبق')}
             </div>
-            <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-rice-white text-brand-green-700 shadow-sm">
-              <CheckCircle2 className="size-6" aria-hidden="true" />
-            </div>
+            {profileSummary.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {profileSummary.map((item) => <span key={item} className="rounded-md bg-surface-raised px-2 py-1 text-xs font-semibold text-text-primary">{item}</span>)}
+              </div>
+            ) : (
+              <p className="text-xs leading-5 text-text-secondary">{t('설정된 식단 조건이 없어요', 'No dietary conditions are set.', 'لا توجد شروط غذائية محددة.')}</p>
+            )}
           </div>
-        </div>
 
-        <div className="flex gap-2 overflow-x-auto px-5 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {[
-            { value: 'all', label: t('전체', 'All', 'الكل'), count: menuList.length },
-            { value: 'safe', label: t('안전', 'Safe', 'آمن'), count: safeCount },
-            { value: 'caution', label: t('주의', 'Caution', 'تنبيه'), count: cautionCount },
-            { value: 'danger', label: t('위험', 'Danger', 'خطر'), count: dangerCount },
-          ].map(({ value, label, count }) => (
+          <div className="mt-3 flex gap-2">
+            <ResultCount level="safe" count={counts.safe} label={t('안전', 'Safe', 'آمن')} />
+            <ResultCount level="caution" count={counts.caution} label={t('주의', 'Caution', 'تنبيه')} />
+            <ResultCount level="danger" count={counts.danger} label={t('위험', 'Danger', 'خطر')} />
+          </div>
+
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-border-warm px-3 py-2.5 text-xs leading-5 text-text-secondary">
+            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+            <p>{t('이 결과는 확보된 정보에 따른 안내이며 절대적인 안전을 보장하지 않아요.', 'This guidance is based on available information and is not an absolute safety guarantee.', 'تستند هذه الإرشادات إلى المعلومات المتاحة ولا تضمن السلامة بشكل مطلق.')}</p>
+          </div>
+        </section>
+
+        <nav className="sticky top-0 z-10 flex gap-2 overflow-x-auto border-b border-border-warm bg-surface-base/95 px-5 py-3 backdrop-blur [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" aria-label={t('결과 필터', 'Result filters', 'مرشحات النتائج')}>
+          {([
+            { value: 'all' as const, label: t('전체', 'All', 'الكل'), count: menuList.length },
+            { value: 'safe' as const, label: t('안전', 'Safe', 'آمن'), count: counts.safe },
+            { value: 'caution' as const, label: t('주의', 'Caution', 'تنبيه'), count: counts.caution },
+            { value: 'danger' as const, label: t('위험', 'Danger', 'خطر'), count: counts.danger },
+          ]).map((item) => (
             <button
-              key={value}
-              onClick={() => setFilter(value as FilterType)}
-              className={`min-h-10 shrink-0 px-4 py-2 rounded-full border text-sm font-bold whitespace-nowrap transition-colors ${
-                filter === value
-                  ? 'bg-brand-green-700 border-brand-green-700 text-white shadow-sm'
-                  : 'bg-rice-white border-border-warm text-sesame-gray hover:border-brand-green-500'
-              }`}
+              key={item.value}
+              onClick={() => setFilter(item.value)}
+              aria-pressed={filter === item.value}
+              className={`min-h-11 shrink-0 rounded-xl border px-3.5 text-sm font-bold ${filter === item.value ? 'border-text-primary bg-text-primary text-white' : 'border-border-warm bg-surface-raised text-text-secondary hover:border-text-tertiary'}`}
             >
-              {label} <span className="opacity-70">{count}</span>
+              {item.label} <span className="ms-1 opacity-70">{item.count}</span>
             </button>
           ))}
-        </div>
+        </nav>
 
-        <div className="px-5 pb-8 space-y-4">
-          {filteredMenus.map((menu) => (
-            <article key={menu.id} className="bg-rice-white border border-border-warm rounded-[1.5rem] overflow-hidden shadow-[0_8px_28px_rgba(54,61,57,0.07)]">
-              <div className="w-full h-44 bg-brand-green-50">
-                <MenuImage
-                  menu={menu}
-                  language={language}
-                  getMenuName={getMenuName}
-                  t={t}
-                />
-              </div>
+        <div className="space-y-4 px-4 py-5 sm:px-5">
+          {filteredMenus.map((menu) => {
+            const expanded = expandedIds.has(menu.id);
+            const translatedName = getTranslatedMenuName(menu, language);
+            const pronunciation = getMenuPronunciation(menu.menuName, language);
+            const description = getDescription(menu, language);
+            const viewModel = buildMenuResultViewModel(menu, language);
+            const curation = CURATION_ARTICLES.find((article) => article.id === viewModel.curationId);
+            const responseId = getStoredResponse(menu, 'ingredient');
+            const response = responseId ? getOwnerResponseOption('ingredient', responseId) : null;
+            const cardDetailsId = `menu-details-${menu.id}`;
 
-              <div className="p-4.5">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-lg font-extrabold tracking-[-0.015em] text-soy-ink mb-1">
-                      {getMenuName(menu)}
-                      {menu.riskLevel === 'danger' && isSpicyMenu(menu) && <span className="ms-1">🌶️</span>}
-                    </h3>
-                    {getMenuSubName(menu) && (
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-sm text-sesame-gray min-w-0 break-words">{getMenuSubName(menu)}</span>
-                        {ttsSupported && (
-                          <button
-                            onClick={() => speak(menu.menuName, 'ko-KR')}
-                            className="flex-shrink-0 size-8 rounded-full bg-brand-green-50 flex items-center justify-center text-brand-green-700 hover:bg-brand-green-100 transition-colors"
-                            aria-label={t('음성 듣기', 'Play audio', 'تشغيل الصوت')}
-                          >
-                            <Volume2 className="size-4" />
-                          </button>
-                        )}
-                      </div>
-                    )}
+            return (
+              <article key={menu.id} className={`overflow-hidden rounded-[var(--radius-card)] border border-s-4 border-border-warm bg-surface-raised shadow-[var(--shadow-card)] ${cardBorderClasses[menu.riskLevel]}`}>
+                <div className="flex gap-3 border-b border-border-warm p-3.5">
+                  <div className="size-24 shrink-0 overflow-hidden rounded-xl border border-border-warm bg-surface-subtle sm:size-28">
+                    <MenuImage menu={menu} translatedName={translatedName} t={t} />
                   </div>
-                  <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {renderRiskBadge(menu)}
-                    {menu.price && (
-                      <span className="text-sm font-bold text-soy-ink">{formatPrice(menu.price)}</span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-sm leading-relaxed text-sesame-gray mb-4">
-                  {getMenuMeaning(menu.menuName, language) && (
-                    <span className="font-bold text-soy-ink">
-                      {getMenuMeaning(menu.menuName, language)}.{' '}
-                    </span>
-                  )}
-                  {getDescription(menu)}
-                </p>
-
-                {renderRiskGuidance(menu)}
-
-                {(() => {
-                  const dietTags = getDietTags(menu);
-                  const ingredientTags = Array.from(
-                    new Set(asStringList(menu.riskReasons)
-                      .map((code) => getHitTagLabel(code, language))
-                      .filter((label): label is string => Boolean(label))
-                      .filter((label) => !HIDDEN_RISK_REASON_LABELS.has(label.trim().toLowerCase()))
-                    ),
-                  );
-                  if (dietTags.length === 0 && ingredientTags.length === 0) return null;
-                  const ingredientClass =
-                    menu.riskLevel === 'danger' ? 'bg-red-50 text-red-700' : 'bg-amber-50 text-amber-700';
-                  return (
-                    <div className="flex items-center gap-2 mb-4 flex-wrap">
-                      {dietTags.map((tag) => (
-                        <span 
-                          key={tag.key} 
-                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${tag.className}`}
-                        >
-                          {tag.key === 'spicy' ? <Flame className="w-3 h-3" /> : <AlertTriangle className="w-3 h-3" />}
-                          {translateText(language, tag.label)}
-                        </span>
-                      ))}
-                      {ingredientTags.map((label) => (
-                        <span
-                          key={`ing-${label}`}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${ingredientClass}`}
-                        >
-                          <AlertTriangle className="w-3 h-3" />
-                          {label === 'fish' ? '생선' : label}
-                        </span>
-                      ))}
+                  <div className="min-w-0 flex-1 py-0.5">
+                    <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                      <RiskBadge level={menu.riskLevel} t={t} />
+                      {menu.price && <span className="text-sm font-extrabold">{formatPrice(menu.price)}</span>}
                     </div>
-                  );
-                })()}
-
-                <div className={`grid gap-2 ${menu.riskLevel !== 'safe' || isSpicyMenu(menu) ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                  <button
-                    onClick={() => openSheet(menu, 'order')}
-                    className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${
-                      menu.riskLevel !== 'safe' || isSpicyMenu(menu) ? 'col-span-2' : ''
-                    } ${getActionButtonClasses(menu, 'order', true)}`}
-                  >
-                    {renderActionButtonLabel(menu, 'order')}
-                  </button>
-                  {menu.riskLevel !== 'safe' && (
-                    <>
-                      <button
-                        onClick={() => openSheet(menu, 'ingredient')}
-                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'ingredient')}`}
-                      >
-                        {renderActionButtonLabel(menu, 'ingredient')}
-                      </button>
-                      <button
-                        onClick={() => openSheet(menu, 'request')}
-                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'request')}`}
-                      >
-                        {renderActionButtonLabel(menu, 'request')}
-                      </button>
-                    </>
-                  )}
-                  {isSpicyMenu(menu) && (
-                    <>
-                      <button
-                        onClick={() => openSheet(menu, 'lessSpicy')}
-                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'lessSpicy')}`}
-                      >
-                        {renderActionButtonLabel(menu, 'lessSpicy')}
-                      </button>
-                      <button
-                        onClick={() => openSheet(menu, 'moreSpicy')}
-                        className={`min-h-13 rounded-2xl border px-3 py-2 text-xs font-bold transition-colors ${getActionButtonClasses(menu, 'moreSpicy')}`}
-                      >
-                        {renderActionButtonLabel(menu, 'moreSpicy')}
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-
-        {safeCount > 0 && (cautionCount + dangerCount) > 0 && (
-          <div className="px-5 pb-6">
-            <h3 className="text-sm font-bold text-soy-ink mb-3">{t('함께 찾은 안심 메뉴', 'Other suitable dishes we found', 'أطباق أخرى مناسبة وجدناها')}</h3>
-            <div className="space-y-2">
-              {menuList.filter((m) => m.riskLevel === 'safe').slice(0, 2).map((menu) => (
-                <div key={menu.id} className="p-4 bg-green-50 border border-green-200 rounded-2xl">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-green-900">{getMenuName(menu)}</span>
-                    <CheckCircle2 className="w-4 h-4 text-green-600" />
+                    <h3 className="break-words text-lg font-extrabold tracking-[-0.015em]">{menu.menuName}</h3>
+                    <p className="mt-0.5 break-words text-sm font-semibold text-text-secondary">{translatedName}</p>
+                    <div className="mt-1 flex min-h-8 items-center gap-1.5">
+                      {pronunciation && <span className="min-w-0 text-xs text-text-tertiary">{pronunciation}</span>}
+                      {ttsSupported && (
+                        <button onClick={() => speak(menu.menuName, 'ko-KR')} className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-brand-primary hover:bg-brand-primary-soft" aria-label={`${t('음성 듣기', 'Listen', 'استمع')}: ${menu.menuName}`}>
+                          <Volume2 className="size-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div className="border-t border-border-warm px-5 py-4 bg-rice-white/95 flex-shrink-0">
-        <button
-          onClick={onRescan}
-          className="w-full h-13 bg-rice-white border border-brand-green-700 text-brand-green-700 text-sm font-bold rounded-2xl hover:bg-brand-green-50 transition-colors"
-        >
-          {t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}
-        </button>
-      </div>
+                <div className="space-y-3 p-4">
+                  <StatusGuidance level={menu.riskLevel} t={t} />
+                  {viewModel.primaryReason && (
+                    <div>
+                      <p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">{t('가장 중요한 판정 이유', 'Key reason', 'السبب الرئيسي')}</p>
+                      <p className="text-sm font-semibold leading-5.5 text-text-primary">{viewModel.primaryReason}</p>
+                    </div>
+                  )}
+                  {(viewModel.ingredients.length > 0 || menu.isSpicy || menu.is_spicy) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewModel.ingredients.slice(0, 4).map((ingredient) => (
+                        <span key={ingredient.localizedName} className="rounded-lg border border-border-warm bg-surface-subtle px-2.5 py-1.5 text-xs font-bold text-text-secondary">{ingredient.localizedName}</span>
+                      ))}
+                      {(menu.isSpicy || menu.is_spicy) && <span className="inline-flex items-center gap-1 rounded-lg border border-border-warm bg-surface-subtle px-2.5 py-1.5 text-xs font-bold text-text-secondary"><Flame className="size-3" />{t('매운 음식', 'Spicy', 'حار')}</span>}
+                    </div>
+                  )}
+
+                  <div className={`grid gap-2 ${menu.riskLevel === 'safe' ? 'grid-cols-1' : 'grid-cols-2'}`}>
+                    {menu.riskLevel !== 'safe' && (
+                      <button onClick={() => openSheet(menu, 'ingredient')} className="col-span-2 min-h-12 rounded-xl bg-brand-primary px-4 py-2.5 text-sm font-extrabold text-white hover:bg-brand-primary-hover">
+                        <span className="inline-flex items-center justify-center gap-2"><MessageSquareText className="size-4" />{t('직원에게 확인하기', 'Ask staff to confirm', 'اطلب من الموظف التأكيد')}</span>
+                      </button>
+                    )}
+                    <button onClick={() => toggleExpanded(menu.id)} aria-expanded={expanded} aria-controls={cardDetailsId} className={`${menu.riskLevel === 'safe' ? '' : 'col-span-1'} min-h-11 rounded-xl border border-border-warm bg-surface-raised px-3 py-2 text-sm font-bold text-text-primary hover:bg-surface-subtle`}>
+                      <span className="inline-flex items-center justify-center gap-1.5">{expanded ? t('근거 접기', 'Hide evidence', 'إخفاء الأدلة') : t('판정 근거 보기', 'View evidence', 'عرض الأدلة')}<ChevronDown className={`size-4 transition-transform ${expanded ? 'rotate-180' : ''}`} /></span>
+                    </button>
+                    <button onClick={() => openSheet(menu, 'order')} className={`${menu.riskLevel === 'safe' ? 'bg-brand-primary text-white hover:bg-brand-primary-hover' : 'col-span-1 border border-brand-primary text-brand-primary hover:bg-brand-primary-soft'} min-h-11 rounded-xl px-3 py-2 text-sm font-bold`}>
+                      {t('주문 카드', 'Order card', 'بطاقة الطلب')}
+                    </button>
+                  </div>
+                </div>
+
+                {expanded && (
+                  <div id={cardDetailsId} className="border-t border-border-warm bg-surface-subtle/60 px-4 pb-1 pt-4">
+                    <EvidenceSection title={t('판정 이유', 'Decision reason', 'سبب القرار')} icon={<ListChecks className="size-4 text-brand-primary" />}>
+                      <p className="text-sm leading-6 text-text-secondary">{viewModel.primaryReason || t('세부 판정 이유가 아직 제공되지 않았어요.', 'A detailed reason is not available yet.', 'سبب القرار التفصيلي غير متاح بعد.')}</p>
+                    </EvidenceSection>
+
+                    <EvidenceSection title={t('내 식단 프로필 관련 항목', 'Related profile items', 'عناصر الملف ذات الصلة')}>
+                      {viewModel.profileRelatedItems.length > 0 ? (
+                        <ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.profileRelatedItems.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul>
+                      ) : (
+                        <p className="text-sm leading-6 text-text-tertiary">{t('판정에 사용된 세부 프로필 항목은 백엔드 연동 후 표시돼요.', 'Detailed profile matches will appear when supplied by the analysis API.', 'ستظهر مطابقة الملف التفصيلية عند توفيرها من واجهة التحليل.')}</p>
+                      )}
+                    </EvidenceSection>
+
+                    <EvidenceSection title={t('확인되었거나 포함 가능성이 있는 재료', 'Confirmed or possible ingredients', 'مكونات مؤكدة أو محتملة')}>
+                      {viewModel.ingredients.length > 0 ? (
+                        <div className="space-y-2">
+                          {viewModel.ingredients.map((ingredient) => (
+                            <div key={ingredient.localizedName} className="rounded-xl border border-border-warm bg-surface-raised p-3">
+                              <div className="flex flex-wrap items-center justify-between gap-2">
+                                <span className="text-sm font-extrabold">{ingredient.localizedName}</span>
+                                {ingredient.confidence && <ConfidenceBadge confidence={ingredient.confidence} language={language} />}
+                              </div>
+                              {ingredient.inclusionLikelihood && <p className="mt-2 text-xs text-text-secondary">{t('포함 가능성', 'Likelihood of inclusion', 'احتمال الاحتواء')}: <strong>{localizeMenuText(LIKELIHOOD_LABELS[ingredient.inclusionLikelihood], language)}</strong></p>}
+                              {ingredient.staffEvidence?.checkedCount !== undefined && ingredient.staffEvidence?.usedCount !== undefined && (
+                                <p className="mt-1 text-xs text-text-secondary">{t('직원 확인 기록', 'Staff records', 'سجلات الموظفين')}: {t(`확인된 ${ingredient.staffEvidence.checkedCount}건 중 ${ingredient.staffEvidence.usedCount}건에서 사용됐어요`, `Used in ${ingredient.staffEvidence.usedCount} of ${ingredient.staffEvidence.checkedCount} confirmed records`, `استُخدم في ${ingredient.staffEvidence.usedCount} من أصل ${ingredient.staffEvidence.checkedCount} سجلاً مؤكداً`)}</p>
+                              )}
+                              {ingredient.staffEvidence?.sampleSufficient === false && <p className="mt-1 text-xs font-semibold text-status-caution-text">{t('아직 확인 기록이 충분하지 않아요', 'There are not enough confirmation records yet.', 'لا توجد سجلات تأكيد كافية بعد.')}</p>}
+                              {ingredient.sourcesConflict && <p className="mt-1 text-xs font-semibold text-status-caution-text">{t('재료 정보가 서로 달라 직원 확인이 필요해요', 'Ingredient sources conflict, so staff confirmation is needed.', 'تتعارض معلومات المكونات، لذا يلزم تأكيد الموظف.')}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      ) : <p className="text-sm text-text-tertiary">{t('표시할 재료 정보가 없어요.', 'No ingredient details are available.', 'لا تتوفر تفاصيل عن المكونات.')}</p>}
+                    </EvidenceSection>
+
+                    {viewModel.hiddenIngredientPaths.length > 0 && (
+                      <EvidenceSection title={t('숨은 재료 추론 경로', 'Hidden ingredient path', 'مسار المكونات المخفية')}>
+                        <div className="space-y-2">{viewModel.hiddenIngredientPaths.map((path) => <div key={path.join('-')} className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border-warm bg-surface-raised p-3 text-sm font-semibold">{path.map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-1.5"><span>{item}</span>{index < path.length - 1 && <ChevronRight className="size-4 text-text-tertiary rtl:rotate-180" />}</span>)}</div>)}</div>
+                      </EvidenceSection>
+                    )}
+
+                    {viewModel.sources.length > 0 && (
+                      <EvidenceSection title={t('근거와 출처', 'Evidence and sources', 'الأدلة والمصادر')}>
+                        <div className="space-y-2">{viewModel.sources.map((source, index) => <div key={`${source.type}-${index}`} className="flex min-h-11 items-center justify-between gap-2 rounded-xl border border-border-warm bg-surface-raised px-3 py-2"><span className="text-sm font-semibold">{source.label}</span>{source.confidence && <span className="text-xs text-text-tertiary">{t('근거 수준', 'Evidence level', 'مستوى الدليل')}: {localizeMenuText(CONFIDENCE_LABELS[source.confidence], language)}</span>}</div>)}</div>
+                      </EvidenceSection>
+                    )}
+
+                    <EvidenceSection title={t('추가 확인이 필요한 정보', 'Information to verify', 'معلومات تحتاج إلى تحقق')} icon={<CircleHelp className="size-4 text-status-caution" />}>
+                      {viewModel.uncertainties.length > 0 ? <ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.uncertainties.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul> : <p className="text-sm leading-6 text-text-tertiary">{t('현재 API에서 별도의 불확실성 정보는 제공되지 않았어요.', 'The current API did not provide separate uncertainty details.', 'لم توفر الواجهة الحالية تفاصيل منفصلة عن عدم اليقين.')}</p>}
+                    </EvidenceSection>
+
+                    <EvidenceSection title={t('직원 소통 카드', 'Staff communication card', 'بطاقة التواصل مع الموظف')} icon={<MessageSquareText className="size-4 text-brand-primary" />}>
+                      {response ? (
+                        <div className="mb-2 rounded-xl border border-status-safe-border bg-status-safe-surface p-3 text-sm text-status-safe-text">
+                          <p className="font-extrabold">{translateText(language, response.label)}</p>
+                          <p className="mt-1 text-xs leading-5">{t('이번 응답은 향후 재료 가능성 계산을 개선하는 데 활용돼요.', 'This response helps improve future ingredient likelihood estimates.', 'تساعد هذه الإجابة في تحسين تقديرات احتمال المكونات مستقبلاً.')}</p>
+                        </div>
+                      ) : null}
+                      <div className="grid grid-cols-2 gap-2">
+                        <button onClick={() => openSheet(menu, 'ingredient')} className="col-span-2 min-h-11 rounded-xl bg-brand-primary px-3 py-2 text-sm font-extrabold text-white hover:bg-brand-primary-hover">{t('직원에게 재료 확인하기', 'Ask staff about ingredients', 'اسأل الموظف عن المكونات')}</button>
+                        {menu.riskLevel !== 'safe' && <button onClick={() => openSheet(menu, 'request')} className="min-h-11 rounded-xl border border-border-warm bg-surface-raised px-3 py-2 text-sm font-bold hover:bg-surface-interactive">{t('빼고 요청', 'Request removal', 'طلب الإزالة')}</button>}
+                        {(menu.isSpicy || menu.is_spicy) && <button onClick={() => openSheet(menu, 'lessSpicy')} className="min-h-11 rounded-xl border border-border-warm bg-surface-raised px-3 py-2 text-sm font-bold hover:bg-surface-interactive">{t('덜 맵게 요청', 'Less spicy', 'أقل حدة')}</button>}
+                      </div>
+                    </EvidenceSection>
+
+                    {curation && (
+                      <EvidenceSection title={t('이 음식 더 알아보기', 'Learn more about this food', 'اعرف المزيد عن هذا الطعام')} icon={<Sparkles className="size-4 text-brand-accent" />}>
+                        <button onClick={() => navigate(`/curation/${curation.id}`)} className="flex w-full items-center gap-3 rounded-xl border border-border-warm bg-surface-raised p-3 text-start hover:border-brand-accent">
+                          <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-brand-accent-soft text-xl" aria-hidden="true">{curation.emoji}</span>
+                          <span className="min-w-0 flex-1"><span className="block text-sm font-extrabold">{translateText(language, curation.title)}</span><span className="mt-0.5 block text-xs leading-5 text-text-secondary">{translateText(language, curation.excerpt)}</span></span>
+                          <ExternalLink className="size-4 shrink-0 text-text-tertiary" />
+                        </button>
+                      </EvidenceSection>
+                    )}
+
+                    {description && <p className="border-t border-border-warm py-4 text-sm leading-6 text-text-secondary"><strong className="text-text-primary">{getMenuMeaning(menu.menuName, language) || translatedName}</strong>{' · '}{description}</p>}
+                  </div>
+                )}
+              </article>
+            );
+          })}
+
+          {filteredMenus.length === 0 && (
+            <div className="flex flex-col items-center rounded-[var(--radius-card)] border border-border-warm bg-surface-raised px-5 py-12 text-center">
+              <SearchX className="mb-3 size-8 text-text-tertiary" aria-hidden="true" />
+              <p className="font-extrabold">{menuList.length === 0 ? t('분석된 메뉴가 없어요', 'No analyzed menu items', 'لا توجد عناصر محللة') : t('이 상태의 메뉴가 없어요', 'No items match this filter', 'لا توجد عناصر بهذا التصنيف')}</p>
+              <p className="mt-1 text-sm text-text-secondary">{t('다른 필터를 선택하거나 다시 스캔해 주세요.', 'Choose another filter or scan again.', 'اختر مرشحًا آخر أو أعد المسح.')}</p>
+            </div>
+          )}
+        </div>
+      </main>
+
+      <footer className="shrink-0 border-t border-border-warm bg-surface-raised/95 px-5 py-3 backdrop-blur">
+        <button onClick={onRescan} className="min-h-11 w-full rounded-xl border border-brand-primary bg-surface-raised px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-primary-soft">{t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}</button>
+      </footer>
 
       {sheetType && selectedMenu && (
         <OwnerCommunicationSheet

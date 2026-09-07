@@ -260,7 +260,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
 
       <div className="flex-1 overflow-y-auto px-5 pb-10 pt-7">
         <div className="mb-6">
-          <div className="mb-3 inline-flex items-center rounded-full bg-brand-orange-100 px-3 py-1.5 text-xs font-bold text-[#873b17]">
+          <div className="mb-3 inline-flex items-center rounded-full bg-brand-accent-soft px-3 py-1.5 text-xs font-bold text-accent-foreground">
             {t('메뉴판 스캔', 'Menu scan', 'مسح القائمة')}
           </div>
           <h2 className="text-[26px] font-extrabold leading-[1.3] tracking-[-0.02em] text-soy-ink">
@@ -290,7 +290,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
 
         <div className="mb-4 rounded-[28px] border border-border-warm bg-rice-white p-3 shadow-[0_12px_36px_rgba(54,70,60,0.08)]">
           {selectedImage ? (
-            <div className="overflow-hidden rounded-[20px] border border-brand-green-100 bg-brand-green-50">
+            <div className="overflow-hidden rounded-[var(--radius-control)] border border-border-warm bg-surface-subtle">
               <img src={selectedImage.previewUrl} alt={t('선택한 메뉴판 미리보기', 'Selected menu preview', 'معاينة قائمة الطعام المحددة')} className="w-full h-64 object-cover" />
             </div>
           ) : cameraStream ? (
@@ -314,10 +314,10 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
             <button
               onClick={handleCameraClick}
               disabled={isStartingCamera}
-              className="w-full h-52 bg-brand-green-50/70 border-2 border-dashed border-brand-green-500/40 rounded-[20px] flex flex-col items-center justify-center gap-4 hover:bg-brand-green-50 hover:border-brand-green-500 transition-colors disabled:opacity-60"
+              className="flex h-52 w-full flex-col items-center justify-center gap-4 rounded-[var(--radius-control)] border-2 border-dashed border-border-warm bg-surface-subtle hover:border-brand-primary hover:bg-surface-interactive disabled:opacity-60"
             >
-              <div className="w-16 h-16 bg-brand-orange-500 rounded-[22px] flex items-center justify-center shadow-[0_10px_24px_rgba(244,119,59,0.25)] rotate-[-3deg]">
-                <Camera className="w-7 h-7 text-white rotate-[3deg]" />
+              <div className="flex size-14 rotate-[-3deg] items-center justify-center rounded-2xl bg-brand-primary shadow-[0_10px_24px_rgba(23,100,73,0.18)]">
+                <Camera className="size-6 rotate-[3deg] text-white" />
               </div>
               <span className="text-base font-bold text-brand-green-900">
                 {isStartingCamera ? t('카메라 여는 중', 'Opening camera', 'جار فتح الكاميرا') : t('메뉴판 촬영하기', 'Take a menu photo', 'التقط صورة للقائمة')}
@@ -393,7 +393,7 @@ export function HomeScreen({ language, onScan, onHistory, onMyPage, history, onD
           <button
             onClick={handleAnalyze}
             disabled={isUploading}
-            className="w-full h-14 bg-brand-green-700 text-white rounded-2xl font-bold hover:bg-brand-green-900 transition-colors mb-8 disabled:bg-[#b9c5be] disabled:cursor-not-allowed shadow-[0_10px_24px_rgba(23,107,77,0.18)]"
+            className="mb-8 min-h-12 w-full rounded-xl bg-brand-primary font-bold text-white shadow-[0_10px_24px_rgba(23,100,73,0.16)] hover:bg-brand-primary-hover disabled:cursor-not-allowed disabled:bg-surface-interactive disabled:text-text-tertiary"
           >
             {isUploading
               ? t('이미지 업로드 중', 'Uploading image', 'جار رفع الصورة')

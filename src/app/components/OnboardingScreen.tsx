@@ -173,7 +173,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
           aria-valuenow={step}
         >
           <div
-            className="h-full rounded-e-full bg-brand-orange-500 transition-all duration-300"
+            className="h-full rounded-e-full bg-brand-primary transition-all duration-200"
             style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
           />
         </div>
@@ -261,7 +261,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
         {/* Step 3 — 식단 프로필 */}
         {step === 3 && (
           <div className="space-y-3">
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${isFirstTime ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${isFirstTime ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={isFirstTime}
@@ -271,7 +271,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
               <span className="text-sm font-semibold text-soy-ink">{t('한국 음식 처음', 'New to Korean food', 'أول مرة مع الطعام الكوري')}</span>
             </label>
 
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${noSpicy ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${noSpicy ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={noSpicy}
@@ -281,7 +281,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
               <span className="text-sm font-semibold text-soy-ink">{t('매운 음식 비선호', 'Avoid spicy food', 'تجنب الطعام الحار')}</span>
             </label>
 
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${isVegan ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${isVegan ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={isVegan}
@@ -292,7 +292,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
             </label>
 
             {isVegan && (
-              <div className="space-y-3 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
+              <div className="space-y-3 rounded-xl border border-border-warm bg-surface-subtle p-4">
                 {VEGETARIAN_OPTIONS.map((option) => (
                   <label key={option.value} className="flex items-start gap-3 cursor-pointer">
                     <input
@@ -308,7 +308,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
               </div>
             )}
 
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${hasReligion ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${hasReligion ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={hasReligion}
@@ -319,7 +319,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
             </label>
 
             {hasReligion && (
-              <div className="space-y-3 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
+              <div className="space-y-3 rounded-xl border border-border-warm bg-surface-subtle p-4">
                 {RELIGION_OPTIONS.map((option) => (
                   <label key={option.value} className="flex items-start gap-3 cursor-pointer">
                     <input
@@ -335,7 +335,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
               </div>
             )}
 
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${hasAllergies ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${hasAllergies ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={hasAllergies}
@@ -346,7 +346,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
             </label>
 
             {hasAllergies && (
-              <div className="flex flex-wrap gap-2 rounded-2xl border border-brand-green-100 bg-brand-green-50 p-4">
+              <div className="flex flex-wrap gap-2 rounded-xl border border-border-warm bg-surface-subtle p-4">
                 {ALLERGY_OPTIONS.map((allergy) => (
                   <button
                     key={allergy.value}
@@ -364,7 +364,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
               </div>
             )}
 
-            <label className={`flex min-h-15 items-start gap-3 p-4 rounded-2xl border cursor-pointer transition-colors ${noAlcohol ? 'border-brand-green-500 bg-brand-green-50' : 'border-border-warm bg-rice-white hover:border-brand-green-500'}`}>
+            <label className={`flex min-h-15 cursor-pointer items-start gap-3 rounded-xl border p-4 transition-colors ${noAlcohol ? 'border-brand-primary bg-surface-subtle' : 'border-border-warm bg-surface-raised hover:border-brand-primary'}`}>
               <input
                 type="checkbox"
                 checked={noAlcohol}

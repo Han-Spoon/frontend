@@ -13,6 +13,7 @@ import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } f
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
 import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, type Language } from './locales';
+import { DevResultsPreview } from './components/DevResultsPreview';
 
 export type { Language } from './locales';
 
@@ -41,6 +42,57 @@ export interface UserProfile {
   noAlcohol: boolean;
 }
 
+export interface LocalizedMenuText {
+  ko: string;
+  en?: string;
+  ar?: string;
+  'zh-CN'?: string;
+  ja?: string;
+  'zh-TW'?: string;
+  es?: string;
+}
+
+export type EvidenceConfidence = 'high' | 'medium' | 'limited';
+export type EvidenceSourceType =
+  | 'menu-description'
+  | 'menu-context'
+  | 'trusted-cooking'
+  | 'web'
+  | 'staff';
+
+export interface MenuIngredientEvidence {
+  name: LocalizedMenuText;
+  /** 백엔드가 제공할 때만 노출한다. 프런트에서는 확률을 계산하지 않는다. */
+  inclusionLikelihood?: 'high' | 'medium' | 'low';
+  confidence?: EvidenceConfidence;
+  staffEvidence?: {
+    usedCount?: number;
+    checkedCount?: number;
+    sampleSufficient?: boolean;
+  };
+  sourcesConflict?: boolean;
+}
+
+export interface MenuEvidenceSource {
+  type: EvidenceSourceType;
+  title?: LocalizedMenuText;
+  confidence?: EvidenceConfidence;
+}
+
+/**
+ * 향후 백엔드 XAI 응답을 화면에 연결하기 위한 optional ViewModel 입력이다.
+ * 현재 API 필드는 그대로 유지하며, 값이 없으면 결과 화면이 자연스럽게 축약된다.
+ */
+export interface MenuExplainability {
+  decisionReason?: LocalizedMenuText;
+  profileRelatedItems?: LocalizedMenuText[];
+  ingredients?: MenuIngredientEvidence[];
+  hiddenIngredientPaths?: LocalizedMenuText[][];
+  sources?: MenuEvidenceSource[];
+  uncertainties?: LocalizedMenuText[];
+  curationId?: string;
+}
+
 export interface MenuAnalysis {
   id: string;
   image?: string;
@@ -59,6 +111,7 @@ export interface MenuAnalysis {
   is_spicy?: boolean;
   isAlcohol?: boolean;
   is_alcohol?: boolean;
+  explainability?: MenuExplainability;
 }
 
 export interface PendingMenuImage {
@@ -360,6 +413,12 @@ export default function App() {
               />
             }
           />
+          {import.meta.env.DEV && (
+            <Route
+              path="/dev/results-preview"
+              element={<DevResultsPreview fallbackLanguage={language} />}
+            />
+          )}
           <Route
             path="/mypage"
             element={

@@ -35,6 +35,50 @@ const PROVISIONAL_TRANSLATIONS: Record<string, ProvisionalTranslation> = {
   'Google ID Token을 받지 못했습니다.': { 'zh-CN': '未能获取 Google ID 令牌。', ja: 'Google IDトークンを取得できませんでした。', 'zh-TW': '無法取得 Google ID 權杖。', es: 'No se pudo obtener el token de ID de Google.' },
   'Google 로그인에 실패했습니다.': { 'zh-CN': 'Google 登录失败。', ja: 'Googleログインに失敗しました。', 'zh-TW': 'Google 登入失敗。', es: 'No se pudo iniciar sesión con Google.' },
   'SCAN COMPLETE': { 'zh-CN': '扫描完成', ja: 'スキャン完了', 'zh-TW': '掃描完成', es: 'ESCANEO COMPLETADO' },
+  '스캔 결과': { 'zh-CN': '扫描结果', ja: 'スキャン結果', 'zh-TW': '掃描結果', es: 'Resultados del escaneo' },
+  '분석 완료': { 'zh-CN': '分析完成', ja: '分析完了', 'zh-TW': '分析完成', es: 'ANÁLISIS COMPLETADO' },
+  '적용된 내 식단 프로필': { 'zh-CN': '已应用的饮食档案', ja: '適用中の食事プロフィール', 'zh-TW': '已套用的飲食檔案', es: 'Perfil alimentario aplicado' },
+  '설정된 식단 조건이 없어요': { 'zh-CN': '尚未设置饮食条件', ja: '食事条件は設定されていません', 'zh-TW': '尚未設定飲食條件', es: 'No hay condiciones alimentarias configuradas' },
+  '이 결과는 확보된 정보에 따른 안내이며 절대적인 안전을 보장하지 않아요.': { 'zh-CN': '此结果基于现有信息，并不构成绝对安全保证。', ja: 'この結果は確認できた情報に基づく案内で、絶対的な安全を保証するものではありません。', 'zh-TW': '此結果依據現有資訊，並不構成絕對安全保證。', es: 'Esta orientación se basa en la información disponible y no garantiza una seguridad absoluta.' },
+  '결과 필터': { 'zh-CN': '结果筛选', ja: '結果フィルター', 'zh-TW': '結果篩選', es: 'Filtros de resultados' },
+  '가장 중요한 판정 이유': { 'zh-CN': '主要判断理由', ja: '主な判定理由', 'zh-TW': '主要判斷理由', es: 'Motivo principal' },
+  '직원에게 확인하기': { 'zh-CN': '向员工确认', ja: 'スタッフに確認する', 'zh-TW': '向員工確認', es: 'Confirmar con el personal' },
+  '판정 근거 보기': { 'zh-CN': '查看判断依据', ja: '判定根拠を見る', 'zh-TW': '查看判斷依據', es: 'Ver los fundamentos' },
+  '근거 접기': { 'zh-CN': '收起依据', ja: '根拠を閉じる', 'zh-TW': '收合依據', es: 'Ocultar fundamentos' },
+  '잘 모르겠어요': { 'zh-CN': '不太清楚', ja: 'よく分かりません', 'zh-TW': '不太清楚', es: 'No estoy seguro/a' },
+  '이번 응답은 향후 재료 가능성 계산을 개선하는 데 활용돼요.': { 'zh-CN': '此回答将用于改进今后的食材可能性估算。', ja: 'この回答は今後の食材可能性の推定改善に活用されます。', 'zh-TW': '此回答將用於改善日後的食材可能性估算。', es: 'Esta respuesta ayudará a mejorar futuras estimaciones sobre los ingredientes.' },
+  '메뉴 이름과 설명을 읽고 있어요': { 'zh-CN': '正在读取菜名和说明', ja: 'メニュー名と説明を読み取っています', 'zh-TW': '正在讀取菜名與說明', es: 'Leyendo los nombres y las descripciones' },
+  '조리법과 재료 정보를 찾고 있어요': { 'zh-CN': '正在查找做法和食材信息', ja: '調理法と食材情報を探しています', 'zh-TW': '正在查找做法與食材資訊', es: 'Buscando información sobre la preparación y los ingredientes' },
+  '육수와 소스 속 숨은 재료도 확인하고 있어요': { 'zh-CN': '正在检查汤底和酱汁中的隐藏食材', ja: 'だしやソースに含まれる隠れた食材も確認しています', 'zh-TW': '正在檢查湯底與醬汁中的隱藏食材', es: 'Comprobando ingredientes ocultos en caldos y salsas' },
+  '내 식단 기준과 비교하고 있어요': { 'zh-CN': '正在与我的饮食标准比较', ja: '食事条件と照合しています', 'zh-TW': '正在與我的飲食標準比較', es: 'Comparando con mi perfil alimentario' },
+  '분석 과정 자세히 보기': { 'zh-CN': '查看分析过程', ja: '分析の流れを詳しく見る', 'zh-TW': '查看分析過程', es: 'Ver cómo funciona el análisis' },
+  '필요한 정보를 차근차근 확인하고 있어요': { 'zh-CN': '正在逐步核对所需信息', ja: '必要な情報を順番に確認しています', 'zh-TW': '正在逐步確認所需資訊', es: 'Estamos comprobando la información paso a paso' },
+  '실제 완료 시점은 분석 결과가 준비되면 알려드려요.': { 'zh-CN': '分析结果准备好后，我们会通知你。', ja: '分析結果の準備ができたらお知らせします。', 'zh-TW': '分析結果準備好後，我們會通知你。', es: 'Te avisaremos cuando el resultado esté listo.' },
+  '기술을 쉬운 말로 설명해요': { 'zh-CN': '用简单的话说明分析过程', ja: '分析技術をやさしく説明します', 'zh-TW': '用簡單的話說明分析過程', es: 'Así funciona, explicado de forma sencilla' },
+  'OCR로 글자를 읽고 메뉴판 문맥을 살핀 뒤, 조리 정보와 검색 근거를 모아 육수·소스의 구성 재료까지 확인해요. 마지막으로 기존 직원 응답 기록과 내 식단 프로필을 비교해 결과를 정리합니다.': { 'zh-CN': '我们先用 OCR 读取文字并理解菜单语境，再结合烹饪资料和搜索依据，检查汤底与酱汁中的组成食材。最后与员工确认记录和你的饮食档案对照，整理结果。', ja: 'OCRで文字を読み、メニューの文脈を確認します。調理情報や検索根拠を集め、だしやソースの構成食材まで調べたうえで、スタッフの確認記録と食事プロフィールを照合して結果をまとめます。', 'zh-TW': '我們先用 OCR 讀取文字並理解菜單脈絡，再結合烹調資料與搜尋依據，確認湯底與醬汁中的組成食材。最後與員工確認紀錄及你的飲食檔案比對，整理結果。', es: 'Primero leemos el texto con OCR y entendemos el contexto del menú. Después reunimos referencias de cocina y búsqueda para revisar incluso los ingredientes de caldos y salsas. Por último, comparamos los registros del personal con tu perfil alimentario.' },
+  '현재 백엔드는 세부 단계별 진행 상태를 제공하지 않아 가짜 퍼센트는 표시하지 않아요.': { 'zh-CN': '当前服务器不提供各阶段的实时进度，因此不会显示虚假的百分比。', ja: '現在のバックエンドは各段階の進行状況を提供していないため、推測のパーセントは表示しません。', 'zh-TW': '目前後端未提供各階段的即時進度，因此不會顯示虛假的百分比。', es: 'El servidor todavía no informa del progreso de cada etapa, así que no mostramos porcentajes estimados.' },
+  '판정 이유': { 'zh-CN': '判断理由', ja: '判定理由', 'zh-TW': '判斷理由', es: 'Motivo de la decisión' },
+  '내 식단 프로필 관련 항목': { 'zh-CN': '与我的饮食档案相关', ja: '食事プロフィールとの関連項目', 'zh-TW': '與我的飲食檔案相關', es: 'Elementos relacionados con mi perfil' },
+  '확인되었거나 포함 가능성이 있는 재료': { 'zh-CN': '已确认或可能包含的食材', ja: '確認済み・含まれる可能性のある食材', 'zh-TW': '已確認或可能包含的食材', es: 'Ingredientes confirmados o posibles' },
+  '숨은 재료 추론 경로': { 'zh-CN': '隐藏食材的判断路径', ja: '隠れた食材の推定経路', 'zh-TW': '隱藏食材的判斷路徑', es: 'Ruta de ingredientes ocultos' },
+  '근거와 출처': { 'zh-CN': '依据与来源', ja: '根拠と情報源', 'zh-TW': '依據與來源', es: 'Evidencias y fuentes' },
+  '추가 확인이 필요한 정보': { 'zh-CN': '需要进一步确认的信息', ja: '追加確認が必要な情報', 'zh-TW': '需要進一步確認的資訊', es: 'Información que conviene verificar' },
+  '직원 소통 카드': { 'zh-CN': '员工沟通卡', ja: 'スタッフとのコミュニケーションカード', 'zh-TW': '員工溝通卡', es: 'Tarjeta para hablar con el personal' },
+  '이 음식 더 알아보기': { 'zh-CN': '进一步了解这道菜', ja: 'この料理をもっと知る', 'zh-TW': '進一步了解這道菜', es: 'Descubre más sobre este plato' },
+  '참고 이미지 없음': { 'zh-CN': '暂无参考图片', ja: '参考画像はありません', 'zh-TW': '暫無參考圖片', es: 'Sin imagen de referencia' },
+  '근거 수준': { 'zh-CN': '依据等级', ja: '根拠レベル', 'zh-TW': '依據等級', es: 'Nivel de evidencia' },
+  '포함 가능성': { 'zh-CN': '包含可能性', ja: '含まれる可能性', 'zh-TW': '包含可能性', es: 'Probabilidad de inclusión' },
+  '직원 확인 기록': { 'zh-CN': '员工确认记录', ja: 'スタッフ確認記録', 'zh-TW': '員工確認紀錄', es: 'Registros del personal' },
+  '직원에게 재료 확인하기': { 'zh-CN': '向员工确认食材', ja: 'スタッフに食材を確認する', 'zh-TW': '向員工確認食材', es: 'Preguntar al personal por los ingredientes' },
+  '표시할 재료 정보가 없어요.': { 'zh-CN': '没有可显示的食材信息。', ja: '表示できる食材情報はありません。', 'zh-TW': '沒有可顯示的食材資訊。', es: 'No hay información de ingredientes disponible.' },
+  '세부 판정 이유가 아직 제공되지 않았어요.': { 'zh-CN': '尚未提供详细的判断理由。', ja: '詳しい判定理由はまだ提供されていません。', 'zh-TW': '尚未提供詳細的判斷理由。', es: 'Todavía no hay un motivo detallado disponible.' },
+  '판정에 사용된 세부 프로필 항목은 백엔드 연동 후 표시돼요.': { 'zh-CN': '分析接口提供后，将显示使用到的详细档案项目。', ja: '分析APIから提供されると、判定に使われた詳しいプロフィール項目が表示されます。', 'zh-TW': '分析介面提供後，將顯示使用到的詳細檔案項目。', es: 'Los detalles del perfil aparecerán cuando los proporcione la API de análisis.' },
+  '현재 API에서 별도의 불확실성 정보는 제공되지 않았어요.': { 'zh-CN': '当前接口未提供单独的不确定性信息。', ja: '現在のAPIからは不確実性に関する個別情報は提供されていません。', 'zh-TW': '目前介面未提供獨立的不確定性資訊。', es: 'La API actual no ha proporcionado detalles separados sobre incertidumbre.' },
+  '분석된 메뉴가 없어요': { 'zh-CN': '没有已分析的菜品', ja: '分析済みのメニューはありません', 'zh-TW': '沒有已分析的餐點', es: 'No hay platos analizados' },
+  '이 상태의 메뉴가 없어요': { 'zh-CN': '没有符合此状态的菜品', ja: 'この状態に該当するメニューはありません', 'zh-TW': '沒有符合此狀態的餐點', es: 'No hay platos con este estado' },
+  '다른 필터를 선택하거나 다시 스캔해 주세요.': { 'zh-CN': '请选择其他筛选条件或重新扫描。', ja: '別のフィルターを選ぶか、もう一度スキャンしてください。', 'zh-TW': '請選擇其他篩選條件或重新掃描。', es: 'Elige otro filtro o vuelve a escanear.' },
+  '아직 확인 기록이 충분하지 않아요': { 'zh-CN': '确认记录还不够充分', ja: '確認記録がまだ十分ではありません', 'zh-TW': '確認紀錄還不夠充分', es: 'Aún no hay suficientes registros de confirmación' },
+  '재료 정보가 서로 달라 직원 확인이 필요해요': { 'zh-CN': '食材信息存在冲突，需要向员工确认', ja: '食材情報が一致しないため、スタッフへの確認が必要です', 'zh-TW': '食材資訊存在衝突，需要向員工確認', es: 'Las fuentes discrepan; conviene confirmarlo con el personal' },
   '가이드라인에 맞춰 촬영해주세요': { 'zh-CN': '请按照拍摄指南重新拍摄。', ja: 'ガイドに沿って撮影してください。', 'zh-TW': '請依照拍攝指南重新拍攝。', es: 'Haz la foto siguiendo la guía.' },
   '같은 식당 내 안전 메뉴': { 'zh-CN': '这家餐厅的其他安心菜单', ja: 'このお店のほかの安心メニュー', 'zh-TW': '這家餐廳的其他安心餐點', es: 'Otros platos adecuados del restaurante' },
   '개인정보와 식단 정보가 안전하게 저장됩니다': { 'zh-CN': '你的个人信息和饮食信息将被安全保存', ja: '個人情報と食事情報は安全に保存されます', 'zh-TW': '你的個人資訊與飲食資訊將安全保存', es: 'Tu información personal y alimentaria se guarda de forma segura' },
@@ -211,7 +255,7 @@ const PROVISIONAL_TRANSLATIONS: Record<string, ProvisionalTranslation> = {
   '락토 오보 주의': { 'zh-CN': '蛋奶素饮食注意', ja: 'ラクト・オボ要確認', 'zh-TW': '蛋奶素飲食注意', es: 'Precaución ovolactovegetariana' },
   '페스코 주의': { 'zh-CN': '鱼素饮食注意', ja: 'ペスカタリアン要確認', 'zh-TW': '魚素飲食注意', es: 'Precaución pescetariana' },
   '선택된 메뉴': { 'zh-CN': '所选菜品', ja: '選択したメニュー', 'zh-TW': '所選餐點', es: 'Plato seleccionado' },
-  '사장님 응답': { 'zh-CN': '店员回复', ja: 'お店の回答', 'zh-TW': '店員回覆', es: 'Respuesta del personal' },
+  '직원 응답': { 'zh-CN': '员工回复', ja: 'スタッフの回答', 'zh-TW': '員工回覆', es: 'Respuesta del personal' },
   '저장되었습니다': { 'zh-CN': '已保存', ja: '保存しました', 'zh-TW': '已儲存', es: 'Guardado' },
   '자주 쓰는 카드로 저장': { 'zh-CN': '保存为常用卡片', ja: 'よく使うカードに保存', 'zh-TW': '儲存為常用卡片', es: 'Guardar como tarjeta frecuente' },
   '네, 주문 받았습니다': { 'zh-CN': '好的，已为您下单', ja: 'はい、ご注文を承りました', 'zh-TW': '好的，已為您下單', es: 'Sí, hemos tomado su pedido' },
@@ -275,6 +319,11 @@ const interpolateDynamicText = (language: Language, ko: string): string | undefi
   const analyzedCount = ko.match(/^메뉴 (\d+)개 분석$/)?.[1];
   if (analyzedCount) {
     return ({ 'zh-CN': `已分析 ${analyzedCount} 个菜品`, ja: `${analyzedCount}件のメニューを分析`, 'zh-TW': `已分析 ${analyzedCount} 個餐點`, es: `${analyzedCount} platos analizados` } as Record<NewLanguage, string>)[language];
+  }
+
+  const checkedCount = ko.match(/^메뉴 (\d+)개를 확인했어요$/)?.[1];
+  if (checkedCount) {
+    return ({ 'zh-CN': `已检查 ${checkedCount} 个菜品`, ja: `${checkedCount}件のメニューを確認しました`, 'zh-TW': `已檢查 ${checkedCount} 個餐點`, es: `Se comprobaron ${checkedCount} platos` } as Record<NewLanguage, string>)[language];
   }
 
   const slide = ko.match(/^슬라이드 (\d+)$/)?.[1];

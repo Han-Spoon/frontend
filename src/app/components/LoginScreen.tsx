@@ -92,7 +92,7 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
 
       <main className="flex-1 overflow-y-auto px-6 pb-5 pt-12">
         <section>
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-orange-100 px-3 py-1.5 text-xs font-bold text-[#873b17]">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-brand-accent-soft px-3 py-1.5 text-xs font-bold text-accent-foreground">
             <ShieldCheck className="h-4 w-4" aria-hidden="true" />
             {t('나에게 맞는 한국 음식 찾기', 'Find Korean food that fits you', 'اعثر على الطعام الكوري المناسب لك')}
           </div>
@@ -130,7 +130,7 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-brand-orange-100 text-[#a34b20]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-brand-accent">
                 <ShieldCheck className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
@@ -140,7 +140,7 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#eaf2fb] text-[#3478b8]">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-subtle text-brand-primary">
                 <MessageCircleHeart className="h-5 w-5" aria-hidden="true" />
               </div>
               <div>
