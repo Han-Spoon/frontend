@@ -34,6 +34,11 @@ textarea:focus-visible {
   outline-offset: 2px;
 }
 
+label:has(input:focus-visible) {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
 button,
 a,
 input,
@@ -52,6 +57,13 @@ textarea {
 .touch-target {
   min-width: var(--control-height);
   min-height: var(--control-height);
+}
+
+.eyebrow {
+  color: var(--brand-primary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .16em;
 }
 
 @media (prefers-reduced-motion: reduce) {

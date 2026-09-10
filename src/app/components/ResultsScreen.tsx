@@ -5,22 +5,27 @@ import {
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  ExternalLink,
   Flame,
   Info,
   MessageSquareText,
   SearchX,
   ShieldCheck,
-  Sparkles,
   Volume2,
+  Heart,
+  Bookmark,
+  MapPin,
 } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../App';
-import { createTranslator, LANGUAGE_LOCALES, translateText } from '../locales';
+import { createTranslator, translateText } from '../locales';
 import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
 import { getMenuPronunciation } from '../constants/menuNames';
 import { CURATION_ARTICLES } from '../constants/curation';
 import { speak, ttsSupported } from '../utils/speech';
+import { menuPrice } from '../demo/currency';
+import { useDemoValue } from '../demo/storage';
+import { RESTAURANTS } from '../demo/restaurants';
+import { SaveScanSheet } from './results/SaveScanSheet';
 import {
   OwnerCommunicationSheet,
   type OwnerCommunicationType,
@@ -34,7 +39,7 @@ import {
   CONFIDENCE_LABELS,
   getProfileCommunicationItems,
   getProfileSummary,
-  LIKELIHOOD_LABELS,
+  getCautionProbabilities,
   localizeMenuText,
 } from '../results/resultViewModel';
 
@@ -44,6 +49,8 @@ interface ResultsScreenProps {
   userProfile: UserProfile | null;
   onBack: () => void;
   onRescan: () => void;
+  sourceScanId?: string;
+  savedRecordId?: string;
 }
 
 interface MenuImageProps {
@@ -109,7 +116,7 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   );
 }
 
-export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }: ResultsScreenProps) {
+export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId }: ResultsScreenProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -117,6 +124,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
   const [sheetType, setSheetType] = useState<OwnerCommunicationType | null>(null);
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
+  const [likedMenus, setLikedMenus] = useDemoValue<string[]>('liked-menus', []);
+  const [restaurantId] = useDemoValue<string | null>('selected-restaurant', null);
+  const [saveOpen, setSaveOpen] = useState(false);
+  const [saved, setSaved] = useState(Boolean(savedRecordId));
+  const [recordId] = useState(() => savedRecordId ?? (sourceScanId ? `local-${sourceScanId}` : `local-${crypto.randomUUID()}`));
+  const restaurant = RESTAURANTS.find(r => r.id === restaurantId);
   const t = createTranslator(language);
   const menuList = Array.isArray(menus) ? menus : [];
   const profileSummary = getProfileSummary(userProfile, language);
@@ -145,12 +158,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
       return next;
     });
   };
-  const formatPrice = (price?: string) => {
-    if (!price?.trim()) return null;
-    const value = Number(price);
-    if (!Number.isFinite(value)) return null;
-    return new Intl.NumberFormat(LANGUAGE_LOCALES[language], { style: 'currency', currency: 'KRW', maximumFractionDigits: 0 }).format(value);
-  };
+  const recommendedArticles = Array.from(new Set(menuList.map(menu => buildMenuResultViewModel(menu, language).curationId))).flatMap(id => CURATION_ARTICLES.filter(article => article.id === id)).slice(0, 3);
 
   return (
     <div className="relative flex h-dvh flex-col bg-surface-base text-text-primary">
@@ -163,8 +171,14 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
 
       <main className="flex-1 overflow-y-auto" aria-live="polite">
         <section className="border-b border-border-warm bg-surface-raised px-5 pb-5 pt-6">
-          <p className="mb-1 text-xs font-extrabold tracking-[0.08em] text-brand-primary">{t('분석 완료', 'ANALYSIS COMPLETE', 'اكتمل التحليل')}</p>
-          <h2 className="text-[22px] font-extrabold tracking-[-0.02em]">{t(`메뉴 ${menuList.length}개를 확인했어요`, `${menuList.length} menu items checked`, `تم فحص ${menuList.length} عناصر`)}</h2>
+          <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{restaurant && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{localizeMenuText(restaurant.name, language)}</span>}</div>
+          <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
+          <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
+          <div className="mt-5 grid grid-cols-3 gap-2">{([
+            ['safe', counts.safe, t('안전', 'Safe', 'آمن'), 'bg-status-safe-surface text-status-safe-text'],
+            ['caution', counts.caution, t('주의', 'Caution', 'تنبيه'), 'bg-status-caution-surface text-status-caution-text'],
+            ['danger', counts.danger, t('위험', 'Danger', 'خطر'), 'bg-status-danger-surface text-status-danger-text'],
+          ] as const).map(([level, count, label, style]) => <button key={level} onClick={() => setFilter(level)} aria-pressed={filter === level} className={`rounded-2xl px-3 py-3 text-start ${style}`}><span className="block text-[26px] font-extrabold leading-8">{count}</span><span className="mt-1 block text-xs font-bold">{label}</span></button>)}</div>
 
           <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
@@ -209,10 +223,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
             const pronunciation = getMenuPronunciation(menu.menuName, language);
             const description = getDescription(menu, language);
             const viewModel = buildMenuResultViewModel(menu, language);
-            const curation = CURATION_ARTICLES.find((article) => article.id === viewModel.curationId);
             const cardDetailsId = `menu-details-${menu.id}`;
             const isSpicy = Boolean(menu.isSpicy || menu.is_spicy);
-            const formattedPrice = formatPrice(menu.price);
+            const price = menuPrice(menu.price, language);
+            const likeKey = menu.menuName.trim().toLocaleLowerCase();
+            const liked = likedMenus.includes(likeKey);
+            const cautionIngredients = getCautionProbabilities(menu, userProfile).map(ingredient => ({ ...ingredient, localizedName: localizeMenuText(ingredient.name, language) }));
             const requestActions = [
               ...(menu.riskLevel !== 'safe' ? [{ id: 'request', label: t('빼고 요청', 'Request removal', 'طلب الإزالة'), onClick: () => openSheet(menu, 'request') }] : []),
               ...(isSpicy ? [{ id: 'less-spicy', label: t('덜 맵게 요청', 'Less spicy', 'أقل حدة'), onClick: () => openSheet(menu, 'lessSpicy') }] : []),
@@ -226,10 +242,11 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                     <div className="min-w-0 flex-1 py-0.5">
                       <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
                         <RiskBadge level={menu.riskLevel} t={t} />
-                        {formattedPrice ? <span className="text-sm font-extrabold">{formattedPrice}</span> : <span className="text-xs font-semibold text-text-tertiary">{t('가격 확인 필요', 'Price needs checking', 'يجب التحقق من السعر')}</span>}
+                        <button aria-label={`${t('메뉴 라이킷', 'Like menu', 'أعجبني الطبق')}: ${menu.menuName}`} aria-pressed={liked} onClick={() => setLikedMenus(liked ? likedMenus.filter(key => key !== likeKey) : [...likedMenus, likeKey])} className={`-mt-1 flex size-11 shrink-0 items-center justify-center rounded-full ${liked ? 'bg-brand-accent-soft text-brand-accent' : 'bg-surface-subtle text-text-tertiary'}`}><Heart className={`size-5 ${liked ? 'fill-current' : ''}`} /></button>
                       </div>
                       <h3 className="break-words text-lg font-extrabold tracking-[-0.015em]">{menu.menuName}</h3>
                       <p className="mt-0.5 break-words text-sm font-semibold text-text-secondary">{translatedName}</p>
+                      {price ? <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1"><span className="text-sm font-extrabold tabular-nums" dir="ltr">{price.original}</span>{price.converted && <span className="text-xs font-semibold text-text-secondary" dir="ltr">≈ {price.converted}</span>}</div> : <p className="mt-2 text-xs text-text-tertiary">{t('가격 확인 필요', 'Price needs checking', 'يجب التحقق من السعر')}</p>}
                       <div className="mt-1 flex min-h-8 items-center gap-1.5">
                         {pronunciation && <span className="min-w-0 text-xs text-text-tertiary">{pronunciation}</span>}
                         {ttsSupported && <button onClick={() => speak(menu.menuName, 'ko-KR')} className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-brand-primary hover:bg-brand-primary-soft" aria-label={`${t('음성 듣기', 'Listen', 'استمع')}: ${menu.menuName}`}><Volume2 className="size-4" /></button>}
@@ -239,6 +256,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   </div>
 
                   <div className="space-y-3 p-4">
+                    {cautionIngredients.length > 0 && <div className="space-y-3 rounded-xl border border-status-caution-border bg-status-caution-surface p-3.5"><p className="text-[11px] font-bold text-status-caution-text">{t('내가 피하는 재료 · 포함 가능성', 'Ingredients I avoid · likelihood of inclusion', 'مكونات أتجنبها · احتمال وجودها')}</p>{cautionIngredients.map(ingredient => <div key={ingredient.localizedName}><div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-bold text-status-caution-text"><span>{ingredient.localizedName}</span><span className="text-xl tabular-nums">{ingredient.inclusionProbability}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-status-caution-border/50" aria-hidden="true"><div className="h-full rounded-full bg-status-caution" style={{ width: `${ingredient.inclusionProbability}%` }} /></div></div>)}<p className="text-[11px] leading-5 text-status-caution-text">{t('재료가 들어갈 가능성이에요. 섭취 안전 확률은 아니며 직원 확인이 필요해요.', 'This estimates ingredient presence, not the probability of a safe meal. Check with staff.', 'هذا تقدير لوجود المكوّن وليس احتمال سلامة الطعام. تحقق مع الموظف.')}</p></div>}
                     {viewModel.primaryReason && <div><p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">{t('가장 중요한 판정 이유', 'Key reason', 'السبب الرئيسي')}</p><p className="text-sm font-semibold leading-5.5 text-text-primary">{viewModel.primaryReason}</p></div>}
                     {(viewModel.ingredients.length > 0 || isSpicy) && (
                       <div className="flex flex-wrap gap-1.5">
@@ -261,7 +279,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   {expanded && (
                     <div id={cardDetailsId} className="border-t border-border-warm bg-surface-subtle/60 px-4 pb-1 pt-4">
                       <EvidenceSection title={t('내 식단 프로필 관련 항목', 'Related profile items', 'عناصر الملف ذات الصلة')}>
-                        {viewModel.profileRelatedItems.length > 0 ? <ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.profileRelatedItems.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul> : <p className="text-sm leading-6 text-text-tertiary">{t('판정에 사용된 세부 프로필 항목은 백엔드 연동 후 표시돼요.', 'Detailed profile matches will appear when supplied by the analysis API.', 'ستظهر مطابقة الملف التفصيلية عند توفيرها من واجهة التحليل.')}</p>}
+                        {viewModel.profileRelatedItems.length > 0 ? <ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.profileRelatedItems.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul> : <p className="text-sm leading-6 text-text-tertiary">{profileSummary.join(' · ') || t('설정된 식단 조건이 없어요', 'No dietary conditions are set.', 'لا توجد شروط غذائية محددة.')}</p>}
                       </EvidenceSection>
 
                       <EvidenceSection title={t('재료별 판정 근거', 'Evidence by ingredient', 'أدلة القرار حسب المكوّن')}>
@@ -271,7 +289,6 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                               <div key={ingredient.localizedName} className="rounded-xl border border-border-warm bg-surface-raised p-3">
                                 <h5 className="text-sm font-extrabold">{ingredient.localizedName}</h5>
                                 <dl className="mt-2 space-y-1.5 text-xs leading-5 text-text-secondary">
-                                  {ingredient.inclusionLikelihood && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('포함 가능성', 'Likelihood of inclusion', 'احتمال الاحتواء')}</dt><dd className="font-bold text-text-primary">{localizeMenuText(LIKELIHOOD_LABELS[ingredient.inclusionLikelihood], language)}</dd></div>}
                                   {ingredient.confidence && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('근거 수준', 'Evidence level', 'مستوى الدليل')}</dt><dd className="font-bold text-text-primary">{localizeMenuText(CONFIDENCE_LABELS[ingredient.confidence], language)}</dd></div>}
                                   {ingredient.localizedSources.length > 0 && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('출처', 'Sources', 'المصادر')}</dt><dd className="font-semibold text-text-primary">{ingredient.localizedSources.join(', ')}</dd></div>}
                                   {ingredient.staffEvidence?.checkedCount !== undefined && ingredient.staffEvidence?.usedCount !== undefined && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('직원 확인 기록', 'Staff records', 'سجلات الموظفين')}</dt><dd>{formatStaffEvidence(language, ingredient.staffEvidence.usedCount, ingredient.staffEvidence.checkedCount)}</dd></div>}
@@ -291,20 +308,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
                   )}
                 </article>
 
-                {curation && (
-                  <section className="rounded-[var(--radius-card)] border border-border-warm bg-surface-raised p-4" aria-label={`${translatedName} ${t('관련 추천', 'related recommendation', 'توصية ذات صلة')}`}>
-                    <div className="mb-2 flex items-center gap-2 text-xs font-bold text-text-tertiary"><Sparkles className="size-4 text-brand-accent" aria-hidden="true" />{translatedName} · {t('관련 추천', 'Related recommendation', 'توصية ذات صلة')}</div>
-                    <h4 className="text-sm font-extrabold">{t('이 음식 더 알아보기', 'Learn more about this food', 'اعرف المزيد عن هذا الطعام')}</h4>
-                    <button onClick={() => navigate(`/curation/${curation.id}`)} className="mt-2 flex min-h-11 w-full items-center gap-3 rounded-xl border border-border-warm bg-surface-subtle p-3 text-start hover:border-brand-accent">
-                      <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-brand-accent-soft text-lg" aria-hidden="true">{curation.emoji}</span>
-                      <span className="min-w-0 flex-1"><span className="block text-sm font-bold">{translateText(language, curation.title)}</span><span className="mt-0.5 block line-clamp-2 text-xs leading-5 text-text-secondary">{translateText(language, curation.excerpt)}</span></span>
-                      <ExternalLink className="size-4 shrink-0 text-text-tertiary" />
-                    </button>
-                  </section>
-                )}
               </Fragment>
             );
           })}
+
+          {menuList.length > 0 && <p className="px-1 text-center text-[10px] leading-5 text-text-tertiary">{t('환율은 매일 00:00 (한국 시간)에 업데이트돼요. 환산 가격은 참고용이에요.', 'Exchange rates update daily at 00:00 KST. Converted prices are estimates.', 'تُحدّث أسعار الصرف يومياً عند 00:00 بتوقيت كوريا. الأسعار المحوّلة تقريبية.')}</p>}
+          {recommendedArticles.length > 0 && <section className="border-t border-border-warm pt-6"><p className="eyebrow">A LITTLE MORE KOREA</p><h3 className="mb-4 mt-1 text-lg font-extrabold">{t('메뉴를 골랐다면, 한식 이야기', 'Chosen your dish? Discover its story.', 'اخترت طبقك؟ اكتشف قصته.')}</h3><div className="space-y-2">{recommendedArticles.map(article => <button key={article.id} onClick={() => navigate(`/curation/${article.id}`)} className="flex w-full items-center gap-3 rounded-2xl border border-border-warm bg-rice-white p-3 text-start"><span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-accent-soft text-2xl">{article.emoji}</span><span className="min-w-0 flex-1"><span className="block text-sm font-bold">{translateText(language, article.title)}</span><span className="mt-1 block line-clamp-1 text-xs text-text-secondary">{translateText(language, article.excerpt)}</span></span><ChevronRight className="size-4 rtl:rotate-180" /></button>)}</div></section>}
 
           {filteredMenus.length === 0 && (
             <div className="flex flex-col items-center rounded-[var(--radius-card)] border border-border-warm bg-surface-raised px-5 py-12 text-center">
@@ -316,9 +325,12 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan }
         </div>
       </main>
 
-      <footer className="shrink-0 border-t border-border-warm bg-surface-raised/95 px-5 py-3 backdrop-blur">
-        <button onClick={onRescan} className="min-h-11 w-full rounded-xl border border-brand-primary bg-surface-raised px-4 text-sm font-extrabold text-brand-primary hover:bg-brand-primary-soft">{t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}</button>
+      <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-border-warm bg-surface-raised/95 px-5 py-3 backdrop-blur">
+        <button onClick={onRescan} className="min-h-12 rounded-xl border border-brand-primary bg-surface-raised px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-primary-soft">{t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}</button>
+        <button disabled={menuList.length === 0} onClick={() => setSaveOpen(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white disabled:opacity-40"><Bookmark className="size-4" />{saved ? t('기록 수정', 'Edit record', 'تعديل السجل') : t('기록하기', 'Keep this scan', 'احفظ المسح')}</button>
       </footer>
+
+      {saveOpen && <SaveScanSheet language={language} menus={menuList} profile={userProfile} recordId={recordId} sourceScanId={sourceScanId} restaurantId={restaurantId} onClose={() => setSaveOpen(false)} onSaved={() => setSaved(true)} />}
 
       {sheetType && selectedMenu && <OwnerCommunicationSheet menu={selectedMenu} type={sheetType} userProfile={userProfile} language={language} initialResponse={getStoredResponse(selectedMenu, sheetType)} onResponseSelect={handleOwnerResponseSelect} onClose={closeSheet} />}
       {profileSheetOpen && <ProfileCommunicationSheet items={profileCommunicationItems} language={language} onClose={() => setProfileSheetOpen(false)} />}

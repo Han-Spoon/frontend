@@ -1,5 +1,18 @@
 # HanSpoon ERD 설계
 
+## 2026-09-10 확장 메모
+
+아래 기존 설계에 Restaurant, VisitRecord, ProfileFeedback, MenuLike를 추가하는 방향이다. 실제 DB 마이그레이션은 아직 없다. 현재 구현은 `src/app/demo/records.ts`의 브라우저 저장이다.
+
+| 엔티티 | 관계·핵심 필드 |
+| --- | --- |
+| Restaurant | canonical id, 한국어 원명/다국어 별칭, latitude/longitude, region |
+| VisitRecord | 사용자와 scan 연결, nullable restaurantId, profileSnapshot, verificationStatus |
+| ProfileFeedback | visitId, profileItemId, questionId, answer yes/no/unknown |
+| MenuLike | 사용자 + canonical menu/scan menu, nullable restaurantId, savedAt |
+
+식당 없이 저장한 스캔도 VisitRecord에 restaurantId=null로 표현할 수 있다. 현재는 로컬 id와 sourceScanId를 분리하며 원본 서버 스캔을 삭제하지 않는다. profileSnapshot은 기록 당시 조건을 재현한다. 위치 후보 선택은 실제 방문 인증을 의미하지 않는다. 세부 확장안은 [api-contracts.md](api-contracts.md)를 따른다.
+
 ## 기준
 
 현재 코드에는 백엔드, ORM, 마이그레이션, 실제 DB 스키마가 없습니다. 따라서 이 ERD는 React 상태와 화면에서 사용하는 타입을 기준으로 정리한 논리 설계입니다.
