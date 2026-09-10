@@ -1,5 +1,6 @@
 import type { Language } from '../App';
 import { translateText, type LocalizedText } from '../locales';
+import { EXTRA_CURATION_ARTICLES } from './curationExtra';
 
 /**
  * 큐레이션 이미지 = Wikimedia Commons 무료 직링크(핫링크 허용·CDN). blob 불필요.
@@ -40,6 +41,7 @@ export interface CurationArticle {
 }
 
 export const CURATION_ARTICLES: CurationArticle[] = [
+  ...EXTRA_CURATION_ARTICLES,
   // ───────── 히어로(featured) ─────────
   {
     id: 'korean-table',

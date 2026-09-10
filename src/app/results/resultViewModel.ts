@@ -50,6 +50,15 @@ export function localizeMenuText(text: LocalizedMenuText, language: Language): s
 
 const hiddenTags = new Set(['unknown menu', 'unknown remain', 'hidden animal']);
 
+export function getCautionProbabilities(menu: MenuAnalysis, profile: UserProfile | null) {
+  const profileIds = new Set(getProfileCommunicationItems(profile).map(item => item.id));
+  if (menu.riskLevel !== 'caution') return [];
+  return (menu.explainability?.ingredients ?? []).filter(ingredient =>
+    ingredient.profileIds?.some(id => profileIds.has(id)) &&
+    typeof ingredient.inclusionProbability === 'number' && Number.isFinite(ingredient.inclusionProbability) &&
+    ingredient.inclusionProbability >= 0 && ingredient.inclusionProbability <= 100);
+}
+
 export function buildMenuResultViewModel(menu: MenuAnalysis, language: Language): MenuResultViewModel {
   const explainability = menu.explainability;
   const fallbackIngredients = Array.from(new Set(menu.riskReasons ?? []))

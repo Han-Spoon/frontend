@@ -16,7 +16,24 @@ export const RESULT_PREVIEW_PROFILE: UserProfile = {
 
 export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
   {
+    id: 'fixture-cream', menuName: '버섯 크림 리조또', menuNameEn: 'Mushroom cream risotto', menuNameAr: 'ريزوتو الفطر بالكريمة',
+    image: 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=400&q=80',
+    description: '버섯과 쌀을 부드러운 크림 소스에 조리한 한 그릇이에요.',
+    descriptionEn: 'A comforting bowl of rice and mushrooms in a creamy sauce.',
+    descriptionAr: 'طبق أرز وفطر بصلصة كريمية.',
+    price: '₩15,000', riskLevel: 'caution', riskReasons: ['has_unclear_milk'], isSpicy: false,
+    explainability: {
+      decisionReason: { ko: '크림 소스에 우유가 들어갈 수 있어요. 유제품 사용 여부를 먼저 확인해 주세요.', en: 'The cream sauce may contain milk. Ask about dairy before ordering.', ar: 'قد تحتوي الصلصة على الحليب. اسأل عن الألبان قبل الطلب.' },
+      profileRelatedItems: [{ ko: '우유 알레르기', en: 'Milk allergy', ar: 'حساسية الحليب' }],
+      ingredients: [{ name: { ko: '우유', en: 'Milk', ar: 'حليب', ja: '牛乳', 'zh-CN': '牛奶', 'zh-TW': '牛奶', es: 'Leche' }, inclusionProbability: 82, profileIds: ['allergy:milk'], confidence: 'medium', sourceTypes: ['menu-description', 'trusted-cooking'] }],
+      hiddenIngredientPaths: [[{ ko: '크림 소스', en: 'Cream sauce', ar: 'صلصة الكريمة' }, { ko: '우유', en: 'Milk', ar: 'حليب' }, { ko: '내 우유 알레르기', en: 'My milk allergy', ar: 'حساسية الحليب' }]],
+      uncertainties: [{ ko: '식물성 크림 사용 여부와 조리도구 공유를 확인해 주세요.', en: 'Ask whether plant-based cream is used and utensils are shared.', ar: 'اسأل عن الكريمة النباتية ومشاركة أدوات الطهي.' }],
+      curationId: 'sauce-on-side',
+    },
+  },
+  {
     id: 'fixture-safe',
+    image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80',
     menuName: '비빔밥',
     menuNameEn: 'Bibimbap',
     menuNameAr: 'بيبيمباب',
@@ -59,22 +76,24 @@ export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
     isSpicy: true,
     explainability: {
       decisionReason: {
-        ko: '육수에 생선 성분이 들어갈 수 있어 직원 확인이 필요해요.',
-        en: 'The broth may contain fish, so staff confirmation is recommended.',
-        ar: 'قد يحتوي المرق على السمك، لذا يُنصح بسؤال الموظف.',
+        ko: '김치 양념과 육수에 돼지고기 성분이 들어갈 수 있어요. 할랄 식단에 맞는지 먼저 확인해 주세요.',
+        en: 'The seasoning or broth may contain pork. Check that the preparation meets your halal needs.',
+        ar: 'قد تحتوي التتبيلة أو المرق على لحم الخنزير. تحقق من ملاءمة التحضير لاحتياجاتك الحلال.',
       },
-      profileRelatedItems: [{ ko: '생선 알레르기', en: 'Fish allergy', ar: 'حساسية السمك' }],
+      profileRelatedItems: [{ ko: '할랄 식단', en: 'Halal diet', ar: 'نظام حلال' }],
       ingredients: [{
-        name: { ko: '멸치', en: 'Anchovy', ar: 'أنشوجة' },
+        name: { ko: '돼지고기', en: 'Pork', ar: 'لحم الخنزير' },
+        inclusionProbability: 68,
+        profileIds: ['religion:halal'],
         inclusionLikelihood: 'high',
         confidence: 'medium',
         sourceTypes: ['menu-context', 'staff'],
         staffEvidence: { checkedCount: 12, usedCount: 8, sampleSufficient: true },
       }],
       hiddenIngredientPaths: [[
-        { ko: '멸치육수', en: 'Anchovy broth', ar: 'مرق الأنشوجة' },
-        { ko: '멸치', en: 'Anchovy', ar: 'أنشوجة' },
-        { ko: '생선 알레르기와 관련', en: 'Related to fish allergy', ar: 'مرتبط بحساسية السمك' },
+        { ko: '육수', en: 'Broth', ar: 'المرق' },
+        { ko: '돼지고기', en: 'Pork', ar: 'لحم الخنزير' },
+        { ko: '할랄 식단과 관련', en: 'Related to halal diet', ar: 'مرتبط بالنظام الحلال' },
       ]],
       sources: [
         { type: 'menu-context', confidence: 'medium' },
@@ -112,8 +131,16 @@ export const RESULT_PREVIEW_MENUS: MenuAnalysis[] = [
     description: '면과 육수를 함께 끓인 국수예요.',
     descriptionEn: 'Knife-cut noodles served in broth.',
     descriptionAr: 'نودلز مقطعة بالسكين تُقدّم في المرق.',
+    price: '9,000원',
     riskLevel: 'caution',
     riskReasons: ['has_unclear_broth'],
     isSpicy: false,
+    explainability: {
+      decisionReason: { ko: '육수의 고기 종류가 명확하지 않아요. 돼지고기 육수 사용 여부를 확인해 주세요.', en: 'The stock is not specified. Ask whether pork stock is used.', ar: 'نوع المرق غير محدد. اسأل إن كان يحتوي على لحم الخنزير.' },
+      profileRelatedItems: [{ ko: '할랄 식단', en: 'Halal diet', ar: 'نظام حلال' }],
+      ingredients: [{ name: { ko: '돼지고기 육수', en: 'Pork stock', ar: 'مرق لحم الخنزير' }, profileIds: ['religion:halal'], inclusionProbability: 36, confidence: 'limited', sourceTypes: ['menu-context'] }],
+      uncertainties: [{ ko: '식당의 실제 육수 재료는 직원 확인이 필요해요.', en: 'Ask staff to confirm the actual stock ingredients.', ar: 'اطلب من الموظف تأكيد مكونات المرق.' }],
+      curationId: 'broth-question',
+    },
   },
 ];

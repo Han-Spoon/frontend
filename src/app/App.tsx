@@ -3,6 +3,11 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
+import { ScanScreen } from './components/ScanScreen';
+import { ScanHistoryScreen } from './components/ScanHistoryScreen';
+import { useDemoValue, writeDemo } from './demo/storage';
+import type { VisitRecord } from './demo/records';
+import { RESULT_PREVIEW_MENUS, RESULT_PREVIEW_PROFILE } from './results/resultFixtures';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
@@ -62,6 +67,9 @@ export type EvidenceSourceType =
 
 export interface MenuIngredientEvidence {
   name: LocalizedMenuText;
+  /** Optional proposed output contract. 0–100; render only for caution + an active matched profile. */
+  inclusionProbability?: number;
+  profileIds?: string[];
   /** 백엔드가 제공할 때만 노출한다. 프런트에서는 확률을 계산하지 않는다. */
   inclusionLikelihood?: 'high' | 'medium' | 'low';
   confidence?: EvidenceConfidence;
@@ -147,15 +155,23 @@ const formatHistoryTitle = (language: Language, date: Date) => {
 
 export default function App() {
   const navigate = useNavigate();
+  const [demoMode] = useState(() => import.meta.env.VITE_DEMO_MODE === 'true' || (import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo') === '1'));
   const [language, setLanguage] = useState<Language>(() => {
+    const requested = new URLSearchParams(window.location.search).get('lang');
+    if (isLanguage(requested)) return requested;
     const saved = localStorage.getItem('han-spoon-language');
     return isLanguage(saved) ? saved : 'ko';
   });
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(() => demoMode ? RESULT_PREVIEW_PROFILE : null);
   const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
   const [currentAnalysis, setCurrentAnalysis] = useState<MenuAnalysis[]>([]);
   const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
+  const [localRecords, setLocalRecords] = useDemoValue<VisitRecord[]>('records', []);
+  const [activeScanId, setActiveScanId] = useState<string | undefined>();
+  const [activeRecordId, setActiveRecordId] = useState<string | undefined>();
+  const [historyProfile, setHistoryProfile] = useState<UserProfile | null | undefined>();
+  const combinedHistory = [...localRecords, ...analysisHistory.filter(item => !localRecords.some(record => record.sourceScanId === item.id))];
 
   useEffect(() => {
     document.documentElement.lang = language;
@@ -225,10 +241,24 @@ export default function App() {
 
   // 기록 열기: 상세를 백엔드에서 가져와 결과화면으로.
   const openHistory = async (item: HistoryItem) => {
+    const local = localRecords.find(record => record.id === item.id);
+    if (local) {
+      setCurrentAnalysis(local.menus);
+      setActiveRecordId(local.id);
+      setActiveScanId(local.sourceScanId);
+      setHistoryProfile(local.profileSnapshot);
+      writeDemo('selected-restaurant', local.restaurantId);
+      navigate('/results');
+      return;
+    }
     try {
       const result = await getScanResult(item.id);
       setCurrentAnalysis((result.menus ?? []).map(mapMenuResult));
       setAnalysisImage(null);
+      setActiveScanId(item.id);
+      setActiveRecordId(undefined);
+      setHistoryProfile(undefined);
+      writeDemo('selected-restaurant', null);
       navigate('/results');
     } catch (error) {
       console.error('Unable to open scan:', error);
@@ -236,6 +266,7 @@ export default function App() {
   };
 
   const handleDeleteHistory = async (id: string) => {
+    if (localRecords.some(record => record.id === id)) { setLocalRecords(localRecords.filter(record => record.id !== id)); return; }
     try {
       await deleteScan(id);
       setAnalysisHistory((prev) => prev.filter((item) => item.id !== id));
@@ -245,6 +276,7 @@ export default function App() {
   };
 
   const handleRenameHistory = async (id: string, title: string) => {
+    if (localRecords.some(record => record.id === id)) { setLocalRecords(localRecords.map(record => record.id === id ? { ...record, title } : record)); return; }
     setAnalysisHistory((prev) => prev.map((item) => (item.id === id ? { ...item, title } : item)));
     try {
       await updateScanTitle(id, title);
@@ -255,6 +287,7 @@ export default function App() {
   };
 
   useEffect(() => {
+    if (demoMode) return;
     loadCurrentUser();
     loadUserProfile();
     loadHistory();
@@ -269,6 +302,7 @@ export default function App() {
   const handleLanguageChange = async (languageValue: Language) => {
     setLanguage(languageValue);
     localStorage.setItem('han-spoon-language', languageValue);
+    if (demoMode) return;
 
     try {
       const backendLanguage = toBackendLanguage(languageValue);
@@ -280,6 +314,7 @@ export default function App() {
   };
 
   const handleProfileSave = async (profile: UserProfile) => {
+    if (demoMode) { setUserProfile(profile); setLanguage(profile.languageCode); navigate('/home'); return; }
     const payload: UserProfilePayload = {
       nationality: profile.nationality.toUpperCase(),
       languageCode: toBackendLanguage(profile.languageCode),
@@ -359,16 +394,31 @@ export default function App() {
           />
           <Route
             path="/home"
+            element={<HomeScreen language={language} userProfile={userProfile} />}
+          />
+          <Route path="/history" element={<ScanHistoryScreen language={language} history={combinedHistory} onOpen={openHistory} onDelete={handleDeleteHistory} onRename={handleRenameHistory} />} />
+          <Route
+            path="/scan"
             element={
-              <HomeScreen
+              <ScanScreen
                 language={language}
+                demoMode={demoMode}
                 onScan={(image) => {
+                  if (demoMode) {
+                    setCurrentAnalysis(RESULT_PREVIEW_MENUS);
+                    setActiveRecordId(undefined);
+                    setActiveScanId(undefined);
+                    setHistoryProfile(undefined);
+                    if (image.previewUrl.startsWith('blob:')) URL.revokeObjectURL(image.previewUrl);
+                    navigate('/results');
+                    return;
+                  }
                   setAnalysisImage(image);
                   navigate('/analyzing');
                 }}
                 onHistory={openHistory}
                 onMyPage={() => navigate('/mypage')}
-                history={analysisHistory}
+                history={combinedHistory}
                 onDeleteHistory={handleDeleteHistory}
                 onRenameHistory={handleRenameHistory}
               />
@@ -390,6 +440,9 @@ export default function App() {
                 language={language}
                 image={analysisImage}
                 onComplete={(_scanId, menus) => {
+                  setActiveScanId(_scanId);
+                  setActiveRecordId(undefined);
+                  setHistoryProfile(undefined);
                   setCurrentAnalysis(menus);
                   setAnalysisImage(null);
                   navigate('/results');
@@ -409,9 +462,11 @@ export default function App() {
               <ResultsScreen
                 language={language}
                 menus={currentAnalysis}
-                userProfile={userProfile}
+                userProfile={historyProfile === undefined ? userProfile : historyProfile}
+                sourceScanId={activeScanId}
+                savedRecordId={activeRecordId}
                 onBack={() => navigate('/home')}
-                onRescan={() => navigate('/home')}
+                onRescan={() => navigate('/scan')}
               />
             }
           />
@@ -429,7 +484,7 @@ export default function App() {
                 setLanguage={handleLanguageChange}
                 currentUser={currentUser}
                 userProfile={userProfile}
-                history={analysisHistory}
+                history={combinedHistory}
                 onBack={() => navigate('/home')}
                 onEditProfile={(section) =>
                   navigate('/onboarding', section ? { state: { editSection: section } } : undefined)
