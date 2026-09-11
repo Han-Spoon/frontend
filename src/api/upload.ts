@@ -5,6 +5,14 @@ export interface UploadTicket {
   storageKey: string;
   uploadUrl: string;
   expiresAt: string;
+  uploadHeaders?: Record<string, string>;
+}
+
+/**
+ * uploadHeaders 가 없는 구버전 백엔드용 fallback.
+ */
+function fallbackHeaders(contentType: string): Record<string, string> {
+  return { 'Content-Type': contentType, 'If-None-Match': '*' };
 }
 
 async function parse<T>(response: Response): Promise<T> {
@@ -35,12 +43,14 @@ export async function getUploadTicket(contentType: string): Promise<UploadTicket
 export async function uploadImage(file: File): Promise<{ key: string }> {
   const ticket = await getUploadTicket(file.type);
 
+  const headers = ticket.uploadHeaders;
+  if (!headers || Object.keys(headers).length === 0) {
+    console.warn('uploadHeaders 누락 — 구버전으로 판단하고 폴백 헤더를 사용합니다.');
+  }
+
   const putResponse = await fetch(ticket.uploadUrl, {
     method: 'PUT',
-    headers: {
-      'Content-Type': file.type,
-      'If-None-Match': '*',
-    },
+    headers: headers && Object.keys(headers).length > 0 ? headers : fallbackHeaders(file.type),
     body: file,
   });
 
