@@ -8,6 +8,7 @@ interface AnalyzingScreenProps {
   language: Language;
   image: PendingMenuImage | null;
   onComplete: (scanId: string, menus: MenuAnalysis[]) => void;
+  onRetryWithNewImage: () => void;
   onCancel: () => void;
 }
 
@@ -16,10 +17,11 @@ type Phase = 'analyzing' | 'retake' | 'failed';
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_MS = 300000;
 
-export function AnalyzingScreen({ language, image, onComplete, onCancel }: AnalyzingScreenProps) {
+export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewImage, onCancel }: AnalyzingScreenProps) {
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
+  const [retryRequiresNewUpload, setRetryRequiresNewUpload] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
 
   const t = createTranslator(language);
@@ -31,8 +33,35 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
     { icon: ShieldCheck, label: t('내 식단 기준과 비교하고 있어요', 'Comparing with your dietary profile', 'جار المقارنة مع ملفك الغذائي') },
   ];
 
+  const scanFailureMessage = (failureCode?: string | null) => {
+    switch (failureCode) {
+      case 'OCR_SERVICE_ERROR':
+        return t('메뉴판 글자를 읽지 못했습니다. 사진을 다시 선택해 주세요.', 'We could not read the menu. Please choose a new photo.', 'تعذر قراءة القائمة. يرجى اختيار صورة جديدة.');
+      case 'SCAN_PROCESSING_TIMEOUT':
+        return t('분석 시간이 초과되었습니다. 잠시 후 새 사진으로 시도해 주세요.', 'Analysis timed out. Please try a new photo shortly.', 'انتهت مهلة التحليل. يرجى المحاولة بصورة جديدة بعد قليل.');
+      case 'AI_SERVICE_OVERLOADED':
+      case 'AI_SERVICE_UNAVAILABLE':
+        return t('분석 서버가 일시적으로 혼잡합니다. 잠시 후 다시 시도해 주세요.', 'The analysis service is temporarily busy. Please try again shortly.', 'خدمة التحليل مشغولة مؤقتًا. يرجى المحاولة بعد قليل.');
+      case 'RULE_ENGINE_ERROR':
+      case 'RESULT_SERVICE_ERROR':
+      case 'AI_RESULT_MISMATCH':
+        return t('메뉴 분석 결과를 완성하지 못했습니다. 새 사진으로 다시 시도해 주세요.', 'We could not finish the menu analysis. Please try again with a new photo.', 'تعذر إكمال تحليل القائمة. يرجى المحاولة مجددًا بصورة جديدة.');
+      default:
+        return t('스캔에 실패했습니다. 새 사진으로 다시 시도해 주세요.', 'Scan failed. Please try again with a new photo.', 'فشل المسح. يرجى المحاولة مجددًا بصورة جديدة.');
+    }
+  };
+
   useEffect(() => {
-    if (!image) return;
+    if (!image) {
+      setErrorMessage(t(
+        '분석할 이미지를 찾을 수 없습니다. 새 사진을 선택해 주세요.',
+        'The image to analyze is missing. Please choose a new photo.',
+        'الصورة المطلوب تحليلها غير موجودة. يرجى اختيار صورة جديدة.',
+      ));
+      setRetryRequiresNewUpload(true);
+      setPhase('failed');
+      return;
+    }
 
     let cancelled = false;
     const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -40,6 +69,7 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
     const run = async () => {
       setPhase('analyzing');
       setErrorMessage(null);
+      setRetryRequiresNewUpload(false);
 
       if (!image.storage?.key) {
         setErrorMessage(t(
@@ -47,6 +77,7 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
           'Image storage key is missing. Please try again.',
           'لا يمكن العثور على مفتاح تخزين الصورة. يرجى المحاولة مرة أخرى.',
         ));
+        setRetryRequiresNewUpload(true);
         setPhase('failed');
         return;
       }
@@ -70,11 +101,9 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
             return;
           }
           if (status === 'failed') {
-            setErrorMessage(t(
-              '스캔에 실패했습니다. 다시 시도해 주세요.',
-              'Scan failed. Please try again.',
-              'فشل المسح. يرجى المحاولة مرة أخرى.',
-            ));
+            setErrorMessage(scanFailureMessage(result.failureCode));
+            // storageKey 멱등성 때문에 같은 키로 startScan을 반복하면 기존 FAILED를 돌려준다.
+            setRetryRequiresNewUpload(true);
             setPhase('failed');
             return;
           }
@@ -200,10 +229,12 @@ export function AnalyzingScreen({ language, image, onComplete, onCancel }: Analy
       <div className="flex-shrink-0 space-y-2 border-t border-border-warm bg-surface-raised/95 px-5 py-3">
         {phase === 'failed' && (
           <button
-            onClick={() => setAttempt((a) => a + 1)}
+            onClick={retryRequiresNewUpload ? onRetryWithNewImage : () => setAttempt((a) => a + 1)}
             className="min-h-12 w-full rounded-xl bg-brand-primary font-bold text-white shadow-sm hover:bg-brand-primary-hover"
           >
-            {t('다시 시도', 'Retry', 'إعادة المحاولة')}
+            {retryRequiresNewUpload
+              ? t('새 사진으로 다시 시도', 'Try a new photo', 'المحاولة بصورة جديدة')
+              : t('다시 시도', 'Retry', 'إعادة المحاولة')}
           </button>
         )}
         <button

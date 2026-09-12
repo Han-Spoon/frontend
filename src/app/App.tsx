@@ -449,6 +449,10 @@ export default function App() {
                   // 백엔드에 영속된 최신 기록으로 목록 갱신.
                   loadHistory();
                 }}
+                onRetryWithNewImage={() => {
+                  setAnalysisImage(null);
+                  navigate('/scan');
+                }}
                 onCancel={() => {
                   setAnalysisImage(null);
                   navigate('/home');
