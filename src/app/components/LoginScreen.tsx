@@ -35,16 +35,6 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
 
       const data = await googleLogin(idToken);
 
-      localStorage.setItem('accessToken', data.accessToken);
-
-      // refreshToken을 body로 받는 경우만 저장
-      // 추후 HttpOnly 쿠키 방식으로 확정되면 이 부분은 제거해도 됨
-      if (data.refreshToken) {
-        localStorage.setItem('refreshToken', data.refreshToken);
-      }
-
-      localStorage.setItem('user', JSON.stringify(data.user));
-
       // true면 /home, false면 /onboarding으로 App 쪽에서 분기
       onLogin(Boolean(data.hasProfile));
     } catch (error) {

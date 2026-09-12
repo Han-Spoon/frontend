@@ -54,6 +54,7 @@ export interface ScanResultResponse {
   scannedAt?: string | null;
   menus?: MenuResult[] | null;
   retakeReasons?: string[] | null;
+  failureCode?: string | null;
 }
 
 export interface ScanHistoryItem {

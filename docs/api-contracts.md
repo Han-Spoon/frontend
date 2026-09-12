@@ -13,7 +13,7 @@
 | GET/POST/PATCH `/api/v1/users/me/profile` | 식단 프로필 |
 | POST `/api/v1/uploads/sas` | 업로드 URL 요청 |
 | POST `/api/v1/scans` | `{ storageKey, source }`로 분석 시작 |
-| GET `/api/v1/scans/:scanId` | 상태·최종 메뉴·재촬영 사유 |
+| GET `/api/v1/scans/:scanId` | 상태·최종 메뉴·재촬영 사유·실패 코드(`failureCode`) |
 | GET `/api/v1/scans?page=0&size=20` | 스캔 이력 |
 | PATCH/DELETE `/api/v1/scans/:scanId` | `{ title }` 변경/삭제 |
 | GET/POST `/api/v1/cards/saved` | 카드 목록/저장 |
@@ -22,6 +22,8 @@
 현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`. 응답은 data 래핑이 있거나 직접 전달될 수 있다. `mapMenuResult`가 프론트 구조로 변환한다. 서버에는 식당 ID, 라이킷, 피드백을 아직 보내지 않는다.
 
 분석 상태는 pending/processing/analyzing → processing, completed/complete/done/succeeded → completed로 정규화한다. failed, needs_retake, unknown은 별도로 다룬다.
+`failed` 응답의 `failureCode`는 사용자 안내와 운영 추적에 사용한다. 동일 `storageKey`는 멱등 키이므로 terminal failed 이후 UI 재시도는 같은 요청을 반복하지 않고 새 이미지를 업로드해야 한다.
+인증 토큰 저장은 `src/api/auth.ts`만 담당하며, 보호 API는 `authFetch`를 통해 401 발생 시 한 번 재발급한 뒤 원 요청을 다시 보낸다.
 
 ## AI 최종 출력 제안
 
