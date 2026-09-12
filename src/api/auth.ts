@@ -67,6 +67,21 @@ export async function googleLogin(idToken: string): Promise<AuthData> {
   return data;
 }
 
+/** 토큰 재발급 실패. */
+export class TokenRefreshError extends Error {
+  readonly status: number;
+  readonly body: string;
+  readonly sessionExpired: boolean;
+
+  constructor(status: number, body = '') {
+    super(`토큰 재발급 실패: ${status}`);
+    this.name = 'TokenRefreshError';
+    this.status = status;
+    this.body = body;
+    this.sessionExpired = status === 401;
+  }
+}
+
 // 백엔드가 refresh 토큰을 회전(rotate)시키므로, 동시에 여러 요청이 401을 만나
 // 각각 refresh를 호출하면 두 번째부터 무효 토큰으로 실패해 세션이 깨진다.
 // 진행 중인 refresh가 있으면 그 Promise를 공유한다(single-flight).
@@ -91,8 +106,12 @@ async function doRefresh(): Promise<AuthData> {
 
   if (!response.ok) {
     console.error('Token refresh failed:', response.status, responseText);
-    clearAuthData();
-    throw new Error(`토큰 재발급 실패: ${response.status}`);
+    // 401 = refresh token 자체가 무효 → 세션 폐기.
+    // 5xx · 프록시 오류는 일시적이므로 세션 유지 후 다음 요청에서 재시도.
+    if (response.status === 401) {
+      clearAuthData();
+    }
+    throw new TokenRefreshError(response.status, responseText);
   }
 
   const json = responseText ? JSON.parse(responseText) : {};

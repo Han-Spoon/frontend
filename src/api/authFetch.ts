@@ -1,4 +1,4 @@
-import { clearAuthData, getAccessToken, refreshAccessToken } from './auth';
+import { getAccessToken, refreshAccessToken } from './auth';
 
 export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}) {
   const accessToken = getAccessToken();
@@ -20,19 +20,14 @@ export async function authFetch(input: RequestInfo | URL, init: RequestInit = {}
     return response;
   }
 
-  try {
-    const refreshed = await refreshAccessToken();
+  const refreshed = await refreshAccessToken();
 
-    const retryHeaders = new Headers(init.headers);
-    retryHeaders.set('Authorization', `Bearer ${refreshed.accessToken}`);
+  const retryHeaders = new Headers(init.headers);
+  retryHeaders.set('Authorization', `Bearer ${refreshed.accessToken}`);
 
-    return await fetch(input, {
-      ...init,
-      headers: retryHeaders,
-      credentials: 'include',
-    });
-  } catch (error) {
-    clearAuthData();
-    throw error;
-  }
+  return fetch(input, {
+    ...init,
+    headers: retryHeaders,
+    credentials: 'include',
+  });
 }
