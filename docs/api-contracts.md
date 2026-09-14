@@ -65,6 +65,12 @@
 
 `getCautionProbabilities`가 이 조건을 실행한다. ID 형식은 allergy:milk, religion:halal, vegan:vegan, preference:no-spicy 등이며 사용자 프로필 어댑터와 공유한다. 식재료 포함 확률을 식사 안전 확률로 표현하지 않는다.
 
+## 현재 프론트 전용 발견 데이터
+
+`demo/partnerMenus.ts`는 가상 레시피를 현재 `UserProfile`과 비교해 기존 `MenuAnalysis`로 변환한다. 등록 레시피 조회용 서버 API는 아직 없으며 새 엔드포인트를 가정해 호출하지 않는다. 실제 스캔의 결과·확률·어댑터는 변경하지 않는다. 향후 서버 연결 시 레시피 버전, 교차접촉 정보, 기준별 확인 범위와 판정 책임을 합의해야 한다.
+
+`/map`의 일회성 위치 조회는 브라우저 Geolocation API만 사용한다. 위치는 메모리에 두고 근처 fixture 필터에만 사용한다. 백엔드로 전송하거나 방문 인증의 증거로 저장하지 않는다.
+
 ## 식당·방문·선호의 향후 계약
 
 - Restaurant: id, 한국어 원명, localizedDisplayName, aliases, 위도·경도, 지역, 메뉴 유형, 사진 출처, 영업 정보 확인 시각.

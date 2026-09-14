@@ -4,18 +4,18 @@ const commons = (file: string, width = 900) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${width}`;
 
 const storyPhotos: Record<string, string> = {
-  'sauce-on-side': commons('Dolsot-bibimbap.jpg'),
+  'sauce-on-side': '/images/curation/sauce-on-side.jpg',
   'market-small-plates': commons('Seoul-Namdaemun.Market-Street.food-02.jpg'),
-  'solo-table': commons("Korean cuisine at Yongsan's Army Community Service-01 (retouched).jpg"),
+  'solo-table': '/images/curation/solo.jpg',
   'broth-question': commons('Korean stew-Sundubu jjigae-05.jpg'),
   'seongsu-walk': commons('Seongsu Street.jpg'),
   'busan-seaside': commons('Haeundae Beach, Busan.jpg'),
   'spice-conversation': commons('Korean.snacks-Tteokbokki-08.jpg'),
-  'banchan-questions': commons('Korean food-Jangajji and namul at Namdaemun Market in Seoul-01.jpg'),
+  'banchan-questions': '/images/curation/banchan-table.jpg',
   'cafe-pause': commons('Coffee and Tea at Droptop Cafe, Seoul.jpg'),
-  'halal-conversation': commons('Seoul central mosque 02.jpg'),
-  'menu-memory': commons('Korean food-Hoedeopbap-01.jpg'),
-  'ordering-rhythm': commons('Korea-Seoul-Insadong-Sanchon-02.jpg'),
+  'halal-conversation': '/images/curation/diet-conversation.jpg',
+  'menu-memory': '/images/curation/meal-memory.jpg',
+  'ordering-rhythm': '/images/curation/diet-conversation.jpg',
 };
 
 // Original editorial drafts for the demonstration. New long-form translations use English fallback outside ko/en/ar.

@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { existsSync } from 'node:fs';
 import { createServer } from 'vite';
 
 // Exercise actual source modules with Vite's existing TS loader; no test dependencies needed.
@@ -102,7 +103,10 @@ try {
   for (const article of EXTRA_CURATION_ARTICLES)
     for (const language of ['ko', 'en', 'ar'])
       assert.ok(article.body[language].split('\n\n').length >= 3);
-  assert.ok(EXTRA_CURATION_ARTICLES.every(article => article.image.startsWith('https://commons.wikimedia.org/')));
+  for (const article of CURATION_ARTICLES) {
+    if (article.image.startsWith('/images/curation/')) assert.ok(existsSync(new URL('../public' + article.image, import.meta.url)), article.id + ' image must exist');
+    else assert.ok(article.image.startsWith('https://commons.wikimedia.org/'), article.id + ' must have an editorial image');
+  }
   const { AREAS, RESTAURANTS, restaurantsInArea, profileMatches } =
     await server.ssrLoadModule('/src/app/demo/restaurants.ts');
   for (const area of AREAS) assert.equal(restaurantsInArea(area.id).length, 3);
@@ -112,6 +116,20 @@ try {
   assert.ok(RESTAURANTS.some(restaurant => restaurant.partnership === 'recipe-verified'));
   assert.ok(RESTAURANTS.some(restaurant => restaurant.partnership === 'standard'));
   const restaurant = restaurantsInArea('nearby')[0];
+  const { buildPartnerMenus } = await server.ssrLoadModule('/src/app/demo/partnerMenus.ts');
+  const unrestricted = { ...RESULT_PREVIEW_PROFILE, hasReligion: false, religionType: null, hasAllergies: false, allergies: [], noSpicy: false, noAlcohol: false };
+  assert.ok(buildPartnerMenus(restaurant, unrestricted).every(menu => menu.riskLevel === 'safe'));
+  assert.ok(buildPartnerMenus(restaurant, null).every(menu => menu.riskLevel === 'caution'));
+  assert.equal(buildPartnerMenus(RESTAURANTS.find(r => r.partnership === 'standard'), unrestricted).length, 0);
+  const milkProfile = { ...unrestricted, hasAllergies: true, allergies: ['milk'] };
+  assert.equal(buildPartnerMenus(restaurant, milkProfile).find(menu => menu.id.endsWith('cream-rice')).riskLevel, 'danger');
+  assert.equal(buildPartnerMenus(restaurant, { ...unrestricted, isVegan: true, veganType: 'vegan' }).find(menu => menu.id.endsWith('egg-bowl')).riskLevel, 'danger');
+  assert.equal(buildPartnerMenus(restaurant, { ...unrestricted, isVegan: true, veganType: 'pesco' }).find(menu => menu.id.endsWith('-fish')).riskLevel, 'safe');
+  const halal = { ...unrestricted, hasReligion: true, religionType: 'halal' };
+  assert.equal(buildPartnerMenus(restaurant, halal).find(menu => menu.id.endsWith('pork-stew')).riskLevel, 'danger');
+  assert.ok(buildPartnerMenus(restaurant, halal).every(menu => getCautionProbabilities(menu, halal).length === 0));
+  assert.equal(buildPartnerMenus(restaurant, { ...unrestricted, hasAllergies: true, allergies: ['soybean'] }).find(menu => menu.id.endsWith('-tofu')).riskLevel, 'danger');
+  assert.ok(RESTAURANTS.every(r => r.feedback.every(f => f.positive >= 0 && f.total > 0 && f.positive <= f.total)));
   assert.equal(profileMatches(restaurant, null).length, 0);
   assert.ok(
     profileMatches(restaurant, RESULT_PREVIEW_PROFILE).every((item) =>

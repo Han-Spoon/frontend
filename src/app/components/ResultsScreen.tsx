@@ -49,6 +49,7 @@ interface ResultsScreenProps {
   onRescan: () => void;
   sourceScanId?: string;
   savedRecordId?: string;
+  partnerRestaurantId?: string;
 }
 
 interface MenuImageProps {
@@ -114,7 +115,7 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   );
 }
 
-export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId }: ResultsScreenProps) {
+export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId }: ResultsScreenProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -123,7 +124,8 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
   const [profileSheetOpen, setProfileSheetOpen] = useState(false);
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
   const [likedMenus, setLikedMenus] = useDemoValue<string[]>('liked-menus', []);
-  const [restaurantId] = useDemoValue<string | null>('selected-restaurant', null);
+  const [selectedRestaurantId] = useDemoValue<string | null>('selected-restaurant', null);
+  const restaurantId = partnerRestaurantId ?? selectedRestaurantId;
   const [saveOpen, setSaveOpen] = useState(false);
   const [saved, setSaved] = useState(Boolean(savedRecordId));
   const [recordId] = useState(() => savedRecordId ?? (sourceScanId ? `local-${sourceScanId}` : `local-${crypto.randomUUID()}`));
@@ -164,13 +166,14 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
         <button onClick={onBack} className="touch-target absolute start-3 inline-flex items-center justify-center rounded-full hover:bg-surface-subtle" aria-label={t('이전', 'Back', 'رجوع')}>
           <ArrowLeft className="size-5 rtl:rotate-180" />
         </button>
-        <h1 className="mx-auto text-base font-extrabold">{t('스캔 결과', 'Scan results', 'نتائج المسح')}</h1>
+        <h1 className="mx-auto text-base font-extrabold">{partnerRestaurantId ? t('내 프로필로 보는 메뉴', 'Menus for my profile', 'القائمة حسب ملفي') : t('스캔 결과', 'Scan results', 'نتائج المسح')}</h1>
       </header>
 
       <main className="flex-1 overflow-y-auto" aria-live="polite">
         <section className="border-b border-border-warm bg-surface-raised px-5 pb-5 pt-6">
           <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{restaurant && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{localizeMenuText(restaurant.name, language)}</span>}</div>
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
+          {partnerRestaurantId && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-3 py-2 text-xs font-bold text-brand-primary"><ShieldCheck className="size-3.5" />{t('등록 레시피로 바로 확인', 'Directly from supplied recipes', 'مباشرة من الوصفات المسجلة')}</p>}
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
           <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
@@ -315,7 +318,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
       </main>
 
       <footer className="grid shrink-0 grid-cols-2 gap-3 border-t border-border-warm bg-surface-raised/95 px-5 py-3 backdrop-blur">
-        <button onClick={onRescan} className="min-h-12 rounded-xl border border-brand-primary bg-surface-raised px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-primary-soft">{t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}</button>
+        <button onClick={onRescan} className="min-h-12 rounded-xl border border-brand-primary bg-surface-raised px-3 text-sm font-extrabold text-brand-primary hover:bg-brand-primary-soft">{partnerRestaurantId ? t('프로필 수정하기', 'Edit profile', 'تعديل الملف') : t('다시 스캔하기', 'Scan again', 'المسح مرة أخرى')}</button>
         <button disabled={menuList.length === 0} onClick={() => setSaveOpen(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white disabled:opacity-40"><Bookmark className="size-4" />{saved ? t('기록 수정', 'Edit record', 'تعديل السجل') : t('기록하기', 'Keep this scan', 'احفظ المسح')}</button>
       </footer>
 

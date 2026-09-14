@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { ArrowLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ArrowUpRight } from 'lucide-react';
 import type { Language } from '../App';
 import { CURATION_ARTICLES, tagLabel } from '../constants/curation';
 import { createTranslator, LANGUAGE_LOCALES, translateText } from '../locales';
+import { StoryImage } from './curation/StoryImage';
 import { CURATION_BODY_DRAFTS } from '../constants/curationBodyDrafts';
 
 interface CurationDetailScreenProps {
   language: Language;
 }
-
-const hideOnError = (e: React.SyntheticEvent<HTMLImageElement>) => {
-  e.currentTarget.style.display = 'none';
-};
 
 const formatDate = (iso: string, language: Language) => {
   const locale = LANGUAGE_LOCALES[language];
@@ -69,73 +66,31 @@ export function CurationDetailScreen({ language }: CurationDetailScreenProps) {
   const paragraphs = body.split('\n\n');
 
   return (
-    <div className="h-dvh flex flex-col bg-rice-cream">
-      <div className="h-16 border-b border-border-warm bg-rice-white/95 flex items-center px-4 flex-shrink-0">
-        <button onClick={() => navigate(-1)} className="inline-flex size-11 items-center justify-center rounded-full hover:bg-brand-green-50" aria-label={t('뒤로', 'Back', 'رجوع')}>
-          <ArrowLeft className="size-5 text-soy-ink rtl:rotate-180" />
-        </button>
-      </div>
-
+    <div className="flex h-dvh flex-col bg-[#13231c] text-rice-white">
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        <div className="px-5 pt-6 pb-3">
-          <span className="inline-block mb-3 px-2.5 py-1 rounded-full bg-brand-orange-100 text-[11px] font-bold text-accent-foreground">
-            {tagLabel(article.tag, language)}
-          </span>
-          <h1 className="text-2xl font-extrabold tracking-[-0.02em] text-soy-ink leading-snug mb-2">{translateText(language, article.title)}</h1>
-          <p className="text-xs text-sesame-gray">{formatDate(article.date, language)}</p>
-        </div>
-
-        <div className="px-5">
-          <div className={`relative h-56 rounded-[1.5rem] border border-border-warm shadow-[0_10px_30px_rgba(54,61,57,0.08)] overflow-hidden ${article.accent} flex items-center justify-center`}>
-            <span className="text-6xl opacity-60">{article.emoji}</span>
-            <img
-              src={article.image}
-              alt={translateText(language, article.title)}
-              onError={hideOnError}
-              className="absolute inset-0 w-full h-full object-cover"
-            />
+        <div className="relative h-[440px]">
+          <StoryImage article={article} language={language} className="absolute inset-0 size-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#13231c] via-transparent to-black/15" />
+          <button onClick={() => navigate('/curation')} className="absolute start-5 top-5 flex size-11 items-center justify-center rounded-full border border-white/20 bg-black/30 backdrop-blur-md" aria-label={t('뒤로', 'Back', 'رجوع')}><ArrowLeft className="size-5 rtl:rotate-180" /></button>
+          <div className="absolute inset-x-0 bottom-0 px-6 pb-4">
+            <span className="mb-4 inline-block rounded-full bg-rice-white px-3 py-2 text-[10px] font-bold text-soy-ink">{tagLabel(article.tag, language)}</span>
+            <h1 className="text-[34px] font-extrabold leading-[1.15] tracking-[-.04em]">{translateText(language, article.title)}</h1>
           </div>
         </div>
-
-        <div className="px-5 py-6 space-y-4">
-          {paragraphs.map((para, i) => (
-            <p key={i} className="text-[15px] text-soy-ink/85 leading-[1.85]">{para}</p>
-          ))}
+        <div className="px-6">
+          <p className="mt-2 text-base leading-7 text-white/70">{translateText(language, article.excerpt)}</p>
+          <p className="mt-5 border-b border-white/10 pb-5 text-[10px] tracking-wide text-[#afd1bf]">HAN SPOON EDITORIAL · {formatDate(article.date, language)}</p>
+          <article className="space-y-6 py-7">{paragraphs.map((para, i) => <p key={i} className="text-[15px] leading-[1.95] text-white/85">{para}</p>)}</article>
+          <p className="mb-6 text-[10px] leading-5 text-white/40">{t('사진은 글의 이해를 돕는 참고 이미지입니다.', 'Images illustrate the story.', 'الصور توضيحية للمقال.')}</p>
         </div>
-
-        {/* 추천 큐레이션 */}
-        {recommended.length > 0 && (
-          <div className="px-5 pb-8 pt-2 border-t border-border-warm">
-            <h3 className="text-sm font-bold text-soy-ink mt-5 mb-3">
-              {t('이런 글은 어때요?', 'You might also like', 'قد يعجبك أيضًا')}
-            </h3>
-            <div className="space-y-2">
-              {recommended.map((rec) => (
-                <button
-                  key={rec.id}
-                  onClick={() => navigate(`/curation/${rec.id}`)}
-                  className="w-full flex items-center gap-3 p-2 rounded-2xl hover:bg-brand-green-50 transition-colors text-start"
-                >
-                  <div className={`relative w-16 h-16 rounded-lg overflow-hidden flex-shrink-0 ${rec.accent} flex items-center justify-center`}>
-                    <span className="text-2xl opacity-60">{rec.emoji}</span>
-                    <img
-                      src={rec.image}
-                      alt=""
-                      loading="lazy"
-                      onError={hideOnError}
-                      className="absolute inset-0 w-full h-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <span className="text-[11px] font-semibold text-brand-green-700">{tagLabel(rec.tag, language)}</span>
-                    <div className="text-sm font-bold text-soy-ink leading-snug line-clamp-2">{translateText(language, rec.title)}</div>
-                  </div>
-                  <ChevronRight className="size-4 text-sesame-gray flex-shrink-0 rtl:rotate-180" />
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
+        <section className="border-t border-white/10 px-5 pb-8 pt-6">
+          <p className="text-[10px] tracking-[.2em] text-[#afd1bf]">KEEP EXPLORING</p>
+          <h2 className="mb-5 mt-2 text-xl font-bold">{t('다음 한 입의 이야기', 'Your next discovery', 'اكتشافك التالي')}</h2>
+          <div className="space-y-3">{recommended.map(rec => <button key={rec.id} onClick={() => navigate('/curation/' + rec.id)} className="flex w-full items-center gap-4 rounded-[22px] bg-white/5 p-3 text-start">
+            <StoryImage article={rec} language={language} className="size-20 shrink-0 rounded-2xl object-cover" />
+            <span className="min-w-0 flex-1"><span className="text-[10px] text-[#afd1bf]">{tagLabel(rec.tag, language)}</span><span className="mt-1 block text-sm font-bold leading-6">{translateText(language, rec.title)}</span></span><ArrowUpRight className="size-4 shrink-0 rtl:-rotate-90" />
+          </button>)}</div>
+        </section>
       </div>
     </div>
   );

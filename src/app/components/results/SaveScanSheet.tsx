@@ -70,7 +70,7 @@ export function SaveScanSheet({
               'A meal to remember',
               'تم حفظ وجبتك اليوم',
             )
-          : t('오늘의 스캔 기록하기', 'Keep today’s scan', 'احفظ مسح اليوم')
+          : t('오늘의 메뉴 기록하기', 'Keep today’s menu', 'احفظ قائمة اليوم')
       }
       description={
         done

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
 import { LandingScreen } from './components/LandingScreen';
+import { PartnerMenuScreen } from './components/PartnerMenuScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { RestaurantMapScreen } from './components/RestaurantMapScreen';
@@ -402,9 +403,12 @@ export default function App() {
             element={<HomeScreen language={language} userProfile={userProfile} />}
           />
           <Route
-            path="/restaurants/map"
+            path="/map"
             element={<RestaurantMapScreen language={language} userProfile={userProfile} />}
           />
+          <Route path="/restaurants/map" element={<Navigate to={`/map${window.location.search}`} replace />} />
+          <Route path="/restaurant/map" element={<Navigate to={`/map${window.location.search}`} replace />} />
+          <Route path="/restaurants/:id/menu" element={<PartnerMenuScreen language={language} userProfile={userProfile} />} />
           <Route path="/history" element={<ScanHistoryScreen language={language} history={combinedHistory} onOpen={openHistory} onDelete={handleDeleteHistory} onRename={handleRenameHistory} />} />
           <Route
             path="/scan"

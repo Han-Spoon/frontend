@@ -28,6 +28,7 @@ export interface CurationArticle {
   emoji: string;
   accent: string;
   image: string;
+  imagePosition?: string;
   date: string; // ISO
   tag: CurationTag;
   title: LocalizedText;
@@ -47,7 +48,7 @@ export const CURATION_ARTICLES: CurationArticle[] = [
     id: 'korean-table',
     emoji: '🍚',
     accent: 'bg-amber-50',
-    image: commons('Dolsot-bibimbap.jpg'),
+    image: '/images/curation/banchan-table.jpg',
     date: '2026-06-05',
     tag: 'culture',
     featured: true,
@@ -73,7 +74,7 @@ export const CURATION_ARTICLES: CurationArticle[] = [
     id: 'fermentation',
     emoji: '🥬',
     accent: 'bg-emerald-50',
-    image: commons('Kimchi.jpg'),
+    image: '/images/curation/fermentation.jpg',
     date: '2026-06-04',
     tag: 'food',
     featured: true,
@@ -99,7 +100,7 @@ export const CURATION_ARTICLES: CurationArticle[] = [
     id: 'chimaek',
     emoji: '🍗',
     accent: 'bg-yellow-50',
-    image: commons('Korean fried chicken 240206.jpg'),
+    image: '/images/curation/chimaek.jpg',
     date: '2026-06-03',
     tag: 'culture',
     featured: true,
@@ -153,7 +154,7 @@ export const CURATION_ARTICLES: CurationArticle[] = [
     id: 'banchan-free',
     emoji: '🥗',
     accent: 'bg-emerald-50',
-    image: commons('Korean side dishes-Banchan-01.jpg'),
+    image: '/images/curation/banchan-table.jpg',
     date: '2026-05-28',
     tag: 'culture',
     title: {
@@ -176,7 +177,7 @@ export const CURATION_ARTICLES: CurationArticle[] = [
     id: 'grill-cut',
     emoji: '🥩',
     accent: 'bg-rose-50',
-    image: commons('Korean Barbecue-Samgyeopsal-01.jpg'),
+    image: '/images/curation/grill.jpg',
     date: '2026-05-24',
     tag: 'restaurant',
     title: {

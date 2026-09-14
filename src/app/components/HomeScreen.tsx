@@ -6,11 +6,7 @@ import {
   Camera,
   ChevronRight,
   Map,
-  Navigation,
-  SlidersHorizontal,
-  Sparkles,
   User,
-  Users,
 } from 'lucide-react';
 import type { Language, UserProfile } from '../App';
 import logo from '../../assets/brand/han-spoon-logo.svg';
@@ -18,7 +14,6 @@ import { createTranslator, translateText } from '../locales';
 import {
   AREAS,
   RESTAURANTS,
-  profileMatches,
   restaurantsInArea,
   type AreaId,
   type Restaurant,
@@ -30,6 +25,7 @@ import { StoreMap } from './discovery/StoreMap';
 import { PartnershipBadge } from './discovery/PartnershipBadge';
 import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { BottomNav } from './BottomNav';
+import { CommunityRanking } from './discovery/CommunityRanking';
 import { menuPrice } from '../demo/currency';
 
 export function HomeScreen({
@@ -41,14 +37,13 @@ export function HomeScreen({
 }) {
   const t = createTranslator(language);
   const navigate = useNavigate();
-  const [area, setArea] = useState<AreaId>('nearby');
+  const [area, setArea] = useState<AreaId>('seongsu');
   const [selectedId, setSelectedId] = useState(
     restaurantsInArea('nearby')[0].id,
   );
   const [picker, setPicker] = useState(false);
   const [carouselPosition, setCarouselPosition] = useState(0);
   const [animateCarousel, setAnimateCarousel] = useState(true);
-  const [ranking, setRanking] = useState('diet');
   const [, setSelectedRestaurant] = useDemoValue<string | null>(
     'selected-restaurant',
     null,
@@ -68,27 +63,10 @@ export function HomeScreen({
     restaurants.find((restaurant) => restaurant.id === selectedId) ??
     restaurants[0];
 
-  const rankingPrefix =
-    ranking === 'allergy'
-      ? 'allergy:'
-      : ranking === 'religion'
-        ? 'religion:'
-        : 'vegan:';
-  const ranked = RESTAURANTS.filter((restaurant) =>
-    restaurant.profileIds.some((id) => id.startsWith(rankingPrefix)),
-  )
-    .sort((a, b) => {
-      const score = (restaurant: Restaurant) =>
-        restaurant.feedback
-          .filter((feedback) => feedback.profileId.startsWith(rankingPrefix))
-          .reduce((total, feedback) => total + feedback.positive, 0);
-      return score(b) - score(a);
-    })
-    .slice(0, 3);
-
   const heroArticles = [
     {
       id: 'restaurant-spotlight',
+      image: RESTAURANTS.find(r => r.area === 'seongsu')!.image,
       title: {
         ko: '성수에서 만난\n초록빛 한 끼',
         en: 'A greener kind of lunch\nin Seongsu',
@@ -117,13 +95,13 @@ export function HomeScreen({
   const openMap = (restaurant?: Restaurant) => {
     const params = new URLSearchParams({ area: restaurant?.area ?? area });
     if (restaurant) params.set('restaurant', restaurant.id);
-    navigate(`/restaurants/map?${params.toString()}`);
+    navigate(`/map?${params.toString()}`);
   };
 
   const chooseForScan = (restaurant: Restaurant | null) => {
     setSelectedRestaurant(restaurant?.id ?? null);
     setPicker(false);
-    navigate('/scan');
+    navigate(restaurant?.partnership === 'recipe-verified' ? `/restaurants/${restaurant.id}/menu` : '/scan');
   };
 
   const selectArea = (nextArea: AreaId) => {
@@ -209,7 +187,7 @@ export function HomeScreen({
                     className="group relative h-[244px] w-full overflow-hidden rounded-[30px] bg-brand-green-900 text-start text-white shadow-[0_18px_44px_rgba(24,61,45,.18)]"
                   >
                     <img
-                      src={RESTAURANTS[(contentIndex * 7) % RESTAURANTS.length].image}
+                      src={article.image}
                       alt=""
                       className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                     />
@@ -300,7 +278,7 @@ export function HomeScreen({
             </div>
 
             <div className="-mx-5 mb-4 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none]">
-              {AREAS.map((item) => (
+              {AREAS.filter(item => item.id !== 'nearby').map((item) => (
                 <button
                   key={item.id}
                   aria-pressed={area === item.id}
@@ -312,7 +290,6 @@ export function HomeScreen({
                       : 'border-border-warm bg-rice-white text-text-secondary')
                   }
                 >
-                  {item.id === 'nearby' && <Navigation className="size-3" />}
                   {localizeMenuText(item, language)}
                 </button>
               ))}
@@ -361,95 +338,7 @@ export function HomeScreen({
             </div>
           </section>
 
-          <section className="mt-10">
-            <p className="eyebrow">THE COMMUNITY PICKS</p>
-            <h2 className="mt-1 text-[22px] font-extrabold tracking-tight">
-              {t(
-                '같은 식단, 좋은 발견',
-                'Shared needs. Great finds.',
-                'احتياجات مشتركة. خيارات رائعة.',
-              )}
-            </h2>
-            <p className="mt-2 text-xs leading-5 text-text-secondary">
-              {t(
-                '나와 비슷한 여행자의 선택형 후기 순위예요.',
-                'Ranked by feedback from travelers with similar needs.',
-                'ترتيب يعتمد على آراء مسافرين باحتياجات مشابهة.',
-              )}
-            </p>
-            <div className="my-4 flex gap-2">
-              {[
-                ['diet', t('식단별', 'Diet', 'النظام الغذائي')],
-                ['allergy', t('알레르기별', 'Allergies', 'الحساسية')],
-                ['religion', t('종교별', 'Religion', 'الدين')],
-              ].map(([id, label]) => (
-                <button
-                  key={id}
-                  onClick={() => setRanking(id)}
-                  aria-pressed={ranking === id}
-                  className={
-                    'min-h-11 rounded-full px-4 text-xs font-bold ' +
-                    (ranking === id
-                      ? 'bg-soy-ink text-white'
-                      : 'border border-border-warm bg-rice-white')
-                  }
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-            <div className="space-y-3">
-              {ranked.map((restaurant, index) => (
-                <button
-                  key={restaurant.id}
-                  onClick={() => openMap(restaurant)}
-                  className="flex w-full items-center gap-3 rounded-[22px] border border-border-warm bg-rice-white p-3 text-start shadow-[var(--shadow-card)]"
-                >
-                  <span
-                    className={
-                      'flex size-8 shrink-0 items-center justify-center rounded-full font-serif text-lg italic ' +
-                      (index === 0
-                        ? 'bg-brand-accent text-white'
-                        : 'bg-surface-subtle text-text-tertiary')
-                    }
-                  >
-                    {index + 1}
-                  </span>
-                  <img
-                    src={restaurant.image}
-                    alt=""
-                    className="size-[68px] shrink-0 rounded-2xl object-cover"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <PartnershipBadge
-                      restaurant={restaurant}
-                      language={language}
-                      compact
-                    />
-                    <span className="mt-1.5 block truncate text-sm font-extrabold">
-                      {localizeMenuText(restaurant.name, language)}
-                    </span>
-                    <span className="mt-1 flex items-center gap-1 text-[11px] text-text-secondary">
-                      <Users className="size-3" />
-                      {profileMatches(restaurant, userProfile).length > 0
-                        ? t(
-                            '나와 같은 식단의 후기 있음',
-                            'Feedback from people like you',
-                            'آراء أشخاص باحتياجات مماثلة',
-                          )
-                        : localizeMenuText(
-                            AREAS.find(
-                              (item) => item.id === restaurant.area,
-                            )!,
-                            language,
-                          )}
-                    </span>
-                  </span>
-                  <ChevronRight className="size-4 shrink-0 rtl:rotate-180" />
-                </button>
-              ))}
-            </div>
-          </section>
+          <CommunityRanking language={language} userProfile={userProfile} onSelect={openMap} />
         </div>
       </main>
 
