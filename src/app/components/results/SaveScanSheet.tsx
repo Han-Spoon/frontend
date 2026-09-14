@@ -51,9 +51,10 @@ export function SaveScanSheet({
     return (
       <RestaurantPicker
         language={language}
+        demoMode
         selectedId={selected}
         onClose={() => setPicker(false)}
-        onSelect={(r) => {
+        onSelectDemo={(r) => {
           setSelected(r?.id ?? null);
           setFeedback({});
           setPicker(false);

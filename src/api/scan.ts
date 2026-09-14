@@ -1,5 +1,6 @@
 import { authFetch } from './authFetch';
 import { ApiError } from './user';
+import type { StoreMatchMethod, StoreSummary } from './store';
 import type { MenuAnalysis } from '../app/App';
 
 export type ScanStatus =
@@ -49,6 +50,7 @@ export interface ScanResultResponse {
   scanId: string;
   status: ScanStatus;
   title?: string | null;
+  store?: StoreSummary | null;
   menuCount?: number | null;
   riskyMenuCount?: number | null;
   scannedAt?: string | null;
@@ -61,6 +63,7 @@ export interface ScanHistoryItem {
   scanId: string;
   title?: string | null;
   status: ScanStatus;
+  store?: StoreSummary | null;
   menuCount?: number | null;
   riskyMenuCount?: number | null;
   scannedAt?: string | null;
@@ -69,6 +72,8 @@ export interface ScanHistoryItem {
 export interface StartScanPayload {
   storageKey: string;
   source?: 'camera' | 'upload';
+  storeId?: number;
+  storeMatchMethod?: StoreMatchMethod;
 }
 
 interface PageResponse<T> {

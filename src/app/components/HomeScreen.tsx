@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -27,13 +27,20 @@ import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { BottomNav } from './BottomNav';
 import { CommunityRanking } from './discovery/CommunityRanking';
 import { menuPrice } from '../demo/currency';
+import type { StoreCandidate } from '../../api/store';
 
 export function HomeScreen({
   language,
   userProfile,
+  demoMode,
+  selectedStore,
+  onSelectStore,
 }: {
   language: Language;
   userProfile: UserProfile | null;
+  demoMode: boolean;
+  selectedStore: StoreCandidate | null;
+  onSelectStore: (store: StoreCandidate | null) => void;
 }) {
   const t = createTranslator(language);
   const navigate = useNavigate();
@@ -44,6 +51,7 @@ export function HomeScreen({
   const [picker, setPicker] = useState(false);
   const [carouselPosition, setCarouselPosition] = useState(0);
   const [animateCarousel, setAnimateCarousel] = useState(true);
+  const carouselPositionRef = useRef(0);
   const [, setSelectedRestaurant] = useDemoValue<string | null>(
     'selected-restaurant',
     null,
@@ -63,8 +71,7 @@ export function HomeScreen({
     restaurants.find((restaurant) => restaurant.id === selectedId) ??
     restaurants[0];
 
-  const heroArticles = [
-    {
+  const heroArticles = [...(demoMode ? [{
       id: 'restaurant-spotlight',
       image: RESTAURANTS.find(r => r.area === 'seongsu')!.image,
       title: {
@@ -77,19 +84,44 @@ export function HomeScreen({
         en: 'Green Table · a recipe-verified partner',
         ar: 'غرين تيبل · شريك بوصفات موثقة',
       },
-    },
-    ...CURATION_ARTICLES.slice(0, 4),
-  ];
+    }] : []), ...CURATION_ARTICLES.slice(0, demoMode ? 4 : 5)];
+  const heroCount = heroArticles.length;
+
+  const resetCarousel = useCallback(() => {
+    carouselPositionRef.current = 0;
+    setAnimateCarousel(false);
+    setCarouselPosition(0);
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => setAnimateCarousel(true)),
+    );
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const timer = window.setInterval(() => {
-      setCarouselPosition((current) => current + 1);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [heroArticles.length]);
 
-  const visibleSlide = carouselPosition === heroArticles.length ? 0 : carouselPosition;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      setCarouselPosition((current) => {
+        const next = Math.min(current + 1, heroCount);
+        carouselPositionRef.current = next;
+        return next;
+      });
+    }, 5000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && carouselPositionRef.current >= heroCount) {
+        resetCarousel();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [heroCount, resetCarousel]);
+
+  const visibleSlide = carouselPosition % heroCount;
   const carouselItems = [...heroArticles, heroArticles[0]];
 
   const openMap = (restaurant?: Restaurant) => {
@@ -155,13 +187,9 @@ export function HomeScreen({
             <div
               className={`flex ${animateCarousel ? 'transition-transform duration-500 ease-out' : ''}`}
               style={{ transform: `translateX(-${carouselPosition * 100}%)` }}
-              onTransitionEnd={() => {
-                if (carouselPosition !== heroArticles.length) return;
-                setAnimateCarousel(false);
-                setCarouselPosition(0);
-                window.requestAnimationFrame(() =>
-                  window.requestAnimationFrame(() => setAnimateCarousel(true)),
-                );
+              onTransitionEnd={(event) => {
+                if (event.currentTarget !== event.target || carouselPosition < heroCount) return;
+                resetCarousel();
               }}
             >
             {carouselItems.map((article, index) => {
@@ -222,6 +250,7 @@ export function HomeScreen({
                 aria-label={t('이야기', 'Story', 'قصة') + ' ' + (index + 1)}
                 aria-pressed={visibleSlide === index}
                 onClick={() => {
+                  carouselPositionRef.current = index;
                   setAnimateCarousel(true);
                   setCarouselPosition(index);
                 }}
@@ -267,7 +296,7 @@ export function HomeScreen({
             <ChevronRight className="size-5 rtl:rotate-180" />
           </button>
 
-          <section>
+          {demoMode ? <section>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <p className="eyebrow">EXPLORE THE MAP</p>
@@ -336,9 +365,28 @@ export function HomeScreen({
                 <ArrowRight className="size-5 shrink-0 rtl:rotate-180" />
               </button>
             </div>
-          </section>
+          </section> : (
+            <section>
+              <p className="eyebrow">EXPLORE THE MAP</p>
+              <h2 className="mt-1 text-[22px] font-extrabold tracking-tight">
+                {t('내 주변 식당 찾기', 'Find restaurants near me', 'اعثر على مطاعم قريبة مني')}
+              </h2>
+              <button
+                type="button"
+                onClick={() => navigate('/map')}
+                className="mt-4 flex min-h-24 w-full items-center gap-4 rounded-[24px] border border-border-warm bg-rice-white p-4 text-start shadow-[var(--shadow-card)]"
+              >
+                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-primary-soft text-brand-primary"><Map className="size-6" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-extrabold">{t('현재 위치에서 가게 찾기', 'Browse from your current location', 'تصفح من موقعك الحالي')}</span>
+                  <span className="mt-1 block text-xs leading-5 text-text-secondary">{t('등록된 실제 가게를 거리순으로 확인해요.', 'See registered restaurants ordered by distance.', 'اعرض المطاعم المسجلة مرتبة حسب المسافة.')}</span>
+                </span>
+                <ArrowRight className="size-5 shrink-0 rtl:rotate-180" />
+              </button>
+            </section>
+          )}
 
-          <CommunityRanking language={language} userProfile={userProfile} onSelect={openMap} />
+          {demoMode && <CommunityRanking language={language} userProfile={userProfile} onSelect={openMap} />}
         </div>
       </main>
 
@@ -346,7 +394,14 @@ export function HomeScreen({
       {picker && (
         <RestaurantPicker
           language={language}
-          onSelect={chooseForScan}
+          demoMode={demoMode}
+          selectedStore={selectedStore}
+          onSelectDemo={chooseForScan}
+          onSelectStore={(store) => {
+            onSelectStore(store);
+            setPicker(false);
+            navigate('/scan');
+          }}
           onClose={() => setPicker(false)}
         />
       )}

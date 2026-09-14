@@ -20,6 +20,7 @@ import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
+import type { StoreCandidate, StoreSummary } from '../api/store';
 import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, type Language } from './locales';
 import { DevResultsPreview } from './components/DevResultsPreview';
 
@@ -135,6 +136,7 @@ export interface PendingMenuImage {
     provider: 's3';
     key?: string;
   };
+  store?: StoreCandidate | null;
 }
 
 export interface HistoryItem {
@@ -144,6 +146,7 @@ export interface HistoryItem {
   menuCount: number;
   dangerCount: number;
   menus: MenuAnalysis[];
+  store?: StoreSummary | null;
 }
 
 const formatHistoryTitle = (language: Language, date: Date) => {
@@ -173,6 +176,8 @@ export default function App() {
   const [localRecords, setLocalRecords] = useDemoValue<VisitRecord[]>('records', []);
   const [activeScanId, setActiveScanId] = useState<string | undefined>();
   const [activeRecordId, setActiveRecordId] = useState<string | undefined>();
+  const [selectedStore, setSelectedStore] = useState<StoreCandidate | null>(null);
+  const [activeScanStore, setActiveScanStore] = useState<StoreSummary | null>(null);
   const [historyProfile, setHistoryProfile] = useState<UserProfile | null | undefined>();
   const combinedHistory = [...localRecords, ...analysisHistory.filter(item => !localRecords.some(record => record.sourceScanId === item.id))];
 
@@ -235,6 +240,7 @@ export default function App() {
           menuCount: item.menuCount ?? 0,
           dangerCount: item.riskyMenuCount ?? 0,
           menus: [],
+          store: item.store ?? null,
         })),
       );
     } catch (error) {
@@ -250,6 +256,7 @@ export default function App() {
       setActiveRecordId(local.id);
       setActiveScanId(local.sourceScanId);
       setHistoryProfile(local.profileSnapshot);
+      setActiveScanStore(null);
       writeDemo('selected-restaurant', local.restaurantId);
       navigate('/results');
       return;
@@ -261,6 +268,7 @@ export default function App() {
       setActiveScanId(item.id);
       setActiveRecordId(undefined);
       setHistoryProfile(undefined);
+      setActiveScanStore(result.store ?? null);
       writeDemo('selected-restaurant', null);
       navigate('/results');
     } catch (error) {
@@ -400,11 +408,11 @@ export default function App() {
           />
           <Route
             path="/home"
-            element={<HomeScreen language={language} userProfile={userProfile} />}
+            element={<HomeScreen language={language} userProfile={userProfile} demoMode={demoMode} selectedStore={selectedStore} onSelectStore={setSelectedStore} />}
           />
           <Route
             path="/map"
-            element={<RestaurantMapScreen language={language} userProfile={userProfile} />}
+            element={<RestaurantMapScreen language={language} userProfile={userProfile} demoMode={demoMode} selectedStore={selectedStore} onSelectStore={setSelectedStore} />}
           />
           <Route path="/restaurants/map" element={<Navigate to={`/map${window.location.search}`} replace />} />
           <Route path="/restaurant/map" element={<Navigate to={`/map${window.location.search}`} replace />} />
@@ -416,12 +424,15 @@ export default function App() {
               <ScanScreen
                 language={language}
                 demoMode={demoMode}
+                selectedStore={selectedStore}
+                onSelectStore={setSelectedStore}
                 onScan={(image) => {
                   if (demoMode) {
                     setCurrentAnalysis(RESULT_PREVIEW_MENUS);
                     setActiveRecordId(undefined);
                     setActiveScanId(undefined);
                     setHistoryProfile(undefined);
+                    setActiveScanStore(null);
                     if (image.previewUrl.startsWith('blob:')) URL.revokeObjectURL(image.previewUrl);
                     navigate('/results');
                     return;
@@ -452,11 +463,12 @@ export default function App() {
               <AnalyzingScreen
                 language={language}
                 image={analysisImage}
-                onComplete={(_scanId, menus) => {
+                onComplete={(_scanId, menus, store) => {
                   setActiveScanId(_scanId);
                   setActiveRecordId(undefined);
                   setHistoryProfile(undefined);
                   setCurrentAnalysis(menus);
+                  setActiveScanStore(store);
                   setAnalysisImage(null);
                   navigate('/results');
                   // 백엔드에 영속된 최신 기록으로 목록 갱신.
@@ -481,6 +493,7 @@ export default function App() {
                 menus={currentAnalysis}
                 userProfile={historyProfile === undefined ? userProfile : historyProfile}
                 sourceScanId={activeScanId}
+                store={activeScanStore}
                 savedRecordId={activeRecordId}
                 onBack={() => navigate('/home')}
                 onRescan={() => navigate('/scan')}

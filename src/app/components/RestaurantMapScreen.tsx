@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  AlertCircle,
   ArrowLeft,
   Camera,
   Utensils,
@@ -9,9 +10,11 @@ import {
   MapPin,
   Navigation,
   Search,
+  Loader2,
   Users,
   X,
 } from 'lucide-react';
+import type { StoreCandidate } from '../../api/store';
 import type { Language, UserProfile } from '../App';
 import {
   AREAS,
@@ -32,12 +35,33 @@ import { StoreMap } from './discovery/StoreMap';
 import { BottomSheet } from './discovery/BottomSheet';
 import { PartnershipBadge } from './discovery/PartnershipBadge';
 import { BottomNav } from './BottomNav';
+import { useStoreCandidates } from '../hooks/useStoreCandidates';
 
 function isAreaId(value: string | null): value is AreaId {
   return AREAS.some((area) => area.id === value);
 }
 
 export function RestaurantMapScreen({
+  language,
+  userProfile,
+  demoMode,
+  selectedStore,
+  onSelectStore,
+}: {
+  language: Language;
+  userProfile: UserProfile | null;
+  demoMode: boolean;
+  selectedStore: StoreCandidate | null;
+  onSelectStore: (store: StoreCandidate | null) => void;
+}) {
+  if (!demoMode) {
+    return <LiveRestaurantMapScreen language={language} selectedStore={selectedStore} onSelectStore={onSelectStore} />;
+  }
+
+  return <DemoRestaurantMapScreen language={language} userProfile={userProfile} />;
+}
+
+function DemoRestaurantMapScreen({
   language,
   userProfile,
 }: {
@@ -388,6 +412,130 @@ export function RestaurantMapScreen({
           )}
         </BottomSheet>
       )}
+    </div>
+  );
+}
+
+function LiveRestaurantMapScreen({
+  language,
+  selectedStore,
+  onSelectStore,
+}: {
+  language: Language;
+  selectedStore: StoreCandidate | null;
+  onSelectStore: (store: StoreCandidate | null) => void;
+}) {
+  const t = createTranslator(language);
+  const navigate = useNavigate();
+  const [query, setQuery] = useState('');
+  const [selectedId, setSelectedId] = useState<number | null>(selectedStore?.storeId ?? null);
+  const { candidates, error, isLoading, location, locationStatus, retryLocation } = useStoreCandidates(query);
+  const selected = candidates.find((store) => store.storeId === selectedId) ?? candidates[0] ?? null;
+
+  const storeName = (store: StoreCandidate) =>
+    store.branchName ? `${store.name} ${store.branchName}` : store.name;
+  const mapStores = candidates.map((store) => ({
+    id: String(store.storeId),
+    name: storeName(store),
+    lat: store.latitude,
+    lng: store.longitude,
+  }));
+
+  const selectAndScan = (store: StoreCandidate) => {
+    onSelectStore(store);
+    navigate('/scan');
+  };
+
+  return (
+    <div className="relative h-dvh overflow-hidden bg-[#e9eee5] text-soy-ink">
+      <div className="absolute inset-x-0 top-0 bottom-[72px]">
+        {locationStatus === 'ready' ? (
+          <StoreMap
+            language={language}
+            stores={mapStores}
+            center={location ? { lat: location.latitude, lng: location.longitude } : undefined}
+            selectedId={selected ? String(selected.storeId) : null}
+            onSelect={(mapStore) => setSelectedId(Number(mapStore.id))}
+            className="h-full min-h-[560px] w-full bg-[#e9eee5]"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center bg-surface-subtle px-8 text-center">
+            {locationStatus === 'loading' ? (
+              <div role="status" className="text-sm text-text-secondary">
+                <Loader2 className="mx-auto mb-3 size-7 animate-spin text-brand-primary" />
+                {t('현재 위치를 확인하고 있어요.', 'Finding your current location…', 'جارٍ تحديد موقعك الحالي…')}
+              </div>
+            ) : (
+              <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
+                <AlertCircle className="mx-auto mb-2 size-6" />
+                <p className="font-bold">{t('주변 식당을 찾으려면 위치 권한이 필요해요.', 'Location access is needed to find nearby restaurants.', 'يلزم إذن الموقع للعثور على المطاعم القريبة.')}</p>
+                {locationStatus === 'denied' && <button type="button" onClick={retryLocation} className="mt-3 min-h-10 rounded-xl border border-amber-300 bg-white px-4 font-bold">{t('위치 다시 확인', 'Try location again', 'إعادة محاولة تحديد الموقع')}</button>}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-rice-cream via-rice-cream/90 to-transparent" />
+
+      <header className="absolute inset-x-0 top-0 z-30 flex h-16 items-center gap-3 px-4 pt-[env(safe-area-inset-top)]">
+        <button
+          type="button"
+          onClick={() => navigate('/home')}
+          aria-label={t('홈으로', 'Back home', 'العودة للرئيسية')}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full border border-border-warm bg-rice-white/95 shadow-sm backdrop-blur"
+        >
+          <ArrowLeft className="size-5 rtl:rotate-180" />
+        </button>
+        <label className="flex min-h-11 min-w-0 flex-1 items-center gap-2 rounded-full border border-border-warm bg-rice-white/95 px-4 shadow-sm backdrop-blur">
+          <Search className="size-4 shrink-0 text-text-secondary" />
+          <input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            disabled={locationStatus !== 'ready'}
+            placeholder={t('식당 이름 검색', 'Search by restaurant name', 'ابحث باسم المطعم')}
+            aria-label={t('식당 검색', 'Search restaurants', 'ابحث عن مطعم')}
+            className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-text-tertiary disabled:cursor-not-allowed"
+          />
+          {query && <button type="button" onClick={() => setQuery('')} aria-label={t('검색 지우기', 'Clear search', 'مسح البحث')} className="flex size-8 shrink-0 items-center justify-center rounded-full bg-surface-subtle"><X className="size-4" /></button>}
+        </label>
+      </header>
+
+      {locationStatus === 'ready' && (
+        <section className="absolute inset-x-0 bottom-[72px] z-30 px-3 pb-[max(14px,env(safe-area-inset-bottom))]">
+          <div className="mb-2 flex items-center justify-between rounded-full bg-rice-white/90 px-3 py-2 text-xs font-extrabold shadow-sm backdrop-blur">
+            <span>{query.trim() ? t('이름 검색 결과', 'Name search results', 'نتائج البحث بالاسم') : t('현재 위치 주변', 'Near your current location', 'بالقرب من موقعك الحالي')} · {candidates.length}</span>
+            {isLoading && <Loader2 className="size-4 animate-spin text-brand-primary" />}
+          </div>
+
+          {error ? (
+            <div role="alert" className="rounded-[24px] border border-red-200 bg-red-50 p-5 text-center text-sm text-red-800 shadow-lg">
+              {t('식당 목록을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.', 'Could not load restaurants. Please try again shortly.', 'تعذر تحميل المطاعم. يرجى المحاولة بعد قليل.')}
+            </div>
+          ) : selected ? (
+            <div className="rounded-[26px] border border-border-warm bg-rice-white/95 p-4 shadow-[0_18px_50px_rgba(35,42,37,.18)] backdrop-blur">
+              <div className="flex items-start gap-3">
+                <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-brand-primary-soft text-brand-primary"><MapPin className="size-5" /></span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-extrabold">{storeName(selected)}</p>
+                  <p className="mt-1 truncate text-xs text-text-secondary">{selected.roadAddress || selected.categoryName || t('주소 정보 없음', 'Address unavailable', 'العنوان غير متوفر')}</p>
+                  <p className="mt-1 text-[11px] font-semibold text-brand-primary">{selected.distanceMeters < 1000 ? `${Math.round(selected.distanceMeters)}m` : `${(selected.distanceMeters / 1000).toFixed(1)}km`}</p>
+                </div>
+              </div>
+              <button type="button" onClick={() => selectAndScan(selected)} className="mt-4 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-brand-primary px-4 text-sm font-bold text-white">
+                <Camera className="size-4" />
+                {t('이 식당 메뉴 스캔', 'Scan this restaurant’s menu', 'امسح قائمة هذا المطعم')}
+              </button>
+            </div>
+          ) : !isLoading ? (
+            <div className="rounded-[24px] bg-rice-white p-5 text-center shadow-lg">
+              <p className="font-bold">{query.trim() ? t('검색된 식당이 없어요.', 'No restaurant matched.', 'لم يتم العثور على مطعم.') : t('주변에 등록된 식당이 아직 없어요.', 'No registered restaurants nearby yet.', 'لا توجد مطاعم مسجلة بالقرب منك بعد.')}</p>
+              <button type="button" onClick={() => navigate('/scan')} className="mt-3 min-h-10 text-sm font-bold text-brand-primary">{t('식당 없이 스캔하기', 'Scan without a restaurant', 'المسح بدون مطعم')}</button>
+            </div>
+          ) : null}
+        </section>
+      )}
+
+      <div className="absolute inset-x-0 bottom-0 z-30"><BottomNav language={language} /></div>
     </div>
   );
 }

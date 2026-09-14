@@ -1,6 +1,6 @@
 # 현재 API와 제안 출력 계약
 
-2026-09-10 기준. 아래 현재 API는 `src/api/`를 근거로 한다. 제안 구조는 서버 구현/합의가 완료되었다는 의미가 아니다.
+2026-09-15 기준. 아래 현재 API는 `src/api/`를 근거로 한다. 제안 구조는 서버 구현/합의가 완료되었다는 의미가 아니다.
 
 ## 현재 API
 
@@ -11,15 +11,23 @@
 | POST `/api/v1/auth/logout` | 로그아웃 |
 | GET/PATCH `/api/v1/users/me` | 사용자 조회·변경 |
 | GET/POST/PATCH `/api/v1/users/me/profile` | 식단 프로필 |
+| POST `/api/v1/stores/candidates` | 현재 위치·선택적 상호명으로 가게 후보 조회 |
 | POST `/api/v1/uploads/sas` | 업로드 URL 요청 |
-| POST `/api/v1/scans` | `{ storageKey, source }`로 분석 시작 |
+| POST `/api/v1/scans` | `{ storageKey, source, storeId?, storeMatchMethod? }`로 분석 시작 |
 | GET `/api/v1/scans/:scanId` | 상태·최종 메뉴·재촬영 사유·실패 코드(`failureCode`) |
 | GET `/api/v1/scans?page=0&size=20` | 스캔 이력 |
 | PATCH/DELETE `/api/v1/scans/:scanId` | `{ title }` 변경/삭제 |
 | GET/POST `/api/v1/cards/saved` | 카드 목록/저장 |
 | DELETE `/api/v1/cards/saved/:id` | 카드 삭제 |
 
-현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`. 응답은 data 래핑이 있거나 직접 전달될 수 있다. `mapMenuResult`가 프론트 구조로 변환한다. 서버에는 식당 ID, 라이킷, 피드백을 아직 보내지 않는다.
+가게 후보 요청은 `{ latitude, longitude, query?, radiusMeters?, limit? }`, 응답은 `{ items: StoreCandidate[] }`이다.
+후보의 `storeId`와 `matchMethod`는 사용자가 가게를 선택한 경우 스캔 시작 요청의 `storeId`,
+`storeMatchMethod`로 함께 전달한다. 가게 연결을 건너뛰면 두 필드를 모두 생략한다. 사용자 좌표는 후보 조회에만
+사용하고 프론트 상태나 스캔 요청에 보관하지 않는다.
+
+현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`.
+스캔 상세·이력의 `store`는 `{ storeId, name } | null`이다. 응답은 data 래핑이 있거나 직접 전달될 수 있다.
+`mapMenuResult`가 메뉴를 프론트 구조로 변환한다. 라이킷과 피드백은 아직 서버에 보내지 않는다.
 
 분석 상태는 pending/processing/analyzing → processing, completed/complete/done/succeeded → completed로 정규화한다. failed, needs_retake, unknown은 별도로 다룬다.
 `failed` 응답의 `failureCode`는 사용자 안내와 운영 추적에 사용한다. 동일 `storageKey`는 멱등 키이므로 terminal failed 이후 UI 재시도는 같은 요청을 반복하지 않고 새 이미지를 업로드해야 한다.
@@ -69,14 +77,16 @@
 
 `demo/partnerMenus.ts`는 가상 레시피를 현재 `UserProfile`과 비교해 기존 `MenuAnalysis`로 변환한다. 등록 레시피 조회용 서버 API는 아직 없으며 새 엔드포인트를 가정해 호출하지 않는다. 실제 스캔의 결과·확률·어댑터는 변경하지 않는다. 향후 서버 연결 시 레시피 버전, 교차접촉 정보, 기준별 확인 범위와 판정 책임을 합의해야 한다.
 
-`/map`의 일회성 위치 조회는 브라우저 Geolocation API만 사용한다. 위치는 메모리에 두고 근처 fixture 필터에만 사용한다. 백엔드로 전송하거나 방문 인증의 증거로 저장하지 않는다.
+운영 모드의 `/map`과 식당 선택창은 브라우저 Geolocation API로 위치를 한 번 조회하고
+`POST /api/v1/stores/candidates`에 전송한다. 위치는 컴포넌트 메모리에만 두고 스캔·방문 기록에는 저장하지 않는다.
+데모 모드만 `demo/restaurants.ts`의 사진·제휴·후기 fixture를 사용한다.
 
 ## 식당·방문·선호의 향후 계약
 
 - Restaurant: id, 한국어 원명, localizedDisplayName, aliases, 위도·경도, 지역, 메뉴 유형, 사진 출처, 영업 정보 확인 시각.
 - Partnership: restaurantId, status(standard/recipe-verified), recipeCoverage, verifiedAt. `recipe-verified`는 전체 레시피 정보 검증 범위이며 사용자별 섭취 안전 보장이 아니다.
 - Map adapter: Naver Maps SDK는 Restaurant의 위도·경도를 렌더링하고 bounds/center/zoom과 pin selection만 UI에 전달한다. SDK 키는 환경변수로 주입하며 데모 fixture에 넣지 않는다.
-- Scan context: restaurantId nullable, selectionSource(nearby/area/search/qr), selectedAt. 위치값은 동의/필요성에 따라 별도 관리.
+- Scan context: `storeId` nullable, `storeMatchMethod`(`gps_candidate`/`name_search`/`kakao_fallback`) nullable. 두 필드는 함께 존재하거나 함께 생략.
 - Visit: id, userId, scanId, restaurantId nullable, profileSnapshot, visitedAt, verificationStatus.
 - Feedback: visitId, profileItemId, questionId, answer(yes/no/unknown), createdAt. 현재 질문은 식단 의사소통의 편의성이다.
 - Like: userId, canonicalMenuId 또는 scanMenuId, restaurantId nullable. idempotent upsert/delete.

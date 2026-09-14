@@ -10,6 +10,7 @@ import logo from '../../assets/brand/han-spoon-logo.svg';
 import { BottomNav } from './BottomNav';
 import { ScanHistoryList } from './ScanHistoryList';
 import { uploadImage } from '../../api/upload';
+import type { StoreCandidate } from '../../api/store';
 import { createTranslator } from '../locales';
 
 interface HomeScreenProps {
@@ -21,13 +22,15 @@ interface HomeScreenProps {
   history: HistoryItem[];
   onDeleteHistory: (id: string) => void;
   onRenameHistory: (id: string, title: string) => void;
+  selectedStore: StoreCandidate | null;
+  onSelectStore: (store: StoreCandidate | null) => void;
 }
 
 const MAX_FILE_SIZE_MB = 10;
 const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onDeleteHistory, onRenameHistory, demoMode = false }: HomeScreenProps) {
+export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onDeleteHistory, onRenameHistory, selectedStore, onSelectStore, demoMode = false }: HomeScreenProps) {
   const navigate = useNavigate();
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [selectedImage, setSelectedImage] = useState<PendingMenuImage | null>(null);
@@ -221,12 +224,13 @@ export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onD
       const imageForAnalysis: PendingMenuImage = uploaded
         ? {
             ...selectedImage,
+            store: selectedStore,
             storage: {
               provider: 's3',
               key: uploaded.key,
             },
           }
-        : selectedImage;
+        : { ...selectedImage, store: selectedStore };
 
       stopCamera();
       if (objectUrlRef.current === selectedImage.previewUrl) {
@@ -269,7 +273,7 @@ export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onD
       </div>
 
       <div className="flex-1 overflow-y-auto px-5 pb-10 pt-7">
-        <button onClick={() => setRestaurantPicker(true)} className="mb-5 flex min-h-14 w-full items-center gap-2 rounded-2xl border border-border-warm bg-rice-white px-3 text-start text-sm"><MapPin className="size-4 shrink-0 text-brand-primary" /><span className="flex-1 font-semibold">{restaurant ? localizeMenuText(restaurant.name, language) : t('식당 선택 · 나중에 해도 괜찮아요', 'Choose a restaurant · or do it later', 'اختر مطعماً · أو أضفه لاحقاً')}</span><ChevronRight className="size-4 rtl:rotate-180" /></button>
+        <button onClick={() => setRestaurantPicker(true)} className="mb-5 flex min-h-14 w-full items-center gap-2 rounded-2xl border border-border-warm bg-rice-white px-3 text-start text-sm"><MapPin className="size-4 shrink-0 text-brand-primary" /><span className="flex-1 font-semibold">{demoMode && restaurant ? localizeMenuText(restaurant.name, language) : !demoMode && selectedStore ? `${selectedStore.name}${selectedStore.branchName ? ` ${selectedStore.branchName}` : ''}` : t('식당 선택 · 나중에 해도 괜찮아요', 'Choose a restaurant · or do it later', 'اختر مطعماً · أو أضفه لاحقاً')}</span><ChevronRight className="size-4 rtl:rotate-180" /></button>
         <div className="mb-6">
           <div className="mb-3 inline-flex items-center rounded-full bg-brand-accent-soft px-3 py-1.5 text-xs font-bold text-accent-foreground">
             {t('메뉴판 스캔', 'Menu scan', 'مسح القائمة')}
@@ -431,7 +435,24 @@ export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onD
       </div>
 
       <BottomNav language={language} />
-      {restaurantPicker && <RestaurantPicker language={language} selectedId={restaurantId} onClose={() => setRestaurantPicker(false)} onSelect={r => { setRestaurantId(r?.id ?? null); setRestaurantPicker(false); if (r?.partnership === 'recipe-verified') navigate(`/restaurants/${r.id}/menu`); }} />}
+      {restaurantPicker && (
+        <RestaurantPicker
+          language={language}
+          demoMode={demoMode}
+          selectedId={restaurantId}
+          selectedStore={selectedStore}
+          onClose={() => setRestaurantPicker(false)}
+          onSelectDemo={(restaurant) => {
+            setRestaurantId(restaurant?.id ?? null);
+            setRestaurantPicker(false);
+            if (restaurant?.partnership === 'recipe-verified') navigate(`/restaurants/${restaurant.id}/menu`);
+          }}
+          onSelectStore={(store) => {
+            onSelectStore(store);
+            setRestaurantPicker(false);
+          }}
+        />
+      )}
     </div>
   );
 }
