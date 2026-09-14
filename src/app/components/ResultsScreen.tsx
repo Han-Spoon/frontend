@@ -18,6 +18,7 @@ import type { Language, MenuAnalysis, UserProfile } from '../App';
 import { createTranslator, translateText } from '../locales';
 import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
+import type { StoreSummary } from '../../api/store';
 import { getMenuPronunciation } from '../constants/menuNames';
 import { CURATION_ARTICLES } from '../constants/curation';
 import { menuPrice } from '../demo/currency';
@@ -50,6 +51,7 @@ interface ResultsScreenProps {
   sourceScanId?: string;
   savedRecordId?: string;
   partnerRestaurantId?: string;
+  store?: StoreSummary | null;
 }
 
 interface MenuImageProps {
@@ -115,7 +117,7 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   );
 }
 
-export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId }: ResultsScreenProps) {
+export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId, store }: ResultsScreenProps) {
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -130,6 +132,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
   const [saved, setSaved] = useState(Boolean(savedRecordId));
   const [recordId] = useState(() => savedRecordId ?? (sourceScanId ? `local-${sourceScanId}` : `local-${crypto.randomUUID()}`));
   const restaurant = RESTAURANTS.find(r => r.id === restaurantId);
+  const storeName = store?.name ?? (restaurant ? localizeMenuText(restaurant.name, language) : null);
   const t = createTranslator(language);
   const menuList = Array.isArray(menus) ? menus : [];
   const profileSummary = getProfileSummary(userProfile, language);
@@ -171,7 +174,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
 
       <main className="flex-1 overflow-y-auto" aria-live="polite">
         <section className="border-b border-border-warm bg-surface-raised px-5 pb-5 pt-6">
-          <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{restaurant && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{localizeMenuText(restaurant.name, language)}</span>}</div>
+          <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{storeName && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{storeName}</span>}</div>
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
           {partnerRestaurantId && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-3 py-2 text-xs font-bold text-brand-primary"><ShieldCheck className="size-3.5" />{t('등록 레시피로 바로 확인', 'Directly from supplied recipes', 'مباشرة من الوصفات المسجلة')}</p>}
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>

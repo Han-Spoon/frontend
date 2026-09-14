@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Camera, ChevronDown, CircleDashed, Database, Loader2, ScanText, Search, ShieldCheck, Users } from 'lucide-react';
 import { getScanResult, mapMenuResult, normalizeScanStatus, startScan } from '../../api/scan';
+import type { StoreSummary } from '../../api/store';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 import { createTranslator } from '../locales';
 
 interface AnalyzingScreenProps {
   language: Language;
   image: PendingMenuImage | null;
-  onComplete: (scanId: string, menus: MenuAnalysis[]) => void;
+  onComplete: (scanId: string, menus: MenuAnalysis[], store: StoreSummary | null) => void;
   onRetryWithNewImage: () => void;
   onCancel: () => void;
 }
@@ -83,7 +84,13 @@ export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewIma
       }
 
       try {
-        const { scanId } = await startScan({ storageKey: image.storage.key, source: image.source });
+        const { scanId } = await startScan({
+          storageKey: image.storage.key,
+          source: image.source,
+          ...(image.store
+            ? { storeId: image.store.storeId, storeMatchMethod: image.store.matchMethod }
+            : {}),
+        });
         const deadline = Date.now() + MAX_POLL_MS;
 
         while (!cancelled) {
@@ -93,7 +100,7 @@ export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewIma
           const status = normalizeScanStatus(result.status);
 
           if (status === 'completed') {
-            onComplete(scanId, (result.menus ?? []).map(mapMenuResult));
+            onComplete(scanId, (result.menus ?? []).map(mapMenuResult), result.store ?? null);
             return;
           }
           if (status === 'needs_retake') {

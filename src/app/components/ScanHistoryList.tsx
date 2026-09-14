@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, Pencil, Trash2, X } from 'lucide-react';
+import { Check, MapPin, Pencil, Trash2, X } from 'lucide-react';
 import type { HistoryItem, Language } from '../App';
 import { createTranslator } from '../locales';
 
@@ -57,6 +57,7 @@ export function ScanHistoryList({ language, history, onOpen, onDelete, onRename 
             <div className="flex items-center gap-2">
               <button onClick={() => onOpen(item)} className="min-w-0 flex-1 text-start">
                 <div className="text-sm font-bold text-soy-ink">{item.title}</div>
+                {item.store && <div className="mt-1 flex items-center gap-1 truncate text-xs font-semibold text-brand-primary"><MapPin className="size-3 shrink-0" />{item.store.name}</div>}
                 <div className="text-xs text-sesame-gray mt-1">{subtitle(item)}</div>
               </button>
               <button
