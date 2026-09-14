@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -51,6 +51,7 @@ export function HomeScreen({
   const [picker, setPicker] = useState(false);
   const [carouselPosition, setCarouselPosition] = useState(0);
   const [animateCarousel, setAnimateCarousel] = useState(true);
+  const carouselPositionRef = useRef(0);
   const [, setSelectedRestaurant] = useDemoValue<string | null>(
     'selected-restaurant',
     null,
@@ -84,16 +85,43 @@ export function HomeScreen({
         ar: 'غرين تيبل · شريك بوصفات موثقة',
       },
     }] : []), ...CURATION_ARTICLES.slice(0, demoMode ? 4 : 5)];
+  const heroCount = heroArticles.length;
+
+  const resetCarousel = useCallback(() => {
+    carouselPositionRef.current = 0;
+    setAnimateCarousel(false);
+    setCarouselPosition(0);
+    window.requestAnimationFrame(() =>
+      window.requestAnimationFrame(() => setAnimateCarousel(true)),
+    );
+  }, []);
 
   useEffect(() => {
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const timer = window.setInterval(() => {
-      setCarouselPosition((current) => current + 1);
-    }, 5000);
-    return () => window.clearInterval(timer);
-  }, [heroArticles.length]);
 
-  const visibleSlide = carouselPosition === heroArticles.length ? 0 : carouselPosition;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      setCarouselPosition((current) => {
+        const next = Math.min(current + 1, heroCount);
+        carouselPositionRef.current = next;
+        return next;
+      });
+    }, 5000);
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden && carouselPositionRef.current >= heroCount) {
+        resetCarousel();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [heroCount, resetCarousel]);
+
+  const visibleSlide = carouselPosition % heroCount;
   const carouselItems = [...heroArticles, heroArticles[0]];
 
   const openMap = (restaurant?: Restaurant) => {
@@ -159,13 +187,9 @@ export function HomeScreen({
             <div
               className={`flex ${animateCarousel ? 'transition-transform duration-500 ease-out' : ''}`}
               style={{ transform: `translateX(-${carouselPosition * 100}%)` }}
-              onTransitionEnd={() => {
-                if (carouselPosition !== heroArticles.length) return;
-                setAnimateCarousel(false);
-                setCarouselPosition(0);
-                window.requestAnimationFrame(() =>
-                  window.requestAnimationFrame(() => setAnimateCarousel(true)),
-                );
+              onTransitionEnd={(event) => {
+                if (event.currentTarget !== event.target || carouselPosition < heroCount) return;
+                resetCarousel();
               }}
             >
             {carouselItems.map((article, index) => {
@@ -226,6 +250,7 @@ export function HomeScreen({
                 aria-label={t('이야기', 'Story', 'قصة') + ' ' + (index + 1)}
                 aria-pressed={visibleSlide === index}
                 onClick={() => {
+                  carouselPositionRef.current = index;
                   setAnimateCarousel(true);
                   setCarouselPosition(index);
                 }}
