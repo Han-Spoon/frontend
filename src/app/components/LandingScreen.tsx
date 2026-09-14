@@ -5,7 +5,7 @@ import type { Language } from '../App';
 import { createTranslator, LANGUAGE_OPTIONS } from '../locales';
 
 const HERO_IMAGE =
-  'https://commons.wikimedia.org/wiki/Special:FilePath/Myeongdong%20night%20market%20seoul%202.jpg?width=1400';
+  'https://images.unsplash.com/photo-1769558688746-7ac36d8ce999?auto=format&fit=crop&w=1400&q=84';
 
 export function LandingScreen({
   language,
@@ -24,7 +24,7 @@ export function LandingScreen({
         <img
           src={HERO_IMAGE}
           alt=""
-          className="h-[64%] w-full object-cover object-[center_42%] opacity-95"
+          className="h-[64%] w-full object-cover object-[center_48%] opacity-95"
         />
         <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(10,31,23,.08)_0%,rgba(12,34,26,.08)_30%,rgba(14,37,28,.78)_59%,#12251d_76%,#12251d_100%)]" />
         <div className="absolute -end-20 bottom-28 size-64 rounded-full bg-brand-orange-500/20 blur-3xl" />
