@@ -77,9 +77,14 @@
 
 `demo/partnerMenus.ts`는 가상 레시피를 현재 `UserProfile`과 비교해 기존 `MenuAnalysis`로 변환한다. 등록 레시피 조회용 서버 API는 아직 없으며 새 엔드포인트를 가정해 호출하지 않는다. 실제 스캔의 결과·확률·어댑터는 변경하지 않는다. 향후 서버 연결 시 레시피 버전, 교차접촉 정보, 기준별 확인 범위와 판정 책임을 합의해야 한다.
 
-운영 모드의 `/map`과 식당 선택창은 브라우저 Geolocation API로 위치를 한 번 조회하고
-`POST /api/v1/stores/candidates`에 전송한다. 위치는 컴포넌트 메모리에만 두고 스캔·방문 기록에는 저장하지 않는다.
-데모 모드만 `demo/restaurants.ts`의 사진·제휴·후기 fixture를 사용한다.
+운영 모드의 홈 지도는 선택한 지역 칩의 중심 좌표를 `POST /api/v1/stores/candidates`에 전송하며,
+응답 후보를 지도 핀과 기존 선택 가게 카드 UI에 표시한다. `/map`과 식당 선택창은 브라우저 Geolocation API로
+현재 위치를 한 번 조회한다. `/map`은 사용자가 지도를 옮긴 뒤 지도 중심 좌표로 후보를 다시 조회한다.
+좌표는 컴포넌트 메모리에만 두고 스캔·방문 기록에는 저장하지 않으며 각 화면은 최대 20개 후보를 사용한다.
+
+실제 후기 집계 API가 아직 없으므로 `CommunityRanking`의 `scanCount`, `recentScanCount`,
+`matchingProfileFeedback`에 해당하는 화면 정보는 `demo/restaurants.ts` fixture를 임시 사용한다.
+이 fixture는 실제 후보·스캔 API 판정을 덮어쓰지 않으며, 집계 계약이 확정되면 서버 응답으로 교체한다.
 
 ## 식당·방문·선호의 향후 계약
 

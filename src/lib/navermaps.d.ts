@@ -31,6 +31,7 @@ declare namespace naver.maps {
   }
   class Map {
     constructor(element: string | HTMLElement, options?: MapOptions);
+    getCenter(): LatLng;
     setCenter(latlng: LatLng): void;
     setZoom(zoom: number): void;
     fitBounds(bounds: LatLngBounds, padding?: number | object): void;

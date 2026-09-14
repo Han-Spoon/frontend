@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowLeft,
@@ -427,10 +427,37 @@ function LiveRestaurantMapScreen({
 }) {
   const t = createTranslator(language);
   const navigate = useNavigate();
+  const routeLocation = useLocation();
+  const initialCenterApplied = useRef(false);
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(selectedStore?.storeId ?? null);
-  const { candidates, error, isLoading, location, locationStatus, retryLocation } = useStoreCandidates(query);
+  const {
+    candidates,
+    error,
+    isLoading,
+    locationStatus,
+    retryLocation,
+    searchAt,
+    searchAtCurrentLocation,
+    searchLocation,
+    searchOrigin,
+  } = useStoreCandidates(query);
+  const initialSearchCenter = (
+    routeLocation.state as {
+      searchCenter?: { latitude: number; longitude: number };
+    } | null
+  )?.searchCenter;
   const selected = candidates.find((store) => store.storeId === selectedId) ?? candidates[0] ?? null;
+
+  useEffect(() => {
+    if (
+      initialCenterApplied.current ||
+      locationStatus !== 'ready' ||
+      !initialSearchCenter
+    ) return;
+    initialCenterApplied.current = true;
+    searchAt(initialSearchCenter);
+  }, [initialSearchCenter, locationStatus, searchAt]);
 
   const storeName = (store: StoreCandidate) =>
     store.branchName ? `${store.name} ${store.branchName}` : store.name;
@@ -453,9 +480,11 @@ function LiveRestaurantMapScreen({
           <StoreMap
             language={language}
             stores={mapStores}
-            center={location ? { lat: location.latitude, lng: location.longitude } : undefined}
+            center={searchLocation ? { lat: searchLocation.latitude, lng: searchLocation.longitude } : undefined}
             selectedId={selected ? String(selected.storeId) : null}
             onSelect={(mapStore) => setSelectedId(Number(mapStore.id))}
+            onCenterChange={(center) => searchAt({ latitude: center.lat, longitude: center.lng })}
+            fitStores={false}
             className="h-full min-h-[560px] w-full bg-[#e9eee5]"
           />
         ) : (
@@ -500,10 +529,25 @@ function LiveRestaurantMapScreen({
         </label>
       </header>
 
+      {locationStatus === 'ready' && searchOrigin === 'map-center' && (
+        <button
+          type="button"
+          onClick={searchAtCurrentLocation}
+          className="absolute end-4 top-[72px] z-30 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border-warm bg-rice-white/95 px-3.5 text-xs font-bold text-brand-primary shadow-sm backdrop-blur"
+        >
+          <Navigation className="size-3.5" />
+          {t('내 위치', 'My location', 'موقعي')}
+        </button>
+      )}
+
       {locationStatus === 'ready' && (
         <section className="absolute inset-x-0 bottom-[72px] z-30 px-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           <div className="mb-2 flex items-center justify-between rounded-full bg-rice-white/90 px-3 py-2 text-xs font-extrabold shadow-sm backdrop-blur">
-            <span>{query.trim() ? t('이름 검색 결과', 'Name search results', 'نتائج البحث بالاسم') : t('현재 위치 주변', 'Near your current location', 'بالقرب من موقعك الحالي')} · {candidates.length}</span>
+            <span>{query.trim()
+              ? t('이름 검색 결과', 'Name search results', 'نتائج البحث بالاسم')
+              : searchOrigin === 'current-location'
+                ? t('현재 위치 주변', 'Near your current location', 'بالقرب من موقعك الحالي')
+                : t('지도 중심 주변', 'Around the map center', 'حول مركز الخريطة')} · {candidates.length}</span>
             {isLoading && <Loader2 className="size-4 animate-spin text-brand-primary" />}
           </div>
 

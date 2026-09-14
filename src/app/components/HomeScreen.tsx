@@ -28,6 +28,7 @@ import { BottomNav } from './BottomNav';
 import { CommunityRanking } from './discovery/CommunityRanking';
 import { menuPrice } from '../demo/currency';
 import type { StoreCandidate } from '../../api/store';
+import { LiveHomeDiscovery } from './discovery/LiveHomeDiscovery';
 
 export function HomeScreen({
   language,
@@ -366,27 +367,20 @@ export function HomeScreen({
               </button>
             </div>
           </section> : (
-            <section>
-              <p className="eyebrow">EXPLORE THE MAP</p>
-              <h2 className="mt-1 text-[22px] font-extrabold tracking-tight">
-                {t('내 주변 식당 찾기', 'Find restaurants near me', 'اعثر على مطاعم قريبة مني')}
-              </h2>
-              <button
-                type="button"
-                onClick={() => navigate('/map')}
-                className="mt-4 flex min-h-24 w-full items-center gap-4 rounded-[24px] border border-border-warm bg-rice-white p-4 text-start shadow-[var(--shadow-card)]"
-              >
-                <span className="flex size-12 shrink-0 items-center justify-center rounded-2xl bg-brand-primary-soft text-brand-primary"><Map className="size-6" /></span>
-                <span className="min-w-0 flex-1">
-                  <span className="block font-extrabold">{t('현재 위치에서 가게 찾기', 'Browse from your current location', 'تصفح من موقعك الحالي')}</span>
-                  <span className="mt-1 block text-xs leading-5 text-text-secondary">{t('등록된 실제 가게를 거리순으로 확인해요.', 'See registered restaurants ordered by distance.', 'اعرض المطاعم المسجلة مرتبة حسب المسافة.')}</span>
-                </span>
-                <ArrowRight className="size-5 shrink-0 rtl:rotate-180" />
-              </button>
-            </section>
+            <LiveHomeDiscovery
+              language={language}
+              selectedStore={selectedStore}
+              onSelectStore={onSelectStore}
+            />
           )}
 
-          {demoMode && <CommunityRanking language={language} userProfile={userProfile} onSelect={openMap} />}
+          <CommunityRanking
+            language={language}
+            userProfile={userProfile}
+            onSelect={(restaurant) =>
+              demoMode ? openMap(restaurant) : navigate('/map')
+            }
+          />
         </div>
       </main>
 
