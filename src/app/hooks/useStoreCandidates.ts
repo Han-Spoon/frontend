@@ -39,14 +39,14 @@ export function useStoreCandidates(
   const [candidates, setCandidates] = useState<StoreCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
-  const [locationAttempt, setLocationAttempt] = useState(0);
+  const [locationRequestPending, setLocationRequestPending] = useState(locateUser);
 
   const retryLocation = useCallback(() => {
     setLocation(null);
     setSearchLocation(null);
     setSearchOrigin('current-location');
     setLocationStatus('loading');
-    setLocationAttempt((value) => value + 1);
+    setLocationRequestPending(true);
   }, []);
 
   const searchAt = useCallback((coordinates: StoreCoordinates) => {
@@ -57,7 +57,13 @@ export function useStoreCandidates(
   }, []);
 
   const searchAtCurrentLocation = useCallback(() => {
-    if (!location) return;
+    if (!location) {
+      // 지역 좌표로 진입한 화면에서는 사용자가 요청할 때만 현재 위치를 조회한다.
+      // 조회 실패 시 기존 지역 검색 결과는 유지한다.
+      setLocationStatus('loading');
+      setLocationRequestPending(true);
+      return;
+    }
     setCandidates([]);
     setError(false);
     setSearchLocation(location);
@@ -65,13 +71,10 @@ export function useStoreCandidates(
   }, [location]);
 
   useEffect(() => {
-    if (!enabled) return;
-    if (!locateUser) {
-      setLocationStatus(initialSearchLocation ? 'ready' : 'unsupported');
-      return;
-    }
+    if (!enabled || !locationRequestPending) return;
     if (!navigator.geolocation) {
       setLocationStatus('unsupported');
+      setLocationRequestPending(false);
       return;
     }
 
@@ -87,14 +90,17 @@ export function useStoreCandidates(
         setSearchLocation(currentLocation);
         setSearchOrigin('current-location');
         setLocationStatus('ready');
+        setLocationRequestPending(false);
       },
       () => {
-        if (!cancelled) setLocationStatus('denied');
+        if (cancelled) return;
+        setLocationStatus('denied');
+        setLocationRequestPending(false);
       },
       { enableHighAccuracy: false, timeout: 8000, maximumAge: LOCATION_CACHE_MS },
     );
     return () => { cancelled = true; };
-  }, [enabled, initialSearchLocation, locateUser, locationAttempt]);
+  }, [enabled, locationRequestPending]);
 
   useEffect(() => {
     if (!enabled || !searchLocation) return;

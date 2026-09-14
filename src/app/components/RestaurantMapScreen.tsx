@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
@@ -428,7 +428,11 @@ function LiveRestaurantMapScreen({
   const t = createTranslator(language);
   const navigate = useNavigate();
   const routeLocation = useLocation();
-  const initialCenterApplied = useRef(false);
+  const initialSearchCenter = (
+    routeLocation.state as {
+      searchCenter?: { latitude: number; longitude: number };
+    } | null
+  )?.searchCenter;
   const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<number | null>(selectedStore?.storeId ?? null);
   const {
@@ -441,23 +445,11 @@ function LiveRestaurantMapScreen({
     searchAtCurrentLocation,
     searchLocation,
     searchOrigin,
-  } = useStoreCandidates(query);
-  const initialSearchCenter = (
-    routeLocation.state as {
-      searchCenter?: { latitude: number; longitude: number };
-    } | null
-  )?.searchCenter;
+  } = useStoreCandidates(query, {
+    initialSearchLocation: initialSearchCenter,
+    locateUser: !initialSearchCenter,
+  });
   const selected = candidates.find((store) => store.storeId === selectedId) ?? candidates[0] ?? null;
-
-  useEffect(() => {
-    if (
-      initialCenterApplied.current ||
-      locationStatus !== 'ready' ||
-      !initialSearchCenter
-    ) return;
-    initialCenterApplied.current = true;
-    searchAt(initialSearchCenter);
-  }, [initialSearchCenter, locationStatus, searchAt]);
 
   const storeName = (store: StoreCandidate) =>
     store.branchName ? `${store.name} ${store.branchName}` : store.name;
@@ -476,7 +468,7 @@ function LiveRestaurantMapScreen({
   return (
     <div className="relative h-dvh overflow-hidden bg-[#e9eee5] text-soy-ink">
       <div className="absolute inset-x-0 top-0 bottom-[72px]">
-        {locationStatus === 'ready' ? (
+        {searchLocation ? (
           <StoreMap
             language={language}
             stores={mapStores}
@@ -520,7 +512,7 @@ function LiveRestaurantMapScreen({
           <input
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            disabled={locationStatus !== 'ready'}
+            disabled={!searchLocation}
             placeholder={t('식당 이름 검색', 'Search by restaurant name', 'ابحث باسم المطعم')}
             aria-label={t('식당 검색', 'Search restaurants', 'ابحث عن مطعم')}
             className="min-w-0 flex-1 bg-transparent text-sm font-semibold outline-none placeholder:text-text-tertiary disabled:cursor-not-allowed"
@@ -529,18 +521,25 @@ function LiveRestaurantMapScreen({
         </label>
       </header>
 
-      {locationStatus === 'ready' && searchOrigin === 'map-center' && (
+      {searchLocation && searchOrigin === 'map-center' && (
         <button
           type="button"
           onClick={searchAtCurrentLocation}
+          disabled={locationStatus === 'loading'}
           className="absolute end-4 top-[72px] z-30 inline-flex min-h-10 items-center gap-1.5 rounded-full border border-border-warm bg-rice-white/95 px-3.5 text-xs font-bold text-brand-primary shadow-sm backdrop-blur"
         >
-          <Navigation className="size-3.5" />
-          {t('내 위치', 'My location', 'موقعي')}
+          {locationStatus === 'loading' ? (
+            <Loader2 className="size-3.5 animate-spin" />
+          ) : (
+            <Navigation className="size-3.5" />
+          )}
+          {locationStatus === 'denied'
+            ? t('위치 다시 확인', 'Try location again', 'إعادة محاولة تحديد الموقع')
+            : t('내 위치', 'My location', 'موقعي')}
         </button>
       )}
 
-      {locationStatus === 'ready' && (
+      {searchLocation && (
         <section className="absolute inset-x-0 bottom-[72px] z-30 px-3 pb-[max(14px,env(safe-area-inset-bottom))]">
           <div className="mb-2 flex items-center justify-between rounded-full bg-rice-white/90 px-3 py-2 text-xs font-extrabold shadow-sm backdrop-blur">
             <span>{query.trim()
