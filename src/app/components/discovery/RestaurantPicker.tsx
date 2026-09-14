@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Check, MapPin, Search } from 'lucide-react';
+import { Check, Map as MapIcon, MapPin, Search } from 'lucide-react';
 import type { Language } from '../../App';
 import {
   AREAS,
@@ -28,6 +28,9 @@ export function RestaurantPicker({
 }) {
   const t = createTranslator(language);
   const [area, setArea] = useState<AreaId>('nearby');
+  // 지도는 기본으로 접어둔다. 후보가 대개 10개 안쪽이라 목록이 더 빠르고,
+  // 펼칠 때만 네이버 SDK 를 받으므로 피커를 열 때의 네트워크 비용이 없다.
+  const [showMap, setShowMap] = useState(false);
   const [query, setQuery] = useState('');
   const candidates = query.trim()
     ? RESTAURANTS.filter((r) =>
@@ -81,6 +84,37 @@ export function RestaurantPicker({
           </button>
         ))}
       </div>
+      <div className="mb-3 flex justify-end">
+        <button
+          type="button"
+          onClick={() => setShowMap((value) => !value)}
+          aria-pressed={showMap}
+          className="inline-flex min-h-9 items-center gap-1.5 rounded-full border border-border-warm px-3 text-xs font-bold text-text-secondary hover:bg-surface-subtle"
+        >
+          <MapIcon className="size-3.5" />
+          {showMap
+            ? t('목록만 보기', 'List only', 'القائمة فقط')
+            : t('지도로 보기', 'Show map', 'عرض الخريطة')}
+        </button>
+      </div>
+      {showMap && candidates.length > 0 && (
+        <div className="mb-4">
+          <StoreMap
+            language={language}
+            stores={candidates.map((r) => ({
+              id: r.id,
+              name: localizeMenuText(r.name, language),
+              lat: r.lat,
+              lng: r.lng,
+            }))}
+            selectedId={selectedId}
+            onSelect={(store) => {
+              const picked = candidates.find((r) => r.id === store.id);
+              if (picked) onSelect(picked);
+            }}
+          />
+        </div>
+      )}
       <div className="space-y-2">
         {candidates.map((r) => (
           <button

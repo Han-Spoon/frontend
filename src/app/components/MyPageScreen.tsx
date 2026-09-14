@@ -6,6 +6,7 @@ import type { CurrentUser } from '../../api/user';
 import type { Language, UserAllergy, UserProfile } from '../App';
 import { getAllergyName, translate } from '../i18n';
 import { createTranslator, LANGUAGE_OPTIONS } from '../locales';
+import { MAP_LANGUAGE_OPTIONS, setMapLanguage, useMapLanguage } from '../../lib/mapLanguage';
 import {
   RELIGION_OPTIONS,
   VEGETARIAN_OPTIONS,
@@ -60,6 +61,7 @@ export function MyPageScreen({
   const [deleteError, setDeleteError] = useState('');
 
   const t = createTranslator(language);
+  const mapLanguage = useMapLanguage();
 
   const getAllergyDisplayName = (allergy: string | UserAllergy) => getAllergyName(allergy, language);
 
@@ -181,6 +183,41 @@ export function MyPageScreen({
                   {sectionHeader(t('언어', 'Language', 'اللغة'), 'language')}
                   <div className="flex items-center gap-3 rounded-2xl px-4 py-3 border bg-rice-white border-border-warm">
                     <span className="text-sm font-semibold text-soy-ink">{currentLanguageLabel}</span>
+                  </div>
+                </section>
+
+                {/* 지도 언어 — 앱 언어와 독립된 로컬 표시 설정이라 프로필 편집 플로우를 타지 않는다.
+                    네이버 지도가 ko/en/zh/ja 4개만 지원해서 앱 언어(7개)와 1:1 대응이 불가능하다. */}
+                <section>
+                  <h3 className="mb-1 text-sm font-bold text-soy-ink">
+                    {t('지도 언어', 'Map language', 'لغة الخريطة')}
+                  </h3>
+                  <p className="mb-2 text-xs text-sesame-gray/80">
+                    {t(
+                      '지도에 표시되는 지명 언어예요. 기본은 한국어예요.',
+                      'Language for place names on the map. Korean by default.',
+                      'لغة أسماء الأماكن على الخريطة. الكورية افتراضياً.',
+                    )}
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {MAP_LANGUAGE_OPTIONS.map((option) => {
+                      const active = option.value === mapLanguage;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => setMapLanguage(option.value)}
+                          aria-pressed={active}
+                          className={`min-h-11 rounded-2xl border px-2 text-xs font-semibold transition-colors ${
+                            active
+                              ? 'border-brand-green-700 bg-brand-green-50 text-brand-green-900'
+                              : 'border-border-warm bg-rice-white text-sesame-gray hover:bg-brand-green-50/50'
+                          }`}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
                   </div>
                 </section>
 
