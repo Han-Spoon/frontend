@@ -51,7 +51,7 @@ pnpm dev --host 127.0.0.1 --port 5173
 
 큐레이션 사진 22편 전체를 재검토했다. 부적절한 사진은 내장 이미지 생성 도구로 제작한 8개 장면으로 교체하고, 주제에 맞는 Wikimedia Commons 사진은 유지했다. [전체 사진 감사와 프롬프트](curation-image-audit.md)에 글별 선택 근거를 기록했다. Commons 유지 파일은 실제 배포 시 저작자·라이선스 조건에 맞춰 크레딧 화면을 제공해야 한다.
 
-랜딩 화면은 Wikimedia Commons의 `Myeongdong night market seoul 2.jpg`(Sgroey, CC BY-SA 4.0), 로그인 화면은 `Samgyeopsal table.jpg`(이동원, CC0)를 사용한다. 랜딩 사진은 서비스 공개 전 화면 내 크레딧 또는 별도 오픈소스·이미지 크레딧 페이지에서 저작자와 라이선스를 연결해야 한다.
+랜딩 화면은 Unsplash의 [A table laden with Korean dishes and people dining](https://unsplash.com/photos/a-table-laden-with-korean-dishes-and-people-dining-wfa4EHNM_1k)(Anbinh Pho, Unsplash License) 실사 이미지를 URL로 불러온다. 한국 식당에서 여러 반찬과 음식을 함께 경험하는 장면이라 메뉴 이해·식단 확인·직원 소통이라는 랜딩 메시지와 연결된다. 로그인 화면은 Wikimedia Commons의 `Samgyeopsal table.jpg`(이동원, CC0)를 사용한다. 공개 전 이미지 크레딧과 각 라이선스 조건을 다시 확인한다.
 
 ## 유지보수
 
