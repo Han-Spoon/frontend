@@ -41,13 +41,35 @@ export function StoreMap({
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
 
+  const clearMarkers = () => {
+    // 인증 실패 시 SDK가 내부 객체를 먼저 폐기할 수 있다. 각 객체는 한 번만 정리한다.
+    const listeners = listenersRef.current.splice(0);
+    const markers = markersRef.current.splice(0);
+    listeners.forEach((listener) => {
+      try { window.naver?.maps?.Event?.removeListener(listener); } catch { /* SDK already disposed */ }
+    });
+    markers.forEach((marker) => {
+      try { marker.setMap(null); } catch { /* SDK already disposed */ }
+    });
+  };
+
+  const disposeMap = () => {
+    clearMarkers();
+    const map = mapRef.current;
+    mapRef.current = null;
+    try { map?.destroy(); } catch { /* Authentication failure can invalidate the map. */ }
+  };
+
   useEffect(() => {
     let cancelled = false;
     setStatus('loading');
 
     // 키/도메인 문제는 스크립트 로드 성공 후에 드러난다. 별도 훅으로 받아 폴백으로 전환한다.
     const offAuthFailure = onNaverMapsAuthFailure(() => {
-      if (!cancelled) setStatus('error');
+      if (!cancelled) {
+        disposeMap();
+        setStatus('error');
+      }
     });
 
     loadNaverMaps(mapLanguage)
@@ -70,12 +92,7 @@ export function StoreMap({
     return () => {
       cancelled = true;
       offAuthFailure();
-      listenersRef.current.forEach((l) => naver?.maps?.Event?.removeListener(l));
-      listenersRef.current = [];
-      markersRef.current.forEach((m) => m.setMap(null));
-      markersRef.current = [];
-      mapRef.current?.destroy();
-      mapRef.current = null;
+      disposeMap();
     };
     // center 는 최초 1회만 반영한다(사용자가 지도를 움직인 뒤 되돌아가지 않게).
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -88,29 +105,31 @@ export function StoreMap({
     const map = mapRef.current;
     if (status !== 'ready' || !map) return;
 
-    listenersRef.current.forEach((l) => naver.maps.Event.removeListener(l));
-    listenersRef.current = [];
-    markersRef.current.forEach((m) => m.setMap(null));
-    markersRef.current = [];
-
-    const bounds = new naver.maps.LatLngBounds();
-    stores.forEach((store) => {
-      const position = new naver.maps.LatLng(store.lat, store.lng);
-      bounds.extend(position);
-      const marker = new naver.maps.Marker({
-        position,
-        map,
-        title: store.name,
-        icon: { content: markerHtml(store.name, store.id === selectedId) },
+    clearMarkers();
+    try {
+      const bounds = new naver.maps.LatLngBounds();
+      stores.forEach((store) => {
+        const position = new naver.maps.LatLng(store.lat, store.lng);
+        bounds.extend(position);
+        const marker = new naver.maps.Marker({
+          position,
+          map,
+          title: store.name,
+          icon: { content: markerHtml(store.name, store.id === selectedId) },
+        });
+        listenersRef.current.push(
+          naver.maps.Event.addListener(marker, 'click', () => onSelectRef.current?.(store)),
+        );
+        markersRef.current.push(marker);
       });
-      listenersRef.current.push(
-        naver.maps.Event.addListener(marker, 'click', () => onSelectRef.current?.(store)),
-      );
-      markersRef.current.push(marker);
-    });
 
-    if (center) bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
-    if (stores.length > 0) map.fitBounds(bounds, 48);
+      if (center) bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
+      if (stores.length > 0) map.fitBounds(bounds, 48);
+      else if (center) { map.setCenter(new naver.maps.LatLng(center.lat, center.lng)); map.setZoom(15); }
+    } catch {
+      disposeMap();
+      setStatus('error');
+    }
   }, [storeKey, selectedId, status, center, stores]);
 
   // key 를 달아 에러/지도 전환 시 DOM 을 새로 만든다.

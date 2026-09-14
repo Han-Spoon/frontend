@@ -106,7 +106,11 @@ export const RESTAURANTS: Restaurant[] = discoverAreaIds.flatMap((areaId, areaIn
   const [centerLat, centerLng] = areaCenters[areaId];
   return names[areaId].map(([ko, en], slot) => {
     const index = areaIndex * 3 + slot;
-    const profileIds = profiles[index % profiles.length];
+    const profileIds = [...profiles[index % profiles.length], ...[
+      ['vegan:lacto_ovo', 'allergy:peanut', 'religion:kosher'],
+      ['vegan:pesco', 'religion:hindu'],
+      ['vegan:lacto_ovo', 'vegan:pesco', 'allergy:peanut'],
+    ][index % 3]];
     return {
       id: `demo-restaurant-${index + 1}`,
       name: { ko, en, ar: en },
@@ -122,8 +126,8 @@ export const RESTAURANTS: Restaurant[] = discoverAreaIds.flatMap((areaId, areaIn
       profileIds,
       feedback: profileIds.map((profileId, profileIndex) => ({
         profileId,
-        positive: 18 + (index % 9) * 3 + profileIndex,
-        total: 23 + (index % 9) * 3 + profileIndex,
+        positive: Math.round((24 + (index * 13 + profileIndex * 7) % 83) * (0.72 + (index * 7 + profileIndex * 3) % 24 / 100)),
+        total: 24 + (index * 13 + profileIndex * 7) % 83,
       })),
       address: `${area.ko} · ${slot + 1}`,
       partnership: slot === 2 ? 'standard' : 'recipe-verified',

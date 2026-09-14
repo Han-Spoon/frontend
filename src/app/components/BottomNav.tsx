@@ -1,5 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
-import { BookOpen, Camera, MessageSquareHeart, Home, History } from 'lucide-react';
+import { BookOpen, Camera, MessageSquareHeart, Home, Map } from 'lucide-react';
 import type { Language } from '../App';
 import { createTranslator } from '../locales';
 
@@ -37,7 +37,7 @@ export function BottomNav({ language }: BottomNavProps) {
           <div className="flex size-10 items-center justify-center rounded-[14px] bg-brand-green-700 text-white shadow-sm"><Camera className="size-5" /></div>
           <span className="text-[10px] font-bold">{t('촬영', 'Scan', 'مسح')}</span>
         </button>
-        <button onClick={() => navigate('/history')} className={sideItemClass(pathname === '/history')}><History className="size-5" /><span className="text-xs font-semibold">{t('기록', 'Journal', 'السجل')}</span></button>
+        <button onClick={() => navigate('/map')} aria-current={pathname === '/map' ? 'page' : undefined} className={sideItemClass(pathname === '/map')}><Map className="size-5" /><span className="text-xs font-semibold">{t('지도', 'Map', 'الخريطة')}</span></button>
 
         <button onClick={() => navigate('/cards')} className={sideItemClass(active === 'cards')}>
           <MessageSquareHeart className="w-5 h-5" />

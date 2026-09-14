@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, Camera, ImageIcon, RotateCcw, User, MapPin, ChevronRight } from 'lucide-react';
 import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { RESTAURANTS } from '../demo/restaurants';
@@ -27,6 +28,7 @@ const MAX_FILE_SIZE = MAX_FILE_SIZE_MB * 1024 * 1024;
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onDeleteHistory, onRenameHistory, demoMode = false }: HomeScreenProps) {
+  const navigate = useNavigate();
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [selectedImage, setSelectedImage] = useState<PendingMenuImage | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -429,7 +431,7 @@ export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onD
       </div>
 
       <BottomNav language={language} />
-      {restaurantPicker && <RestaurantPicker language={language} selectedId={restaurantId} onClose={() => setRestaurantPicker(false)} onSelect={r => { setRestaurantId(r?.id ?? null); setRestaurantPicker(false); }} />}
+      {restaurantPicker && <RestaurantPicker language={language} selectedId={restaurantId} onClose={() => setRestaurantPicker(false)} onSelect={r => { setRestaurantId(r?.id ?? null); setRestaurantPicker(false); if (r?.partnership === 'recipe-verified') navigate(`/restaurants/${r.id}/menu`); }} />}
     </div>
   );
 }

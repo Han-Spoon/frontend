@@ -5,12 +5,15 @@
 | `/` | 브랜드 랜딩·언어 선택 | `/login` |
 | `/login` | Google 전용 로그인·언어 선택 | 기존 사용자 home, 신규 onboarding, 뒤로 landing |
 | `/onboarding` | 식단 프로필 설정/수정 | home 또는 mypage |
-| `/home` | 식당 발견·지도 미리보기·랭킹·자동 캐러셀 | 풀스크린 지도, scan, curation, history |
-| `/restaurants/map?area=seongsu&restaurant=:id` | 풀스크린 지역 지도·식당 상세 시트 | home, scan |
+| `/home` | 동네 발견·지도 미리보기·조건별 랭킹·자동 캐러셀 | map, scan, curation |
+| `/map` | 현재 위치 주변 지도·목록·검색 | 지역 선택, 식당 상세 시트 |
+| `/map?area=seongsu&restaurant=:id` | 지역 지도·식당 상세 시트 | 파트너 메뉴 또는 scan |
+| `/restaurants/map`, `/restaurant/map` | 이전 링크 호환 | 쿼리를 보존해 `/map`으로 replace 리다이렉트 |
+| `/restaurants/:id/menu` | 파트너 등록 레시피의 프로필별 메뉴 결과 | map, onboarding, 기록 저장 |
 | `/scan` | 기존 촬영/업로드 화면 + 식당 선택 | analyzing 또는 데모 results |
 | `/analyzing` | 기존 업로드 이미지 분석 상태 | results 또는 home |
 | `/results` | 메뉴 판정·환산 가격·라이킷·저장 | scan, home, history, curation 상세 |
-| `/history` | 서버 스캔과 로컬 방문 기록 통합 | results 상세 |
+| `/history` | 서버 스캔과 로컬 방문 기록 통합 | 마이페이지에서 진입, results 상세 |
 | `/curation` | 문화 콘텐츠 목록·검색·태그 | `/curation/:id` |
 | `/curation/:id` | 글 상세와 추천 | 뒤로가기/다른 글 |
 | `/cards` | 의사소통 카드 | 기존 카드 흐름 |
