@@ -2,8 +2,8 @@
 
 | 경로 | 화면 | 진입과 이탈 |
 | --- | --- | --- |
-| `/` | 로그인으로 이동 | `/login` |
-| `/login` | 로그인·언어 선택 | 기존 사용자 home, 신규 onboarding |
+| `/` | 브랜드 랜딩·언어 선택 | `/login` |
+| `/login` | Google 전용 로그인·언어 선택 | 기존 사용자 home, 신규 onboarding, 뒤로 landing |
 | `/onboarding` | 식단 프로필 설정/수정 | home 또는 mypage |
 | `/home` | 식당 발견·지도 미리보기·랭킹·자동 캐러셀 | 풀스크린 지도, scan, curation, history |
 | `/restaurants/map?area=seongsu&restaurant=:id` | 풀스크린 지역 지도·식당 상세 시트 | home, scan |
