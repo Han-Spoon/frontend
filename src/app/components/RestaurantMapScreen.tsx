@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -27,7 +27,7 @@ import {
   localizeMenuText,
 } from '../results/resultViewModel';
 import { menuPrice } from '../demo/currency';
-import { AreaMap } from './discovery/AreaMap';
+import { StoreMap } from './discovery/StoreMap';
 import { BottomSheet } from './discovery/BottomSheet';
 import { PartnershipBadge } from './discovery/PartnershipBadge';
 
@@ -65,7 +65,17 @@ export function RestaurantMapScreen({
     'selected-restaurant',
     null,
   );
-  const restaurants = restaurantsInArea(area);
+  const restaurants = useMemo(() => restaurantsInArea(area), [area]);
+  const mapStores = useMemo(
+    () =>
+      restaurants.map((restaurant) => ({
+        id: restaurant.id,
+        name: localizeMenuText(restaurant.name, language),
+        lat: restaurant.lat,
+        lng: restaurant.lng,
+      })),
+    [language, restaurants],
+  );
   const selected =
     restaurants.find((restaurant) => restaurant.id === selectedId) ??
     restaurants[0];
@@ -110,16 +120,15 @@ export function RestaurantMapScreen({
   return (
     <div className="relative h-dvh overflow-hidden bg-[#e9eee5] text-soy-ink">
       <div className="absolute inset-0">
-        <AreaMap
-          area={area}
-          restaurants={restaurants}
+        <StoreMap
+          language={language}
+          stores={mapStores}
           selectedId={selected.id}
-          onSelect={(id) => {
-            const restaurant = restaurants.find((item) => item.id === id);
+          onSelect={(store) => {
+            const restaurant = restaurants.find((item) => item.id === store.id);
             if (restaurant) openRestaurant(restaurant);
           }}
-          language={language}
-          mode="fullscreen"
+          className="h-full min-h-[560px] w-full bg-[#e9eee5]"
         />
       </div>
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-44 bg-gradient-to-b from-rice-cream via-rice-cream/90 to-transparent" />
