@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
@@ -26,7 +26,7 @@ import {
 import { useDemoValue } from '../demo/storage';
 import { localizeMenuText } from '../results/resultViewModel';
 import { CURATION_ARTICLES } from '../constants/curation';
-import { AreaMap } from './discovery/AreaMap';
+import { StoreMap } from './discovery/StoreMap';
 import { PartnershipBadge } from './discovery/PartnershipBadge';
 import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { BottomNav } from './BottomNav';
@@ -53,7 +53,17 @@ export function HomeScreen({
     'selected-restaurant',
     null,
   );
-  const restaurants = restaurantsInArea(area);
+  const restaurants = useMemo(() => restaurantsInArea(area), [area]);
+  const mapStores = useMemo(
+    () =>
+      restaurants.map((restaurant) => ({
+        id: restaurant.id,
+        name: localizeMenuText(restaurant.name, language),
+        lat: restaurant.lat,
+        lng: restaurant.lng,
+      })),
+    [language, restaurants],
+  );
   const selected =
     restaurants.find((restaurant) => restaurant.id === selectedId) ??
     restaurants[0];
@@ -309,12 +319,12 @@ export function HomeScreen({
             </div>
 
             <div className="relative overflow-hidden rounded-[30px] border border-border-warm bg-rice-white shadow-[var(--shadow-card)]">
-              <AreaMap
-                area={area}
-                restaurants={restaurants}
-                selectedId={selected.id}
-                onSelect={setSelectedId}
+              <StoreMap
                 language={language}
+                stores={mapStores}
+                selectedId={selected.id}
+                onSelect={(store) => setSelectedId(store.id)}
+                className="h-[270px] w-full bg-[#e9eee5]"
               />
               <button
                 onClick={() => openMap()}

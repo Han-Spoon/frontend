@@ -33,7 +33,7 @@ pnpm dev --host 127.0.0.1 --port 5173
 | 대상 | 파일/동작 |
 | --- | --- |
 | 18개 지역·식당 54곳·후기·입점 상태 | demo/restaurants.ts |
-| 위치/지도 | 성수 기준 주변 후보, AreaMap SVG 개략도, `/restaurants/map` |
+| 위치/지도 | Naver Maps SDK, 지역 중심 주변 임시 좌표, `/restaurants/map` |
 | 환율 | demo/currency.ts의 고정값; 매일 00시 실제 갱신 없음 |
 | 결과 메뉴/82%·68%·36% | results/resultFixtures.ts |
 | 라이킷/식당 찜 | han-spoon-demo:liked-menus / saved-restaurants |
@@ -42,6 +42,8 @@ pnpm dev --host 127.0.0.1 --port 5173
 | 큐레이션 | constants/curationExtra.ts 신규 12편 |
 
 사진은 참조용 이미지다. 레스토랑의 실제 음식 사진이나 인증 증거가 아니다. `전체 레시피 인증`도 시연용 상태이며 실제 계약/검증 데이터가 아니다. 외부 이미지 네트워크가 차단되면 브랜드 색상/대체 화면으로 표시한다. 본격 배포 전 이미지 사용 조건과 최종 에셋을 검토한다.
+
+지도 렌더링에는 `VITE_NAVER_MAP_KEY_ID`와 Naver Cloud의 Web 서비스 URL 등록이 필요하다. 식당 좌표는 현재 `demo/restaurants.ts`의 fixture이며 실제 DB 좌표가 준비되면 `StoreMap`의 `stores` 입력만 서버 데이터로 교체한다. 키가 없거나 인증에 실패하면 식당 목록을 이용하도록 폴백 안내를 표시한다.
 
 추가 큐레이션 12편의 사진은 Wikimedia Commons의 공개 라이선스 파일을 주제별로 연결한다. 파일명과 원본 경로는 `constants/curationExtra.ts`의 `storyPhotos`에 기록하며, 실제 배포 시 각 파일 페이지의 저작자·라이선스 조건에 맞춰 크레딧 화면을 제공한다.
 

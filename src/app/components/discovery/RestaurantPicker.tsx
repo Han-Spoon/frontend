@@ -12,6 +12,7 @@ import { localizeMenuText } from '../../results/resultViewModel';
 import { createTranslator } from '../../locales';
 import { BottomSheet } from './BottomSheet';
 import { PartnershipBadge } from './PartnershipBadge';
+import { StoreMap } from './StoreMap';
 
 export function RestaurantPicker({
   language,
