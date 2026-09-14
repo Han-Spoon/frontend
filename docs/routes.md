@@ -5,7 +5,8 @@
 | `/` | 로그인으로 이동 | `/login` |
 | `/login` | 로그인·언어 선택 | 기존 사용자 home, 신규 onboarding |
 | `/onboarding` | 식단 프로필 설정/수정 | home 또는 mypage |
-| `/home` | 식당 발견·지도·랭킹·캐러셀 | 상세 시트, scan, curation, history |
+| `/home` | 식당 발견·지도 미리보기·랭킹·자동 캐러셀 | 풀스크린 지도, scan, curation, history |
+| `/restaurants/map?area=seongsu&restaurant=:id` | 풀스크린 지역 지도·식당 상세 시트 | home, scan |
 | `/scan` | 기존 촬영/업로드 화면 + 식당 선택 | analyzing 또는 데모 results |
 | `/analyzing` | 기존 업로드 이미지 분석 상태 | results 또는 home |
 | `/results` | 메뉴 판정·환산 가격·라이킷·저장 | scan, home, history, curation 상세 |

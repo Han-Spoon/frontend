@@ -10,7 +10,6 @@ import {
   MessageSquareText,
   SearchX,
   ShieldCheck,
-  Volume2,
   Heart,
   Bookmark,
   MapPin,
@@ -21,7 +20,6 @@ import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
 import { getMenuPronunciation } from '../constants/menuNames';
 import { CURATION_ARTICLES } from '../constants/curation';
-import { speak, ttsSupported } from '../utils/speech';
 import { menuPrice } from '../demo/currency';
 import { useDemoValue } from '../demo/storage';
 import { RESTAURANTS } from '../demo/restaurants';
@@ -174,12 +172,6 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
           <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{restaurant && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{localizeMenuText(restaurant.name, language)}</span>}</div>
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
-          <div className="mt-5 grid grid-cols-3 gap-2">{([
-            ['safe', counts.safe, t('안전', 'Safe', 'آمن'), 'bg-status-safe-surface text-status-safe-text'],
-            ['caution', counts.caution, t('주의', 'Caution', 'تنبيه'), 'bg-status-caution-surface text-status-caution-text'],
-            ['danger', counts.danger, t('위험', 'Danger', 'خطر'), 'bg-status-danger-surface text-status-danger-text'],
-          ] as const).map(([level, count, label, style]) => <button key={level} onClick={() => setFilter(level)} aria-pressed={filter === level} className={`rounded-2xl px-3 py-3 text-start ${style}`}><span className="block text-[26px] font-extrabold leading-8">{count}</span><span className="mt-1 block text-xs font-bold">{label}</span></button>)}</div>
-
           <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
               <ShieldCheck className="size-4 text-brand-primary" aria-hidden="true" />
@@ -245,12 +237,9 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
                         <button aria-label={`${t('메뉴 라이킷', 'Like menu', 'أعجبني الطبق')}: ${menu.menuName}`} aria-pressed={liked} onClick={() => setLikedMenus(liked ? likedMenus.filter(key => key !== likeKey) : [...likedMenus, likeKey])} className={`-mt-1 flex size-11 shrink-0 items-center justify-center rounded-full ${liked ? 'bg-brand-accent-soft text-brand-accent' : 'bg-surface-subtle text-text-tertiary'}`}><Heart className={`size-5 ${liked ? 'fill-current' : ''}`} /></button>
                       </div>
                       <h3 className="break-words text-lg font-extrabold tracking-[-0.015em]">{menu.menuName}</h3>
-                      <p className="mt-0.5 break-words text-sm font-semibold text-text-secondary">{translatedName}</p>
+                      {language !== 'ko' && translatedName.trim() !== menu.menuName.trim() && <p className="mt-0.5 break-words text-sm font-semibold text-text-secondary">{translatedName}</p>}
                       {price ? <div className="mt-2 flex flex-wrap items-baseline gap-x-2 gap-y-1"><span className="text-sm font-extrabold tabular-nums" dir="ltr">{price.original}</span>{price.converted && <span className="text-xs font-semibold text-text-secondary" dir="ltr">≈ {price.converted}</span>}</div> : <p className="mt-2 text-xs text-text-tertiary">{t('가격 확인 필요', 'Price needs checking', 'يجب التحقق من السعر')}</p>}
-                      <div className="mt-1 flex min-h-8 items-center gap-1.5">
-                        {pronunciation && <span className="min-w-0 text-xs text-text-tertiary">{pronunciation}</span>}
-                        {ttsSupported && <button onClick={() => speak(menu.menuName, 'ko-KR')} className="touch-target inline-flex shrink-0 items-center justify-center rounded-full text-brand-primary hover:bg-brand-primary-soft" aria-label={`${t('음성 듣기', 'Listen', 'استمع')}: ${menu.menuName}`}><Volume2 className="size-4" /></button>}
-                      </div>
+                      {pronunciation && <p className="mt-1 text-xs text-text-tertiary">{pronunciation}</p>}
                       {description && <p className="mt-1 line-clamp-2 text-xs leading-5 text-text-secondary">{description}</p>}
                     </div>
                   </div>

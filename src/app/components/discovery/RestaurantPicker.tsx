@@ -11,7 +11,7 @@ import {
 import { localizeMenuText } from '../../results/resultViewModel';
 import { createTranslator } from '../../locales';
 import { BottomSheet } from './BottomSheet';
-import { StoreMap } from './StoreMap';
+import { PartnershipBadge } from './PartnershipBadge';
 
 export function RestaurantPicker({
   language,
@@ -126,6 +126,7 @@ export function RestaurantPicker({
               <MapPin className="size-5" />
             </span>
             <span className="min-w-0 flex-1">
+              <PartnershipBadge restaurant={r} language={language} compact />
               <span className="block font-bold">
                 {localizeMenuText(r.name, language)}
               </span>
