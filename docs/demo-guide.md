@@ -47,6 +47,8 @@ pnpm dev --host 127.0.0.1 --port 5173
 
 추가 큐레이션 12편의 사진은 Wikimedia Commons의 공개 라이선스 파일을 주제별로 연결한다. 파일명과 원본 경로는 `constants/curationExtra.ts`의 `storyPhotos`에 기록하며, 실제 배포 시 각 파일 페이지의 저작자·라이선스 조건에 맞춰 크레딧 화면을 제공한다.
 
+랜딩 화면은 Wikimedia Commons의 `Myeongdong night market seoul 2.jpg`(Sgroey, CC BY-SA 4.0), 로그인 화면은 `Samgyeopsal table.jpg`(이동원, CC0)를 사용한다. 랜딩 사진은 서비스 공개 전 화면 내 크레딧 또는 별도 오픈소스·이미지 크레딧 페이지에서 저작자와 라이선스를 연결해야 한다.
+
 ## 유지보수
 
 fixture의 고정 판정은 샘플 프로필 시연용이며 임의의 실제 이용자에게 맞춘 AI 분석이 아니다. 별도의 테스트 프로필에서는 확률 표시 필터만 검증한다. 실제 음식 판단에 쓰지 않는다. 촬영용 UI에는 개발 중 문구를 넣지 않지만 데이터 출처는 이 문서와 코드에 계속 남긴다.

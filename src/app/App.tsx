@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
+import { LandingScreen } from './components/LandingScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
 import { RestaurantMapScreen } from './components/RestaurantMapScreen';
@@ -371,7 +372,10 @@ export default function App() {
     <div className="min-h-dvh bg-[var(--shell-background)] flex items-center justify-center sm:px-6">
       <div className="mobile-container w-full max-w-[430px] min-h-dvh bg-rice-cream shadow-[0_24px_80px_rgba(41,54,46,0.16)] relative overflow-hidden sm:border-x sm:border-border-warm">
         <Routes>
-          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route
+            path="/"
+            element={<LandingScreen language={language} setLanguage={setLanguage} />}
+          />
           <Route
             path="/login"
             element={
