@@ -1,5 +1,23 @@
 import type { CurationArticle, CurationTag } from './curation';
 
+const commons = (file: string, width = 900) =>
+  `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${width}`;
+
+const storyPhotos: Record<string, string> = {
+  'sauce-on-side': commons('Dolsot-bibimbap.jpg'),
+  'market-small-plates': commons('Seoul-Namdaemun.Market-Street.food-02.jpg'),
+  'solo-table': commons("Korean cuisine at Yongsan's Army Community Service-01 (retouched).jpg"),
+  'broth-question': commons('Korean stew-Sundubu jjigae-05.jpg'),
+  'seongsu-walk': commons('Seongsu Street.jpg'),
+  'busan-seaside': commons('Haeundae Beach, Busan.jpg'),
+  'spice-conversation': commons('Korean.snacks-Tteokbokki-08.jpg'),
+  'banchan-questions': commons('Korean food-Jangajji and namul at Namdaemun Market in Seoul-01.jpg'),
+  'cafe-pause': commons('Coffee and Tea at Droptop Cafe, Seoul.jpg'),
+  'halal-conversation': commons('Seoul central mosque 02.jpg'),
+  'menu-memory': commons('Korean food-Hoedeopbap-01.jpg'),
+  'ordering-rhythm': commons('Korea-Seoul-Insadong-Sanchon-02.jpg'),
+};
+
 // Original editorial drafts for the demonstration. New long-form translations use English fallback outside ko/en/ar.
 const stories: {
   id: string;
@@ -222,13 +240,13 @@ const stories: {
 ];
 
 export const EXTRA_CURATION_ARTICLES: CurationArticle[] = stories.map(
-  (story, index) => ({
+  (story) => ({
     id: story.id,
     emoji: story.emoji,
     tag: story.tag,
     accent: 'bg-brand-green-50',
     date: '2026-09-10',
-    image: `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="800" height="450" viewBox="0 0 800 450"><rect width="800" height="450" fill="${index % 2 ? '#e4eadf' : '#f3e7da'}"/><circle cx="660" cy="60" r="240" fill="#176449" opacity=".08"/><circle cx="180" cy="400" r="230" fill="#d86632" opacity=".07"/><circle cx="400" cy="225" r="130" fill="#fffdf9"/><text x="400" y="260" text-anchor="middle" font-size="100">${story.emoji}</text></svg>`)}`,
+    image: storyPhotos[story.id],
     title: { ko: story.ko, en: story.en, ar: story.ar },
     excerpt: { ko: story.introKo, en: story.introEn, ar: story.introAr },
     body: { ko: story.bodyKo, en: story.bodyEn, ar: story.bodyAr },

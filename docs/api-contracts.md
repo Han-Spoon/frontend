@@ -68,6 +68,8 @@
 ## 식당·방문·선호의 향후 계약
 
 - Restaurant: id, 한국어 원명, localizedDisplayName, aliases, 위도·경도, 지역, 메뉴 유형, 사진 출처, 영업 정보 확인 시각.
+- Partnership: restaurantId, status(standard/recipe-verified), recipeCoverage, verifiedAt. `recipe-verified`는 전체 레시피 정보 검증 범위이며 사용자별 섭취 안전 보장이 아니다.
+- Map adapter: Naver Maps SDK는 Restaurant의 위도·경도를 렌더링하고 bounds/center/zoom과 pin selection만 UI에 전달한다. SDK 키는 환경변수로 주입하며 데모 fixture에 넣지 않는다.
 - Scan context: restaurantId nullable, selectionSource(nearby/area/search/qr), selectedAt. 위치값은 동의/필요성에 따라 별도 관리.
 - Visit: id, userId, scanId, restaurantId nullable, profileSnapshot, visitedAt, verificationStatus.
 - Feedback: visitId, profileItemId, questionId, answer(yes/no/unknown), createdAt. 현재 질문은 식단 의사소통의 편의성이다.

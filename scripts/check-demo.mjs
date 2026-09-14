@@ -102,9 +102,15 @@ try {
   for (const article of EXTRA_CURATION_ARTICLES)
     for (const language of ['ko', 'en', 'ar'])
       assert.ok(article.body[language].split('\n\n').length >= 3);
-  const { AREAS, restaurantsInArea, profileMatches } =
+  assert.ok(EXTRA_CURATION_ARTICLES.every(article => article.image.startsWith('https://commons.wikimedia.org/')));
+  const { AREAS, RESTAURANTS, restaurantsInArea, profileMatches } =
     await server.ssrLoadModule('/src/app/demo/restaurants.ts');
   for (const area of AREAS) assert.equal(restaurantsInArea(area.id).length, 3);
+  assert.equal(AREAS.length, 19);
+  for (const areaName of ['청담', '부산', '강남·역삼', '제주', '성수', '대구', '홍대·신촌'])
+    assert.ok(AREAS.some(area => area.ko === areaName));
+  assert.ok(RESTAURANTS.some(restaurant => restaurant.partnership === 'recipe-verified'));
+  assert.ok(RESTAURANTS.some(restaurant => restaurant.partnership === 'standard'));
   const restaurant = restaurantsInArea('nearby')[0];
   assert.equal(profileMatches(restaurant, null).length, 0);
   assert.ok(

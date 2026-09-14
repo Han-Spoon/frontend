@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useNavigate } from 'react-router-dom';
 import { LoginScreen } from './components/LoginScreen';
 import { OnboardingScreen } from './components/OnboardingScreen';
 import { HomeScreen } from './components/HomeScreen';
+import { RestaurantMapScreen } from './components/RestaurantMapScreen';
 import { ScanScreen } from './components/ScanScreen';
 import { ScanHistoryScreen } from './components/ScanHistoryScreen';
 import { useDemoValue, writeDemo } from './demo/storage';
@@ -395,6 +396,10 @@ export default function App() {
           <Route
             path="/home"
             element={<HomeScreen language={language} userProfile={userProfile} />}
+          />
+          <Route
+            path="/restaurants/map"
+            element={<RestaurantMapScreen language={language} userProfile={userProfile} />}
           />
           <Route path="/history" element={<ScanHistoryScreen language={language} history={combinedHistory} onOpen={openHistory} onDelete={handleDeleteHistory} onRename={handleRenameHistory} />} />
           <Route
