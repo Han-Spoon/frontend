@@ -17,6 +17,8 @@ export function StoreMap({
   center,
   selectedId,
   onSelect,
+  onCenterChange,
+  fitStores = true,
   className = 'h-56 w-full overflow-hidden rounded-2xl',
 }: {
   language: Language;
@@ -25,12 +27,17 @@ export function StoreMap({
   center?: { lat: number; lng: number };
   selectedId?: string | null;
   onSelect?: (store: MapStore) => void;
+  /** 사용자가 지도를 옮긴 뒤의 중심 좌표. 프로그램에 의한 이동에는 호출하지 않는다. */
+  onCenterChange?: (center: { lat: number; lng: number }) => void;
+  /** false이면 후보가 바뀌어도 사용자가 보고 있는 지도 영역을 유지한다. */
+  fitStores?: boolean;
   className?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<naver.maps.Map | null>(null);
   const markersRef = useRef<naver.maps.Marker[]>([]);
   const listenersRef = useRef<unknown[]>([]);
+  const mapListenersRef = useRef<unknown[]>([]);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
 
   // 지도 라벨 언어는 앱 언어가 아니라 사용자 설정(기본 한국어)을 따른다.
@@ -40,6 +47,8 @@ export function StoreMap({
   // 콜백은 ref 로 넘겨 마커 재생성 없이 최신 값을 쓴다.
   const onSelectRef = useRef(onSelect);
   onSelectRef.current = onSelect;
+  const onCenterChangeRef = useRef(onCenterChange);
+  onCenterChangeRef.current = onCenterChange;
 
   const clearMarkers = () => {
     // 인증 실패 시 SDK가 내부 객체를 먼저 폐기할 수 있다. 각 객체는 한 번만 정리한다.
@@ -55,6 +64,9 @@ export function StoreMap({
 
   const disposeMap = () => {
     clearMarkers();
+    mapListenersRef.current.splice(0).forEach((listener) => {
+      try { window.naver?.maps?.Event?.removeListener(listener); } catch { /* SDK already disposed */ }
+    });
     const map = mapRef.current;
     mapRef.current = null;
     try { map?.destroy(); } catch { /* Authentication failure can invalidate the map. */ }
@@ -75,7 +87,7 @@ export function StoreMap({
     loadNaverMaps(mapLanguage)
       .then(() => {
         if (cancelled || !containerRef.current) return;
-        mapRef.current = new naver.maps.Map(containerRef.current, {
+        const map = new naver.maps.Map(containerRef.current, {
           center: new naver.maps.LatLng(center?.lat ?? 37.5665, center?.lng ?? 126.978),
           zoom: 17,
           logoControl: true,
@@ -83,6 +95,13 @@ export function StoreMap({
           scaleControl: false,
           zoomControl: false,
         });
+        mapRef.current = map;
+        mapListenersRef.current.push(
+          naver.maps.Event.addListener(map, 'dragend', () => {
+            const nextCenter = map.getCenter();
+            onCenterChangeRef.current?.({ lat: nextCenter.lat(), lng: nextCenter.lng() });
+          }),
+        );
         setStatus('ready');
       })
       .catch(() => {
@@ -94,9 +113,23 @@ export function StoreMap({
       offAuthFailure();
       disposeMap();
     };
-    // center 는 최초 1회만 반영한다(사용자가 지도를 움직인 뒤 되돌아가지 않게).
+    // 지도 생성 시 중심 좌표만 사용한다. 이후 변경은 아래 effect에서 필요한 경우에만 반영한다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mapLanguage]);
+
+  // 현재 위치로 돌아가기처럼 호출부가 명시적으로 중심을 바꿀 때만 지도를 이동한다.
+  // 사용자의 dragend가 전달한 좌표는 이미 지도 중심과 같으므로 재이동하지 않는다.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (status !== 'ready' || !map || !center) return;
+    const current = map.getCenter();
+    if (
+      Math.abs(current.lat() - center.lat) > 0.000001 ||
+      Math.abs(current.lng() - center.lng) > 0.000001
+    ) {
+      map.setCenter(new naver.maps.LatLng(center.lat, center.lng));
+    }
+  }, [center?.lat, center?.lng, status]);
 
   // 후보가 바뀌면 마커를 다시 그린다.
   const storeKey = useMemo(() => stores.map((s) => s.id).join('|'), [stores]);
@@ -123,14 +156,16 @@ export function StoreMap({
         markersRef.current.push(marker);
       });
 
-      if (center) bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
-      if (stores.length > 0) map.fitBounds(bounds, 48);
-      else if (center) { map.setCenter(new naver.maps.LatLng(center.lat, center.lng)); map.setZoom(15); }
+      if (fitStores) {
+        if (center) bounds.extend(new naver.maps.LatLng(center.lat, center.lng));
+        if (stores.length > 0) map.fitBounds(bounds, 48);
+        else if (center) { map.setCenter(new naver.maps.LatLng(center.lat, center.lng)); map.setZoom(15); }
+      }
     } catch {
       disposeMap();
       setStatus('error');
     }
-  }, [storeKey, selectedId, status, center, stores]);
+  }, [fitStores, storeKey, selectedId, status, center, stores]);
 
   // key 를 달아 에러/지도 전환 시 DOM 을 새로 만든다.
   // 같은 div 를 재사용하면 네이버가 컨테이너에 직접 주입한 노드(에러 화면·타일)가 남아 겹친다.

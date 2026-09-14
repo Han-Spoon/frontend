@@ -24,7 +24,7 @@ export const AREAS = [
 ] as const;
 
 export type AreaId = (typeof AREAS)[number]['id'];
-type DiscoverAreaId = Exclude<AreaId, 'nearby'>;
+export type DiscoverAreaId = Exclude<AreaId, 'nearby'>;
 
 export interface Restaurant {
   id: string;
@@ -42,7 +42,7 @@ export interface Restaurant {
   partnership: 'recipe-verified' | 'standard';
 }
 
-const areaCenters: Record<DiscoverAreaId, [number, number]> = {
+export const AREA_CENTERS: Record<DiscoverAreaId, [number, number]> = {
   cheongdam: [37.524, 127.047],
   busan: [35.156, 129.12],
   'gangnam-yeoksam': [37.5, 127.036],
@@ -98,12 +98,12 @@ const profiles = [
   ['allergy:milk', 'allergy:egg', 'vegan:vegan', 'religion:halal'],
 ];
 
-const discoverAreaIds = Object.keys(areaCenters) as DiscoverAreaId[];
+const discoverAreaIds = Object.keys(AREA_CENTERS) as DiscoverAreaId[];
 
 // Fictional restaurants, coordinates, feedback and partnership states for UI demonstrations.
 export const RESTAURANTS: Restaurant[] = discoverAreaIds.flatMap((areaId, areaIndex) => {
   const area = AREAS.find((item) => item.id === areaId)!;
-  const [centerLat, centerLng] = areaCenters[areaId];
+  const [centerLat, centerLng] = AREA_CENTERS[areaId];
   return names[areaId].map(([ko, en], slot) => {
     const index = areaIndex * 3 + slot;
     const profileIds = [...profiles[index % profiles.length], ...[

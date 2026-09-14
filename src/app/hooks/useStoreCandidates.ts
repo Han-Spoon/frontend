@@ -2,13 +2,40 @@ import { useCallback, useEffect, useState } from 'react';
 import { findStoreCandidates, type StoreCandidate } from '../../api/store';
 
 export type StoreLocationStatus = 'loading' | 'ready' | 'denied' | 'unsupported';
+export type StoreSearchOrigin = 'current-location' | 'map-center';
+
+export interface StoreCoordinates {
+  latitude: number;
+  longitude: number;
+}
+
+interface StoreCandidateOptions {
+  enabled?: boolean;
+  initialSearchLocation?: StoreCoordinates;
+  locateUser?: boolean;
+}
 
 const SEARCH_DEBOUNCE_MS = 350;
 const LOCATION_CACHE_MS = 5 * 60 * 1000;
 
-export function useStoreCandidates(query: string, enabled = true) {
-  const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [locationStatus, setLocationStatus] = useState<StoreLocationStatus>('loading');
+export function useStoreCandidates(
+  query: string,
+  {
+    enabled = true,
+    initialSearchLocation,
+    locateUser = true,
+  }: StoreCandidateOptions = {},
+) {
+  const [location, setLocation] = useState<StoreCoordinates | null>(null);
+  const [searchLocation, setSearchLocation] = useState<StoreCoordinates | null>(
+    initialSearchLocation ?? null,
+  );
+  const [searchOrigin, setSearchOrigin] = useState<StoreSearchOrigin>(
+    initialSearchLocation ? 'map-center' : 'current-location',
+  );
+  const [locationStatus, setLocationStatus] = useState<StoreLocationStatus>(
+    locateUser ? 'loading' : initialSearchLocation ? 'ready' : 'unsupported',
+  );
   const [candidates, setCandidates] = useState<StoreCandidate[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(false);
@@ -16,12 +43,33 @@ export function useStoreCandidates(query: string, enabled = true) {
 
   const retryLocation = useCallback(() => {
     setLocation(null);
+    setSearchLocation(null);
+    setSearchOrigin('current-location');
     setLocationStatus('loading');
     setLocationAttempt((value) => value + 1);
   }, []);
 
+  const searchAt = useCallback((coordinates: StoreCoordinates) => {
+    setCandidates([]);
+    setError(false);
+    setSearchLocation(coordinates);
+    setSearchOrigin('map-center');
+  }, []);
+
+  const searchAtCurrentLocation = useCallback(() => {
+    if (!location) return;
+    setCandidates([]);
+    setError(false);
+    setSearchLocation(location);
+    setSearchOrigin('current-location');
+  }, [location]);
+
   useEffect(() => {
     if (!enabled) return;
+    if (!locateUser) {
+      setLocationStatus(initialSearchLocation ? 'ready' : 'unsupported');
+      return;
+    }
     if (!navigator.geolocation) {
       setLocationStatus('unsupported');
       return;
@@ -31,7 +79,13 @@ export function useStoreCandidates(query: string, enabled = true) {
     navigator.geolocation.getCurrentPosition(
       ({ coords }) => {
         if (cancelled) return;
-        setLocation({ latitude: coords.latitude, longitude: coords.longitude });
+        const currentLocation = {
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+        };
+        setLocation(currentLocation);
+        setSearchLocation(currentLocation);
+        setSearchOrigin('current-location');
         setLocationStatus('ready');
       },
       () => {
@@ -40,10 +94,10 @@ export function useStoreCandidates(query: string, enabled = true) {
       { enableHighAccuracy: false, timeout: 8000, maximumAge: LOCATION_CACHE_MS },
     );
     return () => { cancelled = true; };
-  }, [enabled, locationAttempt]);
+  }, [enabled, initialSearchLocation, locateUser, locationAttempt]);
 
   useEffect(() => {
-    if (!enabled || !location) return;
+    if (!enabled || !searchLocation) return;
 
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
@@ -51,7 +105,7 @@ export function useStoreCandidates(query: string, enabled = true) {
       setError(false);
       try {
         const items = await findStoreCandidates({
-          ...location,
+          ...searchLocation,
           query: query.trim() || undefined,
           radiusMeters: 1000,
           limit: 20,
@@ -71,7 +125,18 @@ export function useStoreCandidates(query: string, enabled = true) {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [enabled, location, query]);
+  }, [enabled, query, searchLocation]);
 
-  return { candidates, error, isLoading, location, locationStatus, retryLocation };
+  return {
+    candidates,
+    error,
+    isLoading,
+    location,
+    locationStatus,
+    retryLocation,
+    searchAt,
+    searchAtCurrentLocation,
+    searchLocation,
+    searchOrigin,
+  };
 }
