@@ -79,12 +79,12 @@ export function CurationDetailScreen({ language }: CurationDetailScreenProps) {
         </div>
         <div className="px-6">
           <p className="mt-2 text-base leading-7 text-white/70">{translateText(language, article.excerpt)}</p>
-          <p className="mt-5 border-b border-white/10 pb-5 text-[10px] tracking-wide text-[#afd1bf]">HAN SPOON EDITORIAL · {formatDate(article.date, language)}</p>
+          <p className="mt-5 border-b border-white/10 pb-5 text-[10px] tracking-wide text-[#afd1bf]">{t('HAN SPOON 에디토리얼', 'HAN SPOON EDITORIAL', 'افتتاحية HAN SPOON')} · {formatDate(article.date, language)}</p>
           <article className="space-y-6 py-7">{paragraphs.map((para, i) => <p key={i} className="text-[15px] leading-[1.95] text-white/85">{para}</p>)}</article>
           <p className="mb-6 text-[10px] leading-5 text-white/40">{t('사진은 글의 이해를 돕는 참고 이미지입니다.', 'Images illustrate the story.', 'الصور توضيحية للمقال.')}</p>
         </div>
         <section className="border-t border-white/10 px-5 pb-8 pt-6">
-          <p className="text-[10px] tracking-[.2em] text-[#afd1bf]">KEEP EXPLORING</p>
+          <p className="text-[10px] tracking-[.2em] text-[#afd1bf]">{t('계속 둘러보기', 'Keep exploring', 'واصل الاستكشاف')}</p>
           <h2 className="mb-5 mt-2 text-xl font-bold">{t('다음 한 입의 이야기', 'Your next discovery', 'اكتشافك التالي')}</h2>
           <div className="space-y-3">{recommended.map(rec => <button key={rec.id} onClick={() => navigate('/curation/' + rec.id)} className="flex w-full items-center gap-4 rounded-[22px] bg-white/5 p-3 text-start">
             <StoryImage article={rec} language={language} className="size-20 shrink-0 rounded-2xl object-cover" />

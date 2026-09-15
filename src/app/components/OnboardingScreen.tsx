@@ -253,7 +253,7 @@ export function OnboardingScreen({ language, setLanguage, initialProfile, onComp
                 <span className="min-w-0 flex-1">
                   <span className="block text-base font-bold">{option.label}</span>
                   <span className={`mt-0.5 block text-[11px] ${language === option.value ? 'text-white/75' : 'text-white/45'}`}>
-                    {option.sub}
+                    {translateText(language, option.sub)}
                   </span>
                 </span>
                 <span className={`flex size-7 shrink-0 items-center justify-center rounded-full border ${language === option.value ? 'border-white/40 bg-white/15' : 'border-white/20'}`}>

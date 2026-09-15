@@ -1,4 +1,5 @@
 import type { CurationArticle, CurationTag } from './curation';
+import { CURATION_EXTRA_ZH_TW } from './curationExtraZhTw';
 
 const commons = (file: string, width = 900) =>
   `https://commons.wikimedia.org/wiki/Special:FilePath/${encodeURIComponent(file)}?width=${width}`;
@@ -18,7 +19,7 @@ const storyPhotos: Record<string, string> = {
   'ordering-rhythm': '/images/curation/diet-conversation.jpg',
 };
 
-// Original editorial drafts for the demonstration. New long-form translations use English fallback outside ko/en/ar.
+// Original editorial drafts for the demonstration. zh-TW is maintained as dedicated Taiwan copy.
 const stories: {
   id: string;
   emoji: string;
@@ -240,15 +241,18 @@ const stories: {
 ];
 
 export const EXTRA_CURATION_ARTICLES: CurationArticle[] = stories.map(
-  (story) => ({
+  (story) => {
+    const zhTW = CURATION_EXTRA_ZH_TW[story.id];
+    return ({
     id: story.id,
     emoji: story.emoji,
     tag: story.tag,
     accent: 'bg-brand-green-50',
     date: '2026-09-10',
     image: storyPhotos[story.id],
-    title: { ko: story.ko, en: story.en, ar: story.ar },
-    excerpt: { ko: story.introKo, en: story.introEn, ar: story.introAr },
-    body: { ko: story.bodyKo, en: story.bodyEn, ar: story.bodyAr },
-  }),
+    title: { ko: story.ko, en: story.en, ar: story.ar, 'zh-TW': zhTW.title },
+    excerpt: { ko: story.introKo, en: story.introEn, ar: story.introAr, 'zh-TW': zhTW.excerpt },
+    body: { ko: story.bodyKo, en: story.bodyEn, ar: story.bodyAr, 'zh-TW': zhTW.body },
+    });
+  },
 );

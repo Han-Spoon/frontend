@@ -120,6 +120,7 @@ export const RESTAURANTS: Restaurant[] = discoverAreaIds.flatMap((areaId, areaIn
       category: {
         ko: ['채소가 있는 한식', '편안한 한 끼', '계절의 한 그릇'][slot],
         en: ['Plant-forward Korean', 'Comfort food', 'Seasonal bowls'][slot],
+        'zh-TW': ['蔬食韓國料理', '暖心家常料理', '當季風味餐點'][slot],
       },
       price: [13000, 15000, 12000][slot],
       image: images[index % images.length],

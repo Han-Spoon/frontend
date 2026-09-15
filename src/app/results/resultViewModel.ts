@@ -9,6 +9,7 @@ import type {
 } from '../App';
 import { getAllergyName, getHitTagLabel } from '../i18n';
 import { getCurationIdForMenu } from '../constants/menuCuration';
+import { translateText } from '../locales';
 
 export const CONFIDENCE_LABELS: Record<EvidenceConfidence, LocalizedMenuText> = {
   high: { ko: '높음', en: 'High', ar: 'مرتفع', 'zh-CN': '高', ja: '高い', 'zh-TW': '高', es: 'Alta' },
@@ -46,7 +47,12 @@ export interface MenuResultViewModel {
 }
 
 export function localizeMenuText(text: LocalizedMenuText, language: Language): string {
-  return text[language] ?? text.en ?? text.ko;
+  return translateText(language, {
+    ko: text.ko,
+    en: text.en ?? text.ko,
+    ar: text.ar ?? text.en ?? text.ko,
+    ...text,
+  });
 }
 
 const hiddenTags = new Set(['unknown menu', 'unknown remain', 'hidden animal']);
@@ -76,19 +82,21 @@ export function buildMenuResultViewModel(menu: MenuAnalysis, language: Language)
       localizeMenuText(SOURCE_LABELS[sourceType], language)),
   }));
 
-  const localizedReasons = language === 'ko'
-    ? menu.riskReasons
-    : language === 'ar'
-      ? menu.riskReasonsAr ?? menu.riskReasonsEn ?? menu.riskReasons
-      : menu.riskReasonsEn ?? menu.riskReasons;
+  const localizedReasons = menu.riskReasons.map((reason, index) => translateText(language, {
+    ko: reason,
+    en: menu.riskReasonsEn?.[index] ?? reason,
+    ar: menu.riskReasonsAr?.[index] ?? menu.riskReasonsEn?.[index] ?? reason,
+  }));
   const firstReason = (localizedReasons ?? [])
     .map((reason) => getHitTagLabel(reason, language) ?? reason)
     .find((reason) => !hiddenTags.has(reason.trim().toLowerCase()));
-  const description = language === 'ko'
-    ? menu.description
-    : language === 'ar'
-      ? menu.descriptionAr ?? menu.descriptionEn ?? menu.description
-      : menu.descriptionEn ?? menu.description;
+  const description = menu.descriptionLocalized
+    ? localizeMenuText(menu.descriptionLocalized, language)
+    : translateText(language, {
+        ko: menu.description,
+        en: menu.descriptionEn ?? menu.description,
+        ar: menu.descriptionAr ?? menu.descriptionEn ?? menu.description,
+      });
 
   return {
     primaryReason: explainability?.decisionReason

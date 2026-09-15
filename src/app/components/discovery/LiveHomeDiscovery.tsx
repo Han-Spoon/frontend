@@ -70,7 +70,7 @@ export function LiveHomeDiscovery({
     <section>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <p className="eyebrow">EXPLORE THE MAP</p>
+          <p className="eyebrow">{t('EXPLORE THE MAP', 'EXPLORE THE MAP', 'استكشف الخريطة')}</p>
           <h2 className="mt-1 text-[22px] font-extrabold tracking-tight">
             {t(
               '오늘은 어느 동네를 살펴볼까요?',

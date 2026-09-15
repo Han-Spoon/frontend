@@ -21,7 +21,7 @@ import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } f
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
 import type { StoreCandidate, StoreSummary } from '../api/store';
-import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, type Language } from './locales';
+import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, translateText, type Language } from './locales';
 import { DevResultsPreview } from './components/DevResultsPreview';
 
 export type { Language } from './locales';
@@ -125,9 +125,11 @@ export interface MenuAnalysis {
   menuName: string;
   menuNameEn: string;
   menuNameAr?: string;
+  menuNameLocalized?: LocalizedMenuText;
   description: string;
   descriptionEn?: string;
   descriptionAr?: string;
+  descriptionLocalized?: LocalizedMenuText;
   price?: string;
   riskLevel: 'safe' | 'caution' | 'danger';
   riskReasons: string[];
@@ -186,6 +188,30 @@ export default function App() {
   const [analysisImage, setAnalysisImage] = useState<PendingMenuImage | null>(null);
   const [analysisHistory, setAnalysisHistory] = useState<HistoryItem[]>([]);
   const [localRecords, setLocalRecords] = useDemoValue<VisitRecord[]>('records', []);
+
+  useEffect(() => {
+    document.title = translateText(language, {
+      ko: '한스푼 | 낯선 메뉴도, 안심하고 한 스푼',
+      en: 'Han Spoon | Discover Korean food with confidence',
+      ar: 'Han Spoon | اكتشف الطعام الكوري بثقة',
+      'zh-CN': 'Han Spoon | 安心探索韩国美食',
+      ja: 'Han Spoon | 韓国のメニューを安心して楽しむ',
+      'zh-TW': 'Han Spoon | 安心探索韓國美食',
+      es: 'Han Spoon | Descubre la comida coreana con confianza',
+    });
+    document.querySelector<HTMLMetaElement>('meta[name="description"]')?.setAttribute(
+      'content',
+      translateText(language, {
+        ko: '낯선 한국 메뉴도 안심하고 발견하도록 돕는 여행 식탁 가이드',
+        en: 'A dining guide that helps travelers explore unfamiliar Korean menus with confidence.',
+        ar: 'دليل طعام يساعد المسافرين على استكشاف القوائم الكورية بثقة.',
+        'zh-CN': '帮助旅客安心探索陌生韩国菜单的餐饮指南。',
+        ja: '旅行者が初めての韓国メニューを安心して楽しむための食事ガイド。',
+        'zh-TW': '幫助旅客安心探索陌生韓國菜單的用餐指南。',
+        es: 'Una guía para descubrir menús coreanos desconocidos con confianza.',
+      }),
+    );
+  }, [language]);
   const [activeScanId, setActiveScanId] = useState<string | undefined>();
   const [activeRecordId, setActiveRecordId] = useState<string | undefined>();
   const [selectedStore, setSelectedStore] = useState<StoreCandidate | null>(null);

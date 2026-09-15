@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { Language } from '../../locales';
+import { createTranslator, type Language } from '../../locales';
 import { loadNaverMaps, onNaverMapsAuthFailure } from '../../../lib/naverMap';
 import { useMapLanguage } from '../../../lib/mapLanguage';
 
@@ -33,6 +33,7 @@ export function StoreMap({
   fitStores?: boolean;
   className?: string;
 }) {
+  const t = createTranslator(language);
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<naver.maps.Map | null>(null);
   const markersRef = useRef<naver.maps.Marker[]>([]);
@@ -176,7 +177,11 @@ export function StoreMap({
         role="status"
         className={`${className} flex items-center justify-center bg-surface-subtle px-4 text-center text-xs text-text-secondary`}
       >
-        {language === 'ko' ? '지도를 불러오지 못했어요. 아래 목록에서 찾아주세요.' : 'Map unavailable — pick from the list below.'}
+        {t(
+          '지도를 불러오지 못했어요. 아래 목록에서 찾아주세요.',
+          'Map unavailable — pick from the list below.',
+          'تعذر تحميل الخريطة. اختر من القائمة أدناه.',
+        )}
       </div>
     );
   }
