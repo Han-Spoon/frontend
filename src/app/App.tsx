@@ -10,7 +10,7 @@ import { ScanScreen } from './components/ScanScreen';
 import { ScanHistoryScreen } from './components/ScanHistoryScreen';
 import { useDemoValue, writeDemo } from './demo/storage';
 import type { VisitRecord } from './demo/records';
-import { FIXED_SCAN_RESULTS_ENABLED, FILMING_MENUS as RESULT_PREVIEW_MENUS, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
+import { FIXED_SCAN_RESULTS_ENABLED, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
@@ -439,16 +439,6 @@ export default function App() {
                 selectedStore={selectedStore}
                 onSelectStore={setSelectedStore}
                 onScan={(image) => {
-                  if (FIXED_SCAN_RESULTS_ENABLED || demoMode) {
-                    setCurrentAnalysis(RESULT_PREVIEW_MENUS);
-                    setActiveRecordId(undefined);
-                    setActiveScanId(undefined);
-                    setHistoryProfile({ ...RESULT_PREVIEW_PROFILE, languageCode: language });
-                    setActiveScanStore(image.store ? { storeId: image.store.storeId, name: image.store.name } : null);
-                    if (image.previewUrl.startsWith('blob:')) URL.revokeObjectURL(image.previewUrl);
-                    navigate('/results');
-                    return;
-                  }
                   setAnalysisImage(image);
                   navigate('/analyzing');
                 }}
@@ -475,22 +465,26 @@ export default function App() {
               <AnalyzingScreen
                 language={language}
                 image={analysisImage}
+                fixedResults={FIXED_SCAN_RESULTS_ENABLED || demoMode}
                 onComplete={(_scanId, menus, store) => {
-                  setActiveScanId(_scanId);
+                  setActiveScanId(_scanId ?? undefined);
                   setActiveRecordId(undefined);
-                  setHistoryProfile(undefined);
+                  setHistoryProfile(_scanId === null ? { ...RESULT_PREVIEW_PROFILE, languageCode: language } : undefined);
                   setCurrentAnalysis(menus);
                   setActiveScanStore(store);
+                  if (analysisImage?.previewUrl.startsWith('blob:')) URL.revokeObjectURL(analysisImage.previewUrl);
                   setAnalysisImage(null);
                   navigate('/results');
                   // 백엔드에 영속된 최신 기록으로 목록 갱신.
-                  loadHistory();
+                  if (_scanId !== null) loadHistory();
                 }}
                 onRetryWithNewImage={() => {
+                  if (analysisImage?.previewUrl.startsWith('blob:')) URL.revokeObjectURL(analysisImage.previewUrl);
                   setAnalysisImage(null);
                   navigate('/scan');
                 }}
                 onCancel={() => {
+                  if (analysisImage?.previewUrl.startsWith('blob:')) URL.revokeObjectURL(analysisImage.previewUrl);
                   setAnalysisImage(null);
                   navigate('/home');
                 }}

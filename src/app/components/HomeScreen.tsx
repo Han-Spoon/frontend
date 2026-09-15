@@ -26,7 +26,7 @@ import { PartnershipBadge } from './discovery/PartnershipBadge';
 import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { BottomNav } from './BottomNav';
 import { RestaurantRecommendations } from './discovery/RestaurantRecommendations';
-import { RESTAURANT_PHOTOS } from './discovery/restaurantPhotos';
+import { restaurantRecommendationPhotos } from './discovery/restaurantPhotos';
 import { menuPrice } from '../demo/currency';
 import type { StoreCandidate } from '../../api/store';
 import { LiveHomeDiscovery } from './discovery/LiveHomeDiscovery';
@@ -45,7 +45,7 @@ export function HomeScreen({
 }) {
   const t = createTranslator(language);
   const navigate = useNavigate();
-  const [area, setArea] = useState<AreaId>('seongsu');
+  const [area, setArea] = useState<AreaId>('cheongdam');
   const [selectedId, setSelectedId] = useState(
     restaurantsInArea('nearby')[0].id,
   );
@@ -58,6 +58,7 @@ export function HomeScreen({
     null,
   );
   const restaurants = useMemo(() => restaurantsInArea(area), [area]);
+  const recommendationPhotos = restaurantRecommendationPhotos(restaurants.map(restaurant => restaurant.category.ko));
   const mapStores = useMemo(
     () =>
       restaurants.map((restaurant) => ({
@@ -383,7 +384,7 @@ export function HomeScreen({
               name: localizeMenuText(restaurant.name, language),
               category: localizeMenuText(restaurant.category, language),
               address: '',
-              image: [RESTAURANT_PHOTOS.bibimbap, RESTAURANT_PHOTOS.korean, RESTAURANT_PHOTOS.dining][index % 3],
+              image: recommendationPhotos[index],
             }))}
             onSelect={id => {
               const restaurant = restaurants.find(item => item.id === id);
