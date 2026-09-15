@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { createServer } from 'vite';
 
 // Exercise actual source modules with Vite's existing TS loader; no test dependencies needed.
@@ -57,6 +57,8 @@ try {
     assert.ok(m.explainability.uncertainties.length >= 2);
     assert.equal(getCautionProbabilities(m, null).length, 0);
     assert.ok(m.explainability.ingredients.every(i => !i.staffEvidence));
+    assert.ok(m.menuNameLocalized?.['zh-TW']);
+    assert.ok(m.descriptionLocalized?.['zh-TW']);
     if (m.riskLevel === 'caution') assert.ok(getCautionProbabilities(m, FILMING_PROFILE).length > 0);
     else assert.equal(getCautionProbabilities(m, FILMING_PROFILE).length, 0);
   }
@@ -144,7 +146,7 @@ try {
     CURATION_ARTICLES.length,
   );
   for (const article of EXTRA_CURATION_ARTICLES)
-    for (const language of ['ko', 'en', 'ar'])
+    for (const language of ['ko', 'en', 'ar', 'zh-TW'])
       assert.ok(article.body[language].split('\n\n').length >= 3);
   for (const article of CURATION_ARTICLES) {
     if (article.image.startsWith('/images/curation/')) assert.ok(existsSync(new URL('../public' + article.image, import.meta.url)), article.id + ' image must exist');
@@ -200,6 +202,13 @@ try {
   saveVisit({ id: 'offline-a', restaurantId: null, menus: [] });
   saveVisit({ id: 'offline-b', restaurantId: null, menus: [] });
   assert.equal(readDemo('records', []).length, 2);
+  const publicRoot = new URL('../public/', import.meta.url);
+  for (const icon of ['apple-touch-icon.png', 'icon-192.png', 'icon-512.png'])
+    assert.ok(existsSync(new URL(icon, publicRoot)), `${icon} must exist`);
+  const manifest = JSON.parse(readFileSync(new URL('manifest.webmanifest', publicRoot), 'utf8'));
+  assert.equal(manifest.name, 'Han Spoon');
+  assert.equal(manifest.start_url, '/');
+  assert.equal(manifest.display, 'standalone');
   delete globalThis.window;
   delete globalThis.localStorage;
   console.log(

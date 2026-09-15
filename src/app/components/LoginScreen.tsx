@@ -123,7 +123,9 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
         <div className="mx-auto max-w-[350px]">
           <div className="mb-5 flex items-start justify-between gap-4">
             <div>
-              <p className="mb-2 text-[10px] font-extrabold tracking-[.15em] text-brand-primary">WELCOME TO HAN SPOON</p>
+              <p className="mb-2 text-[10px] font-extrabold tracking-[.15em] text-brand-primary">
+                {t('WELCOME TO HAN SPOON', 'WELCOME TO HAN SPOON', 'مرحباً بك في HAN SPOON')}
+              </p>
               <h1 className="text-[29px] font-extrabold leading-[1.2] tracking-[-0.035em]">
                 {t(
                   '한국의 맛을\n편안하게 만나보세요.',
@@ -190,7 +192,7 @@ export function LoginScreen({ onLogin, language, setLanguage }: LoginScreenProps
                   size="large"
                   shape="pill"
                   text="continue_with"
-                  locale={LANGUAGE_LOCALES[language]}
+                  locale={language === 'zh-TW' ? 'zh_TW' : LANGUAGE_LOCALES[language]}
                   width={String(googleButtonWidth)}
                 />
               </div>

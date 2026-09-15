@@ -80,14 +80,16 @@ export function OwnerCommunicationSheet({
   // 이 메뉴의 플래그된 재료(코드)를 언어별로 라벨화 후 쉼표 나열.
   const activeProfileIds = new Set(getProfileCommunicationItems(userProfile).map(item => item.id));
   const relevantIngredients = (menu.explainability?.ingredients ?? []).filter(item => item.profileIds?.some(id => activeProfileIds.has(id)));
+  const listSeparator = (lang: Language) =>
+    lang === 'zh-CN' || lang === 'zh-TW' || lang === 'ja' ? '、' : lang === 'ar' ? '، ' : ', ';
   const flaggedFor = (lang: Language) => relevantIngredients.length
-    ? relevantIngredients.map(item => localizeMenuText(item.name, lang)).join(', ')
+    ? relevantIngredients.map(item => localizeMenuText(item.name, lang)).join(listSeparator(lang))
     : Array.from(
       new Set((menu.riskReasons ?? [])
         .map((code) => getHitTagLabel(code, lang))
         .filter(Boolean)
         .filter((label) => !HIDDEN_OWNER_CONTENT_LABELS.has(label.trim().toLowerCase()))),
-    ).join(', ');
+    ).join(listSeparator(lang));
   const flaggedLabels: LocalizedText = {
     ko: flaggedFor('ko'),
     en: flaggedFor('en'),
@@ -254,7 +256,15 @@ export function OwnerCommunicationSheet({
 
           <div className="mb-6 rounded-xl border border-border-warm bg-surface-subtle p-4">
             <div className="mb-1 text-xs font-semibold text-brand-primary">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
-            <div className="font-bold text-text-primary">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
+            <div className="font-bold text-text-primary">
+              {language === 'ko'
+                ? menu.menuName
+                : localizeMenuText({
+                    ko: menu.menuName,
+                    en: menu.menuNameEn || menu.menuName,
+                    ar: menu.menuNameAr ?? menu.menuNameEn ?? menu.menuName,
+                  }, language)}
+            </div>
             <div className="mt-1 text-xs text-text-secondary">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
             <p className="mt-2 text-xs font-semibold text-brand-primary">{t('내 식단', 'My dietary needs', 'احتياجاتي الغذائية')}: {getProfileSummary(userProfile, language).join(' · ')}</p>
           </div>

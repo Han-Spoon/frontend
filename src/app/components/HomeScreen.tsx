@@ -158,7 +158,7 @@ export function HomeScreen({
 
       <main className="flex-1 overflow-y-auto pb-9">
         <section className="px-5 pb-5 pt-4">
-          <p className="eyebrow">YOUR TASTE, YOUR KOREA</p>
+          <p className="eyebrow">{t('YOUR TASTE, YOUR KOREA', 'YOUR TASTE, YOUR KOREA', 'ذوقك، كوريا الخاصة بك')}</p>
           <h1 className="mt-2 text-[30px] font-extrabold leading-[1.22] tracking-[-0.035em]">
             {t(
               '나에게 맞는 한 끼,\n새로운 한국의 발견.',
@@ -225,8 +225,8 @@ export function HomeScreen({
                     <span className="relative flex h-full flex-col justify-end p-5">
                       <span className="mb-2 text-[10px] font-extrabold tracking-[.17em] text-white/80">
                         {contentIndex === 0
-                          ? 'NEIGHBORHOOD SPOTLIGHT'
-                          : 'HAN SPOON JOURNAL'}{' '}
+                          ? t('NEIGHBORHOOD SPOTLIGHT', 'NEIGHBORHOOD SPOTLIGHT', 'أضواء الحي')
+                          : t('HAN SPOON JOURNAL', 'HAN SPOON JOURNAL', 'مجلة HAN SPOON')}{' '}
                         · 0{contentIndex + 1}
                       </span>
                       <span className="max-w-[86%] whitespace-pre-line text-[24px] font-extrabold leading-[1.15] tracking-[-0.02em]">
@@ -301,7 +301,7 @@ export function HomeScreen({
           {demoMode ? <section>
             <div className="mb-4 flex items-end justify-between gap-3">
               <div>
-                <p className="eyebrow">EXPLORE THE MAP</p>
+                <p className="eyebrow">{t('EXPLORE THE MAP', 'EXPLORE THE MAP', 'استكشف الخريطة')}</p>
                 <h2 className="mt-1 text-[22px] font-extrabold tracking-tight">
                   {t('오늘은 어느 동네를 살펴볼까요?', 'Choose a neighborhood', 'اختر حياً')}
                 </h2>

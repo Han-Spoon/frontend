@@ -1,5 +1,7 @@
 import type { LocalizedMenuText, MenuAnalysis, UserProfile } from '../App';
 import { getProfileCommunicationItems } from '../results/resultViewModel';
+import { localizeMenuText } from '../results/resultViewModel';
+import { translateText } from '../locales';
 import type { Restaurant } from './restaurants';
 
 // Complete fictional recipes, kept separate from the real scan/API output.
@@ -16,6 +18,11 @@ const ingredientLabels: Record<string, LocalizedMenuText> = {
   soybean: { ko: '대두', en: 'Soybean' }, wheat: { ko: '밀', en: 'Wheat' }, egg: { ko: '달걀', en: 'Egg' }, milk: { ko: '우유', en: 'Milk' },
   pork: { ko: '돼지고기', en: 'Pork' }, shrimp: { ko: '새우', en: 'Shrimp' }, chili: { ko: '고추', en: 'Chili' }, mackerel: { ko: '고등어', en: 'Mackerel' },
 };
+const localized = (ko: string, en: string): LocalizedMenuText => ({
+  ko,
+  en,
+  'zh-TW': translateText('zh-TW', { ko, en, ar: en }),
+});
 export function buildPartnerMenus(restaurant: Restaurant, profile: UserProfile | null): MenuAnalysis[] {
   if (restaurant.partnership !== 'recipe-verified') return [];
   return recipes.map(recipe => {
@@ -36,14 +43,24 @@ export function buildPartnerMenus(restaurant: Restaurant, profile: UserProfile |
     const religiousCheck = items.filter(item => item.id.startsWith('religion:'));
     const riskLevel = conflicts.length ? 'danger' : (!profile || religiousCheck.length ? 'caution' : 'safe');
     const reason: LocalizedMenuText = conflicts.length
-      ? { ko: `등록 레시피에 ${conflicts.map(item => item.label.ko).join(' · ')} 조건과 맞지 않는 재료 또는 양념이 있어요.`, en: `The supplied recipe conflicts with: ${conflicts.map(item => item.label.en ?? item.label.ko).join(', ')}.` }
+      ? {
+          ko: `등록 레시피에 ${conflicts.map(item => item.label.ko).join(' · ')} 조건과 맞지 않는 재료 또는 양념이 있어요.`,
+          en: `The supplied recipe conflicts with: ${conflicts.map(item => item.label.en ?? item.label.ko).join(', ')}.`,
+          'zh-TW': `餐廳提供的食譜含有不符合「${conflicts.map(item => localizeMenuText(item.label, 'zh-TW')).join(' · ')}」需求的食材或調味料。`,
+        }
       : !profile ? { ko: '프로필을 설정하면 등록된 레시피와 내 기준을 비교할 수 있어요.', en: 'Set your profile to compare your needs with the supplied recipe.' }
       : religiousCheck.length ? { ko: '표시 재료 외에도 종교 기준에 따른 인증과 조리 과정을 확인해 주세요.', en: 'Confirm certification and preparation required by your religious needs, in addition to the listed ingredients.' }
       : { ko: '등록된 레시피에서 내 프로필과 충돌하는 재료를 찾지 못했어요. 공용 조리도구는 직원에게 확인해 주세요.', en: 'No conflicting ingredients found in the supplied recipe. Ask staff about shared utensils.' };
     return {
       id: `${restaurant.id}-${recipe.id}`, menuName: recipe.ko, menuNameEn: recipe.en,
+      menuNameLocalized: localized(recipe.ko, recipe.en),
       description: recipe.ingredients.map(id => ingredientLabels[id].ko).join(' · '),
       descriptionEn: recipe.ingredients.map(id => ingredientLabels[id].en).join(' · '),
+      descriptionLocalized: {
+        ko: recipe.ingredients.map(id => ingredientLabels[id].ko).join(' · '),
+        en: recipe.ingredients.map(id => ingredientLabels[id].en).join(' · '),
+        'zh-TW': recipe.ingredients.map(id => localizeMenuText(ingredientLabels[id], 'zh-TW')).join(' · '),
+      },
       price: String(recipe.price), riskLevel, riskReasons: [], isSpicy: recipe.spicy,
       explainability: {
         decisionReason: reason,

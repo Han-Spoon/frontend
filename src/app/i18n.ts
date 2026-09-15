@@ -36,6 +36,13 @@ const ownerContent = (localized: LocalizedText): OwnerContent => ({
   localized,
 });
 
+const koreanSubjectParticle = (value: string) => {
+  const last = value.trim().at(-1);
+  if (!last) return '가';
+  const code = last.charCodeAt(0);
+  return code >= 0xac00 && code <= 0xd7a3 && (code - 0xac00) % 28 !== 0 ? '이' : '가';
+};
+
 export const allergyI18n = {
   fallback: {
     ko: '특정 재료',
@@ -254,7 +261,7 @@ export const ownerCommunicationI18n = {
       es: `Un ${translate('es', menuName)}, por favor`,
     }),
     ingredient: ({ ingredient }: OwnerContentParams): OwnerContent => ownerContent({
-      ko: `여기에 ${ingredient.ko}가 들어가 있나요?`,
+      ko: `여기에 ${ingredient.ko}${koreanSubjectParticle(ingredient.ko)} 들어가 있나요?`,
       en: `Does this contain ${ingredient.en}?`,
       ar: `هل يحتوي هذا على ${ingredient.ar}؟`,
       'zh-CN': `这里面含有${translate('zh-CN', ingredient)}吗？`,

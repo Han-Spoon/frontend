@@ -63,14 +63,21 @@ type FilterType = 'all' | MenuAnalysis['riskLevel'];
 
 function getTranslatedMenuName(menu: MenuAnalysis, language: Language) {
   if (language === 'ko') return menu.menuNameEn || menu.menuName;
-  if (language === 'ar') return menu.menuNameAr ?? menu.menuNameEn ?? menu.menuName;
-  return menu.menuNameEn || menu.menuName;
+  if (menu.menuNameLocalized) return translateText(language, menu.menuNameLocalized);
+  return translateText(language, {
+    ko: menu.menuName,
+    en: menu.menuNameEn || menu.menuName,
+    ar: menu.menuNameAr ?? menu.menuNameEn ?? menu.menuName,
+  });
 }
 
 function getDescription(menu: MenuAnalysis, language: Language) {
-  if (language === 'ko') return menu.description;
-  if (language === 'ar') return menu.descriptionAr ?? menu.descriptionEn ?? menu.description;
-  return menu.descriptionEn ?? menu.description;
+  if (menu.descriptionLocalized) return translateText(language, menu.descriptionLocalized);
+  return translateText(language, {
+    ko: menu.description,
+    en: menu.descriptionEn ?? menu.description,
+    ar: menu.descriptionAr ?? menu.descriptionEn ?? menu.description,
+  });
 }
 
 
@@ -164,7 +171,7 @@ export function ResultsScreen({ language, menus, userProfile: suppliedProfile, o
 
       <main className="flex-1 overflow-y-auto" aria-live="polite">
         <section className="border-b border-border-warm bg-surface-raised px-5 pb-5 pt-6">
-          <div className="mb-3 flex items-center justify-between"><p className="eyebrow">YOUR MENU, MADE CLEAR</p>{storeName && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{storeName}</span>}</div>
+          <div className="mb-3 flex items-center justify-between"><p className="eyebrow">{t('YOUR MENU, MADE CLEAR', 'YOUR MENU, MADE CLEAR', 'قائمتك بوضوح')}</p>{storeName && <span className="flex items-center gap-1 text-[11px] text-text-secondary"><MapPin className="size-3" />{storeName}</span>}</div>
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
           {partnerRestaurantId && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-3 py-2 text-xs font-bold text-brand-primary"><ShieldCheck className="size-3.5" />{t('등록 레시피로 바로 확인', 'Directly from supplied recipes', 'مباشرة من الوصفات المسجلة')}</p>}
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
@@ -268,7 +275,7 @@ export function ResultsScreen({ language, menus, userProfile: suppliedProfile, o
           })}
 
           {menuList.length > 0 && <p className="px-1 text-center text-[10px] leading-5 text-text-tertiary">{t('환율은 매일 00:00 (한국 시간)에 업데이트돼요. 환산 가격은 참고용이에요.', 'Exchange rates update daily at 00:00 KST. Converted prices are estimates.', 'تُحدّث أسعار الصرف يومياً عند 00:00 بتوقيت كوريا. الأسعار المحوّلة تقريبية.')}</p>}
-          {recommendedArticles.length > 0 && <section className="border-t border-border-warm pt-6"><p className="eyebrow">A LITTLE MORE KOREA</p><h3 className="mb-4 mt-1 text-lg font-extrabold">{t('메뉴를 골랐다면, 한식 이야기', 'Chosen your dish? Discover its story.', 'اخترت طبقك؟ اكتشف قصته.')}</h3><div className="space-y-2">{recommendedArticles.map(article => <button key={article.id} onClick={() => navigate(`/curation/${article.id}`)} className="flex w-full items-center gap-3 rounded-2xl border border-border-warm bg-rice-white p-3 text-start"><span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-accent-soft text-2xl">{article.emoji}</span><span className="min-w-0 flex-1"><span className="block text-sm font-bold">{translateText(language, article.title)}</span><span className="mt-1 block line-clamp-1 text-xs text-text-secondary">{translateText(language, article.excerpt)}</span></span><ChevronRight className="size-4 rtl:rotate-180" /></button>)}</div></section>}
+          {recommendedArticles.length > 0 && <section className="border-t border-border-warm pt-6"><p className="eyebrow">{t('A LITTLE MORE KOREA', 'A LITTLE MORE KOREA', 'المزيد عن كوريا')}</p><h3 className="mb-4 mt-1 text-lg font-extrabold">{t('메뉴를 골랐다면, 한식 이야기', 'Chosen your dish? Discover its story.', 'اخترت طبقك؟ اكتشف قصته.')}</h3><div className="space-y-2">{recommendedArticles.map(article => <button key={article.id} onClick={() => navigate(`/curation/${article.id}`)} className="flex w-full items-center gap-3 rounded-2xl border border-border-warm bg-rice-white p-3 text-start"><span className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-brand-accent-soft text-2xl">{article.emoji}</span><span className="min-w-0 flex-1"><span className="block text-sm font-bold">{translateText(language, article.title)}</span><span className="mt-1 block line-clamp-1 text-xs text-text-secondary">{translateText(language, article.excerpt)}</span></span><ChevronRight className="size-4 rtl:rotate-180" /></button>)}</div></section>}
 
           {filteredMenus.length === 0 && (
             <div className="flex flex-col items-center rounded-[var(--radius-card)] border border-border-warm bg-surface-raised px-5 py-12 text-center">

@@ -58,7 +58,7 @@ export function RestaurantRecommendations({ language, areaName, items, loading =
     <section className="mt-11 pb-2" aria-labelledby={headingId} data-restaurant-picks="">
       <div className="mb-5 flex items-end justify-between gap-3">
         <div className="min-w-0">
-          <p className="eyebrow text-brand-primary">HAN SPOON PICKS</p>
+          <p className="eyebrow text-brand-primary">{t('HAN SPOON PICKS', 'HAN SPOON PICKS', 'اختيارات HAN SPOON')}</p>
           <h2 id={headingId} className="mt-2 text-[26px] font-extrabold leading-tight tracking-[-0.04em]">
             {t('한 끼가 여행이 되는 곳', 'A table worth discovering', 'مائدة تستحق الاكتشاف')}
           </h2>

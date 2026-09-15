@@ -63,7 +63,7 @@ export function LandingScreen({
         <main className="mt-auto pt-[42vh]">
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[10px] font-extrabold tracking-[.14em] text-white/90 backdrop-blur-md">
             <span className="size-1.5 rounded-full bg-brand-orange-500" />
-            YOUR TASTE, YOUR KOREA
+            {t('YOUR TASTE, YOUR KOREA', 'YOUR TASTE, YOUR KOREA', 'ذوقك، كوريا الخاصة بك')}
           </div>
 
           <h1 className="max-w-[370px] whitespace-pre-line text-[38px] font-extrabold leading-[1.08] tracking-[-0.045em]">

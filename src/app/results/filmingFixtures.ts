@@ -1,4 +1,5 @@
 import type { LocalizedMenuText, MenuAnalysis, MenuIngredientEvidence, UserProfile } from '../App';
+import { translateText } from '../locales';
 
 /** Fixed filming scenario only. No OCR, model inference, recipe verification or staff records. */
 // Current presentation release: every new scan uses the fixed scenario.
@@ -9,7 +10,11 @@ export const FILMING_PROFILE: UserProfile = {
   isVegan: true, veganType: 'vegan', hasReligion: false, religionType: null,
   hasAllergies: true, allergies: ['shrimp'], noSpicy: false, noAlcohol: false,
 };
-const L = (ko: string, en: string): LocalizedMenuText => ({ ko, en });
+const L = (ko: string, en: string): LocalizedMenuText => ({
+  ko,
+  en,
+  'zh-TW': translateText('zh-TW', { ko, en, ar: en }),
+});
 const V = ['vegan:vegan'];
 const S = ['vegan:vegan', 'allergy:shrimp'];
 const ingredient = (ko: string, en: string, profileIds: string[], probability?: number): MenuIngredientEvidence => ({
@@ -168,8 +173,8 @@ const dishes: Dish[] = [
 
 export const FILMING_MENUS: MenuAnalysis[] = dishes.map(d => ({
   id: `filming-${d.id}`, demoScenario: 'bunsik-vegan-shrimp',
-  menuName: d.ko, menuNameEn: d.en, price: String(d.price),
-  description: d.description[0], descriptionEn: d.description[1],
+  menuName: d.ko, menuNameEn: d.en, menuNameLocalized: L(d.ko, d.en), price: String(d.price),
+  description: d.description[0], descriptionEn: d.description[1], descriptionLocalized: L(...d.description),
   riskLevel: d.level, riskReasons: [], isSpicy: !!d.spicy, ...d.picture,
   explainability: {
     decisionReason: L(...d.reason),
