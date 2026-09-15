@@ -4,11 +4,13 @@ import { getScanResult, mapMenuResult, normalizeScanStatus, startScan } from '..
 import type { StoreSummary } from '../../api/store';
 import type { Language, MenuAnalysis, PendingMenuImage } from '../App';
 import { createTranslator } from '../locales';
+import { FILMING_MENUS } from '../results/filmingFixtures';
 
 interface AnalyzingScreenProps {
   language: Language;
   image: PendingMenuImage | null;
-  onComplete: (scanId: string, menus: MenuAnalysis[], store: StoreSummary | null) => void;
+  fixedResults?: boolean;
+  onComplete: (scanId: string | null, menus: MenuAnalysis[], store: StoreSummary | null) => void;
   onRetryWithNewImage: () => void;
   onCancel: () => void;
 }
@@ -18,7 +20,7 @@ type Phase = 'analyzing' | 'retake' | 'failed';
 const POLL_INTERVAL_MS = 1500;
 const MAX_POLL_MS = 300000;
 
-export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewImage, onCancel }: AnalyzingScreenProps) {
+export function AnalyzingScreen({ language, image, fixedResults = false, onComplete, onRetryWithNewImage, onCancel }: AnalyzingScreenProps) {
   const [phase, setPhase] = useState<Phase>('analyzing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -62,6 +64,15 @@ export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewIma
       setRetryRequiresNewUpload(true);
       setPhase('failed');
       return;
+    }
+
+    if (fixedResults) {
+      setPhase('analyzing');
+      setErrorMessage(null);
+      const timer = window.setTimeout(() => {
+        onComplete(null, FILMING_MENUS, image.store ? { storeId: image.store.storeId, name: image.store.name } : null);
+      }, 4200);
+      return () => window.clearTimeout(timer);
     }
 
     let cancelled = false;
@@ -145,7 +156,7 @@ export function AnalyzingScreen({ language, image, onComplete, onRetryWithNewIma
       cancelled = true;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [image, attempt]);
+  }, [image, attempt, fixedResults]);
 
   // 재촬영 안내 (needs_retake)
   if (phase === 'retake') {

@@ -4,6 +4,8 @@
 
 ## 데이터와 동선
 
+초기 선택 지역은 일반/데모 모두 청담(37.524, 127.047)이다.
+
 - 운영 모드: `LiveHomeDiscovery`가 지도용으로 조회한 `POST /api/v1/stores/candidates` 응답을 재사용한다. 추가 요청이나 추천 전용 API는 만들지 않는다.
 - 선택 지역 반경 1km, 최대 20개 후보 중 서버 응답 순서의 첫 6곳을 소개한다. 개인화·인기 순위·안전 추천 알고리즘이 아니며 같은 후보 응답에는 누구에게나 같은 카드가 보인다.
 - 상호·지점·업종·도로명 주소를 그대로 사용한다. 후기·평점·영업 상태·레시피 인증을 추정하지 않는다. 누락된 주소는 숨기고 업종은 일반적인 소개 문구로 대체한다.
@@ -23,6 +25,16 @@
 | 식당 공간 | Toa Heftiba | [자연광이 있는 식당](https://unsplash.com/photos/restaurant-interior-during-daytime-doZQmog8A5w) |
 
 원본 페이지의 Unsplash License 표기를 확인했다. `restaurantPhotos.ts`에 원본 CDN 주소를 관리하며 가로 1000px, 품질 85, 자동 포맷으로 요청한다. 로딩 실패 시 다른 무관한 사진을 넣지 않고 브랜드 배경과 식당 아이콘으로 대체한다. 이미지 생성·새 라이브러리·사진 파일 다운로드는 하지 않았다.
+
+같은 업종/미상 업종이 반복되더라도 추천 6곳의 사진은 모두 다르게 배정한다. 업종별 사진을 우선하고 이미 사용한 경우 아래 실사 공간 사진 풀에서 미사용 이미지를 순서대로 선택한다. 같은 목록의 순서가 유지되면 사진도 유지된다. 음식 종류를 모르는 가게에 임의의 다른 음식 사진을 붙이지 않는다.
+
+- [나무 소재 다이닝 공간](https://unsplash.com/photos/uUoVKLLDsGI) — Martin Baron
+- [다크 우드 다이닝 룸](https://unsplash.com/photos/4OcwZ7SwsJI) — Joseph Sung
+- [붉은 커튼과 테이블 세팅](https://unsplash.com/photos/0VIu_SAetn4) — Joseph Sung
+- [초록빛 레스토랑 공간](https://unsplash.com/photos/qm6Ddb2qu7A) — Jason Leung
+- [따뜻한 조명의 식당](https://unsplash.com/photos/Pgu0wF6EOOE) — Robert / Visual Diary
+
+모두 Unsplash License의 참고 사진이다. 기존 Toa Heftiba 공간 사진과 합쳐 일반 공간 사진 6개를 확보했다.
 
 백엔드에서 실제 사진을 제공하려면 `photoUrl`, 사진 권리/출처, 대체 텍스트, 썸네일 크롭 위치 계약을 먼저 합의한다. 실제 매장 사진과 참고 사진은 분리해야 하며 계약 전 존재하지 않는 필드를 사용하지 않는다.
 

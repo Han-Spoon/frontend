@@ -8,7 +8,12 @@ const server = await createServer({
   appType: 'custom',
 });
 try {
-  const { restaurantReferencePhoto, RESTAURANT_PHOTOS } = await server.ssrLoadModule('/src/app/components/discovery/restaurantPhotos.ts');
+  const { restaurantReferencePhoto, restaurantRecommendationPhotos, RESTAURANT_PHOTOS } = await server.ssrLoadModule('/src/app/components/discovery/restaurantPhotos.ts');
+  for (const categories of [Array(6).fill('한식'), Array(6).fill(null), ['한식', '초밥', '한식', null, '비빔밥', '한식']]) {
+    const photos = restaurantRecommendationPhotos(categories);
+    assert.equal(new Set(photos).size, 6, 'Recommendations must not repeat photos');
+    assert.deepEqual(restaurantRecommendationPhotos(categories), photos, 'Photos remain stable for the same list');
+  }
   assert.equal(restaurantReferencePhoto('한식 > 비빔밥'), RESTAURANT_PHOTOS.bibimbap);
   assert.equal(restaurantReferencePhoto('일식 > 초밥'), RESTAURANT_PHOTOS.sushi);
   assert.equal(restaurantReferencePhoto('한식'), RESTAURANT_PHOTOS.korean);
