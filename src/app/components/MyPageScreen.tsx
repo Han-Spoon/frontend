@@ -186,41 +186,6 @@ export function MyPageScreen({
                   </div>
                 </section>
 
-                {/* 지도 언어 — 앱 언어와 독립된 로컬 표시 설정이라 프로필 편집 플로우를 타지 않는다.
-                    네이버 지도가 ko/en/zh/ja 4개만 지원해서 앱 언어(7개)와 1:1 대응이 불가능하다. */}
-                <section>
-                  <h3 className="mb-1 text-sm font-bold text-soy-ink">
-                    {t('지도 언어', 'Map language', 'لغة الخريطة')}
-                  </h3>
-                  <p className="mb-2 text-xs text-sesame-gray/80">
-                    {t(
-                      '지도에 표시되는 지명 언어예요. 기본은 한국어예요.',
-                      'Language for place names on the map. Korean by default.',
-                      'لغة أسماء الأماكن على الخريطة. الكورية افتراضياً.',
-                    )}
-                  </p>
-                  <div className="grid grid-cols-4 gap-2">
-                    {MAP_LANGUAGE_OPTIONS.map((option) => {
-                      const active = option.value === mapLanguage;
-                      return (
-                        <button
-                          key={option.value}
-                          type="button"
-                          onClick={() => setMapLanguage(option.value)}
-                          aria-pressed={active}
-                          className={`min-h-11 rounded-2xl border px-2 text-xs font-semibold transition-colors ${
-                            active
-                              ? 'border-brand-green-700 bg-brand-green-50 text-brand-green-900'
-                              : 'border-border-warm bg-rice-white text-sesame-gray hover:bg-brand-green-50/50'
-                          }`}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </section>
-
                 {/* 나라 */}
                 <section>
                   {sectionHeader(t('나라', 'Country', 'البلد'), 'country')}
@@ -334,6 +299,41 @@ export function MyPageScreen({
 
         {activeTab === 'setting' && (
           <div className="px-5 py-6 space-y-3">
+            {/* 지도 언어 — 앱 언어와 독립된 로컬 표시 설정이라 프로필 편집 플로우를 타지 않는다.
+                네이버 지도가 ko/en/zh/ja 4개만 지원해서 앱 언어(7개)와 1:1 대응이 불가능하다. */}
+            <section>
+              <h3 className="mb-1 text-sm font-bold text-soy-ink">
+                {t('지도 언어', 'Map language', 'لغة الخريطة')}
+              </h3>
+              <p className="mb-2 text-xs text-sesame-gray/80">
+                {t(
+                  '지도에 표시되는 지명 언어예요. 기본은 한국어예요.',
+                  'Language for place names on the map. Korean by default.',
+                  'لغة أسماء الأماكن على الخريطة. الكورية افتراضياً.',
+                )}
+              </p>
+              <div className="grid grid-cols-4 gap-2">
+                {MAP_LANGUAGE_OPTIONS.map((option) => {
+                  const active = option.value === mapLanguage;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setMapLanguage(option.value)}
+                      aria-pressed={active}
+                      className={`min-h-11 rounded-2xl border px-2 text-xs font-semibold transition-colors ${
+                        active
+                          ? 'border-brand-green-700 bg-brand-green-50 text-brand-green-900'
+                          : 'border-border-warm bg-rice-white text-sesame-gray hover:bg-brand-green-50/50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </section>
+
             <button
               onClick={() => setShowLogoutConfirm(true)}
               className="w-full h-13 bg-rice-white border border-border-warm text-soy-ink text-sm font-bold rounded-2xl hover:bg-brand-green-50 transition-colors flex items-center justify-center gap-2"

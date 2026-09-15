@@ -92,7 +92,7 @@ export function RestaurantRecommendations({ language, areaName, items, loading =
           <div className="mt-4 flex items-center justify-between gap-3">
             <p className="max-w-[240px] text-[10px] leading-relaxed text-text-muted">
               {demo
-                ? t('시연용 식당 · 사진은 메뉴·공간 참고 이미지입니다.', 'Demo restaurants · illustrative food and interior photos.', 'مطاعم تجريبية · صور توضيحية للطعام والأماكن.')
+                ? t('사진은 메뉴·공간 참고 이미지입니다.', 'Illustrative food and interior photos.', 'صور توضيحية للطعام والأماكن.')
                 : t('선택한 동네의 식당을 소개해요. 사진은 메뉴·공간 참고 이미지입니다.', 'Places in your chosen neighborhood. Photos illustrate food and interiors.', 'مطاعم في الحي المختار. الصور توضيحية للطعام والأماكن.')}
             </p>
             {items.length > 1 && <div className="flex shrink-0 gap-2">

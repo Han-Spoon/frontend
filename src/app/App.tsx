@@ -10,7 +10,7 @@ import { ScanScreen } from './components/ScanScreen';
 import { ScanHistoryScreen } from './components/ScanHistoryScreen';
 import { useDemoValue, writeDemo } from './demo/storage';
 import type { VisitRecord } from './demo/records';
-import { FILMING_MENUS as RESULT_PREVIEW_MENUS, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
+import { FIXED_SCAN_RESULTS_ENABLED, FILMING_MENUS as RESULT_PREVIEW_MENUS, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
@@ -439,13 +439,12 @@ export default function App() {
                 selectedStore={selectedStore}
                 onSelectStore={setSelectedStore}
                 onScan={(image) => {
-                  if (demoMode) {
+                  if (FIXED_SCAN_RESULTS_ENABLED || demoMode) {
                     setCurrentAnalysis(RESULT_PREVIEW_MENUS);
-                    setUserProfile({ ...RESULT_PREVIEW_PROFILE, languageCode: language });
                     setActiveRecordId(undefined);
                     setActiveScanId(undefined);
-                    setHistoryProfile(undefined);
-                    setActiveScanStore(null);
+                    setHistoryProfile({ ...RESULT_PREVIEW_PROFILE, languageCode: language });
+                    setActiveScanStore(image.store ? { storeId: image.store.storeId, name: image.store.name } : null);
                     if (image.previewUrl.startsWith('blob:')) URL.revokeObjectURL(image.previewUrl);
                     navigate('/results');
                     return;

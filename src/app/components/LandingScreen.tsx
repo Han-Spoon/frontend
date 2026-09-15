@@ -5,7 +5,8 @@ import type { Language } from '../App';
 import { createTranslator, LANGUAGE_OPTIONS } from '../locales';
 
 const HERO_IMAGE =
-  'https://images.unsplash.com/photo-1769558688746-7ac36d8ce999?auto=format&fit=crop&w=1400&q=84';
+  'https://images.unsplash.com/photo-1718777791262-c66d11baaa3b?auto=format&fit=crop&w=1600&q=90';
+// Deepthi Clicks / Unsplash: https://unsplash.com/photos/-UUkXJIXgy4
 
 export function LandingScreen({
   language,

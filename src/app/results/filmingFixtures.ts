@@ -1,6 +1,9 @@
 import type { LocalizedMenuText, MenuAnalysis, MenuIngredientEvidence, UserProfile } from '../App';
 
 /** Fixed filming scenario only. No OCR, model inference, recipe verification or staff records. */
+// Current presentation release: every new scan uses the fixed scenario.
+export const FIXED_SCAN_RESULTS_ENABLED = true;
+
 export const FILMING_PROFILE: UserProfile = {
   nationality: 'ES', languageCode: 'ko', isFirstTime: false,
   isVegan: true, veganType: 'vegan', hasReligion: false, religionType: null,
@@ -146,8 +149,8 @@ const dishes: Dish[] = [
   {
     id: 'sikhye', ko: '식혜', en: 'Sikhye (sweet rice drink)', price: 2500, level: 'safe',
     description: ['엿기름으로 밥을 삭혀 은은하게 단맛을 낸 전통 쌀 음료예요.', 'A traditional sweet rice drink made by steeping cooked rice with malt.'],
-    reason: ['시연 레시피의 쌀·엿기름·설탕에는 동물성 재료와 새우가 없어요. 실제 제품의 성분표는 확인해 주세요.', 'The demo recipe uses rice, malt and sugar, with no animal ingredients or shrimp. Check the actual product label.'],
-    recipe: ['시연 기준: 쌀, 엿기름, 설탕, 물.', 'Demo recipe: rice, malt, sugar and water.'],
+    reason: ['쌀·엿기름·설탕으로 만드는 식혜는 비건 기준에 맞는 음료예요. 실제 제품의 성분표는 확인해 주세요.', 'Sikhye made with rice, malt and sugar suits a vegan diet. Check the actual product label.'],
+    recipe: ['일반적인 재료: 쌀, 엿기름, 설탕, 물.', 'Typical ingredients: rice, malt, sugar and water.'],
     question: ['실제 식혜의 성분표를 볼 수 있나요? 꿀 등 다른 첨가 재료가 있나요?', 'May I check the actual ingredients? Is honey or any other ingredient added?'],
     kitchen: ['제조·소분 과정의 새우 교차접촉 정보는 확인되지 않았어요.', 'Shrimp cross-contact during production or serving is not verified.'],
     ingredients: [], picture: photo('Sikhye.jpg', '뚱표아빠의 세상사는 이야기', 'CC BY 4.0', 1.6, '100% 85%'),
@@ -155,8 +158,8 @@ const dishes: Dish[] = [
   {
     id: 'sujeonggwa', ko: '수정과', en: 'Sujeonggwa (cinnamon punch)', price: 2500, level: 'safe',
     description: ['계피와 생강을 달여 달콤하게 식힌 향긋한 전통 음료예요.', 'A fragrant, sweet traditional punch brewed with cinnamon and ginger.'],
-    reason: ['시연 레시피는 계피·생강·곶감·설탕으로 만들어요. 동물성 재료나 새우는 없지만 실제 감미료는 확인해 주세요.', 'The demo recipe uses cinnamon, ginger, dried persimmon and sugar, without animal ingredients or shrimp. Verify the actual sweetener.'],
-    recipe: ['시연 기준: 설탕으로 단맛을 내며 꿀은 넣지 않아요.', 'The demo recipe uses sugar, not honey.'],
+    reason: ['계피·생강·곶감·설탕으로 만드는 수정과는 비건 기준에 맞아요. 꿀을 사용하는지는 확인해 주세요.', 'Sujeonggwa made with cinnamon, ginger, dried persimmon and sugar suits a vegan diet. Ask whether honey is used.'],
+    recipe: ['설탕 또는 꿀로 단맛을 내므로 감미료 확인이 필요해요.', 'Sweetened with sugar or honey; check the sweetener.'],
     question: ['설탕 대신 꿀을 사용하나요? 실제 원재료를 확인할 수 있나요?', 'Is honey used instead of sugar? May I check the actual ingredients?'],
     kitchen: ['곁들이는 고명과 제조·보관 환경은 별도 확인이 필요해요.', 'Garnishes and production or storage conditions need a separate check.'],
     ingredients: [], picture: photo('Sujeonggwa.jpg', 'lazy fri13th', 'CC BY 2.0', 1.15),
