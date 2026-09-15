@@ -8,6 +8,12 @@ const server = await createServer({
   appType: 'custom',
 });
 try {
+  const { restaurantReferencePhoto, RESTAURANT_PHOTOS } = await server.ssrLoadModule('/src/app/components/discovery/restaurantPhotos.ts');
+  assert.equal(restaurantReferencePhoto('한식 > 비빔밥'), RESTAURANT_PHOTOS.bibimbap);
+  assert.equal(restaurantReferencePhoto('일식 > 초밥'), RESTAURANT_PHOTOS.sushi);
+  assert.equal(restaurantReferencePhoto('한식'), RESTAURANT_PHOTOS.korean);
+  for (const category of [null, undefined, '', '일식', '중식', '카페'])
+    assert.equal(restaurantReferencePhoto(category), RESTAURANT_PHOTOS.dining);
   const { menuPrice, parseKrw, DEMO_CURRENCIES } = await server.ssrLoadModule(
     '/src/app/demo/currency.ts',
   );
@@ -28,6 +34,38 @@ try {
   const { getCautionProbabilities } = await server.ssrLoadModule(
     '/src/app/results/resultViewModel.ts',
   );
+  const { FILMING_MENUS, FILMING_PROFILE } = await server.ssrLoadModule('/src/app/results/filmingFixtures.ts');
+  assert.deepEqual(FILMING_PROFILE.allergies, ['shrimp']);
+  assert.equal(FILMING_PROFILE.veganType, 'vegan');
+  assert.equal(FILMING_PROFILE.hasReligion, false);
+  assert.equal(FILMING_PROFILE.noSpicy, false);
+  assert.deepEqual(FILMING_MENUS.map(m => [m.menuName, Number(m.price)]), [
+    ['야채김밥',4000], ['참치김밥',5000], ['스팸김밥',5500], ['매운 떡볶이',5000],
+    ['쫄면',7000], ['라면',4500], ['어묵탕',6000], ['순대',4000], ['새우튀김',5000],
+    ['오징어튀김',5000], ['야채튀김',4000], ['식혜',2500], ['수정과',2500],
+  ]);
+  for (const m of FILMING_MENUS) {
+    assert.equal(m.demoScenario, 'bunsik-vegan-shrimp');
+    assert.ok(m.description && m.descriptionEn && m.imageCredit.author);
+    assert.notEqual(m.description, m.explainability.decisionReason.ko);
+    assert.equal(m.explainability.checks.length, 4);
+    assert.ok(m.explainability.uncertainties.length >= 2);
+    assert.equal(getCautionProbabilities(m, null).length, 0);
+    assert.ok(m.explainability.ingredients.every(i => !i.staffEvidence));
+    if (m.riskLevel === 'caution') assert.ok(getCautionProbabilities(m, FILMING_PROFILE).length > 0);
+    else assert.equal(getCautionProbabilities(m, FILMING_PROFILE).length, 0);
+  }
+  assert.equal(FILMING_MENUS.filter(m => m.riskLevel === 'safe').length, 2);
+  assert.equal(FILMING_MENUS.filter(m => m.riskLevel === 'caution').length, 5);
+  assert.equal(FILMING_MENUS.filter(m => m.riskLevel === 'danger').length, 6);
+  const { mapMenuResult } = await server.ssrLoadModule('/src/api/scan.ts');
+  const live = mapMenuResult({menuNameKo:'서버 메뉴', riskLevel:'caution', message:{ko:'서버 판정 이유'}, hits:['has_unclear_milk']}, 0);
+  assert.equal(live.description, '');
+  assert.equal(live.explainability.decisionReason.ko, '서버 판정 이유');
+  assert.equal(live.riskLevel, 'caution');
+  assert.equal(live.demoScenario, undefined);
+  const { getProfileSummary } = await server.ssrLoadModule('/src/app/results/resultViewModel.ts');
+  assert.ok(getProfileSummary({...FILMING_PROFILE,noSpicy:true,noAlcohol:true},'ko').every(label=>!label.includes('제외')));
   const milkMenu = RESULT_PREVIEW_MENUS.find(
     (menu) => menu.id === 'fixture-cream',
   );

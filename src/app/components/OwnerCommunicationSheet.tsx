@@ -13,6 +13,7 @@ import {
   type OwnerContent,
 } from '../i18n';
 import { createTranslator } from '../locales';
+import { getProfileCommunicationItems, getProfileSummary, localizeMenuText } from '../results/resultViewModel';
 
 export type OwnerCommunicationType =
   | 'order'
@@ -77,8 +78,11 @@ export function OwnerCommunicationSheet({
   };
 
   // 이 메뉴의 플래그된 재료(코드)를 언어별로 라벨화 후 쉼표 나열.
-  const flaggedFor = (lang: Language) =>
-    Array.from(
+  const activeProfileIds = new Set(getProfileCommunicationItems(userProfile).map(item => item.id));
+  const relevantIngredients = (menu.explainability?.ingredients ?? []).filter(item => item.profileIds?.some(id => activeProfileIds.has(id)));
+  const flaggedFor = (lang: Language) => relevantIngredients.length
+    ? relevantIngredients.map(item => localizeMenuText(item.name, lang)).join(', ')
+    : Array.from(
       new Set((menu.riskReasons ?? [])
         .map((code) => getHitTagLabel(code, lang))
         .filter(Boolean)
@@ -122,6 +126,11 @@ export function OwnerCommunicationSheet({
         });
       }
       case 'request': {
+        // A vegan restriction is not an allergy. Never label egg/fish as allergies
+        // merely because these ingredients conflict with a dietary preference.
+        if (flaggedLabels.ko) return formatOwnerCommunicationContent('exclude', {
+          menuName, ingredient: flaggedLabels, allergen: emptyText,
+        });
         // 플래그된 재료가 있으면 그걸, 없으면 사용자 알레르기 첫 항목으로 폴백.
         const fallbackAllergy = userProfile?.allergies[0];
         const allergen = flaggedLabels.ko
@@ -160,15 +169,15 @@ export function OwnerCommunicationSheet({
   const selectedResponse = response ? getOwnerResponseOption(type, response) : null;
 
   const selectedButtonClasses: Record<OwnerResponseTone, string> = {
-    success: 'border-status-safe-border bg-status-safe-surface text-status-safe-text shadow-sm',
-    caution: 'border-status-caution-border bg-status-caution-surface text-status-caution-text shadow-sm',
-    danger: 'border-status-danger-border bg-status-danger-surface text-status-danger-text shadow-sm',
+    success: 'border-brand-primary bg-brand-primary text-white shadow-sm',
+    caution: 'border-brand-primary bg-brand-primary text-white shadow-sm',
+    danger: 'border-brand-primary bg-brand-primary text-white shadow-sm',
   };
 
   const summaryClasses: Record<OwnerResponseTone, string> = {
-    success: 'bg-status-safe-surface border-status-safe-border text-status-safe-text',
-    caution: 'bg-status-caution-surface border-status-caution-border text-status-caution-text',
-    danger: 'bg-status-danger-surface border-status-danger-border text-status-danger-text',
+    success: 'bg-brand-primary-soft border-brand-primary text-brand-primary',
+    caution: 'bg-brand-primary-soft border-brand-primary text-brand-primary',
+    danger: 'bg-brand-primary-soft border-brand-primary text-brand-primary',
   };
 
   const getResponseIcon = (tone: OwnerResponseTone) => {
@@ -247,6 +256,7 @@ export function OwnerCommunicationSheet({
             <div className="mb-1 text-xs font-semibold text-brand-primary">{translate(language, ownerCommunicationI18n.labels.selectedMenu)}</div>
             <div className="font-bold text-text-primary">{language === 'ko' ? menu.menuName : language === 'ar' ? menu.menuNameAr ?? menu.menuNameEn : menu.menuNameEn}</div>
             <div className="mt-1 text-xs text-text-secondary">{language === 'ko' ? menu.menuNameEn : menu.menuName}</div>
+            <p className="mt-2 text-xs font-semibold text-brand-primary">{t('내 식단', 'My dietary needs', 'احتياجاتي الغذائية')}: {getProfileSummary(userProfile, language).join(' · ')}</p>
           </div>
 
           <div className="space-y-2 mb-4">
@@ -257,6 +267,7 @@ export function OwnerCommunicationSheet({
               return (
                 <button
                   key={btn.id}
+                  aria-pressed={selected}
                   onClick={() => handleResponseSelect(btn)}
                   className={`flex min-h-14 w-full items-center gap-3 rounded-xl border-2 px-4 py-3 text-sm font-semibold transition-colors ${
                     selected
@@ -266,7 +277,7 @@ export function OwnerCommunicationSheet({
                 >
                   <span
                     className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      selected ? 'bg-white/75' : 'bg-surface-subtle text-brand-primary'
+                      selected ? 'bg-white/20 text-white' : 'bg-surface-subtle text-brand-primary'
                     }`}
                   >
                     {selected ? getResponseIcon(btn.tone) : btn.id === 'ok' || btn.id === 'possible' ? '✓' : btn.id === 'yes' ? '!' : btn.id === 'unknown' ? '?' : '✗'}
@@ -285,9 +296,9 @@ export function OwnerCommunicationSheet({
           {selectedResponse && type === 'ingredient' && (
             <div className={`mb-4 rounded-xl border p-3 text-xs leading-5 ${summaryClasses[selectedResponse.tone]}`} role="status">
               {t(
-                '이번 응답은 향후 재료 가능성 계산을 개선하는 데 활용돼요.',
-                'This response helps improve future ingredient likelihood estimates.',
-                'تساعد هذه الإجابة في تحسين تقديرات احتمال المكونات مستقبلاً.',
+                '직원 응답을 기록했어요. 분석 판정은 자동으로 바뀌지 않으며 교차접촉도 별도로 확인해 주세요.',
+                'Response noted. It does not automatically change the result; check cross-contact separately.',
+                'تم تسجيل الرد. لا يغيّر النتيجة تلقائياً؛ تحقق من التلامس العرضي بشكل منفصل.',
               )}
             </div>
           )}

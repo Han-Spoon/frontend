@@ -1,6 +1,6 @@
 # 한스푼 제품·프론트엔드 문서
 
-최종 갱신: 2026-09-14. 코드 기준: 홈 랭킹·사진 중심 큐레이션·지도 탭·파트너 메뉴 발견 개편.
+최종 갱신: 2026-09-15. 코드 기준: 실제 지역 후보 기반 홈 식당 추천·사진 중심 큐레이션·지도 탭·파트너 메뉴 발견.
 
 ## 읽는 순서
 
@@ -25,6 +25,8 @@
 - [제품의 여섯 가지 고민과 결정](decisions/0001-discovery-and-scan.md)
 - [사업 제휴와 후속 작업](roadmap.md)
 - [큐레이션 편집 원칙](content-guide.md)
+- [홈 식당 추천과 실사 사진 출처](restaurant-recommendations.md)
+- [분식 메뉴판 시연과 멀티 관점 결과 UI 계약](scan-result-filming.md)
 - [22편 사진 감사와 생성 프롬프트](curation-image-audit.md)
 - [변경 기록](changelog.md)
 - [기존 논리 ERD](ERD.md): 실제 DB 스키마를 의미하지 않음.

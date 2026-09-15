@@ -41,9 +41,9 @@ export function StatusGuidance({ level, t }: { level: MenuAnalysis['riskLevel'];
       : t('위험', 'Danger', 'خطر');
   const guidance = level === 'safe'
     ? t(
-      '현재 확인된 정보로는 안심하고 선택해도 좋아요',
-      'Based on the information available, you can choose this with confidence.',
-      'وفقًا للمعلومات المتاحة، يمكنك اختيار هذا الطبق باطمئنان.',
+      '확보한 정보에서 식단 충돌을 찾지 못했어요. 실제 재료와 조리 환경은 확인해 주세요.',
+      'No dietary conflict was found in the available information. Verify actual ingredients and preparation.',
+      'لم يظهر تعارض غذائي في المعلومات المتاحة. تحقق من المكونات الفعلية وطريقة التحضير.',
     )
     : level === 'caution'
       ? t(

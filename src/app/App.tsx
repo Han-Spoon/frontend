@@ -10,7 +10,7 @@ import { ScanScreen } from './components/ScanScreen';
 import { ScanHistoryScreen } from './components/ScanHistoryScreen';
 import { useDemoValue, writeDemo } from './demo/storage';
 import type { VisitRecord } from './demo/records';
-import { RESULT_PREVIEW_MENUS, RESULT_PREVIEW_PROFILE } from './results/resultFixtures';
+import { FILMING_MENUS as RESULT_PREVIEW_MENUS, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
@@ -66,6 +66,7 @@ export type EvidenceSourceType =
   | 'menu-description'
   | 'menu-context'
   | 'trusted-cooking'
+  | 'demo-recipe'
   | 'web'
   | 'staff';
 
@@ -98,6 +99,12 @@ export interface MenuEvidenceSource {
  * 현재 API 필드는 그대로 유지하며, 값이 없으면 결과 화면이 자연스럽게 축약된다.
  */
 export interface MenuExplainability {
+  /** User-facing findings from independent analysis perspectives, not agent reasoning logs. */
+  checks?: {
+    kind: 'menu' | 'recipe' | 'profile' | 'cross-contact';
+    status: 'observed' | 'inferred' | 'unverified';
+    finding: LocalizedMenuText;
+  }[];
   decisionReason?: LocalizedMenuText;
   profileRelatedItems?: LocalizedMenuText[];
   ingredients?: MenuIngredientEvidence[];
@@ -110,6 +117,11 @@ export interface MenuExplainability {
 export interface MenuAnalysis {
   id: string;
   image?: string;
+  imagePosition?: string;
+  imageScale?: number;
+  imageCredit?: { author: string; url: string; license: string };
+  /** Explicit fixture marker. Never returned/inferred by the live API adapter. */
+  demoScenario?: 'bunsik-vegan-shrimp';
   menuName: string;
   menuNameEn: string;
   menuNameAr?: string;
@@ -161,7 +173,7 @@ const formatHistoryTitle = (language: Language, date: Date) => {
 
 export default function App() {
   const navigate = useNavigate();
-  const [demoMode] = useState(() => import.meta.env.VITE_DEMO_MODE === 'true' || (import.meta.env.DEV && new URLSearchParams(window.location.search).get('demo') === '1'));
+  const [demoMode] = useState(() => import.meta.env.VITE_DEMO_MODE === 'true' || (import.meta.env.DEV && (new URLSearchParams(window.location.search).get('demo') === '1' || window.location.pathname === '/dev/results-preview')));
   const [language, setLanguage] = useState<Language>(() => {
     const requested = new URLSearchParams(window.location.search).get('lang');
     if (isLanguage(requested)) return requested;
@@ -429,6 +441,7 @@ export default function App() {
                 onScan={(image) => {
                   if (demoMode) {
                     setCurrentAnalysis(RESULT_PREVIEW_MENUS);
+                    setUserProfile({ ...RESULT_PREVIEW_PROFILE, languageCode: language });
                     setActiveRecordId(undefined);
                     setActiveScanId(undefined);
                     setHistoryProfile(undefined);

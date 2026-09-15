@@ -163,9 +163,13 @@ export function mapMenuResult(menu: MenuResult, index: number): MenuAnalysis {
     menuName: menu.menuNameKo,
     menuNameEn: menu.menuNameEn ?? menu.menuNameKo,
     menuNameAr: undefined,
-    description: menu.message?.ko ?? '',
-    descriptionEn: menu.message?.en ?? undefined,
-    descriptionAr: menu.message?.ar ?? undefined,
+    // message is dietary guidance, not a culinary description under the price.
+    description: '',
+    explainability: menu.message ? { decisionReason: {
+      ko: menu.message.ko || menu.message.en || menu.message.ar || '',
+      en: menu.message.en ?? undefined,
+      ar: menu.message.ar ?? undefined,
+    } } : undefined,
     price: menu.priceText ?? undefined,
     riskLevel: menu.riskLevel,
     riskReasons: tags,
