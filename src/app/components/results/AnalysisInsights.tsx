@@ -1,4 +1,4 @@
-import { ArrowDown, ChefHat, CircleHelp, ClipboardCheck, GitBranch, Leaf, ScanLine, ShieldQuestion, Utensils } from 'lucide-react';
+import { ArrowDown, CircleHelp, ClipboardCheck, GitBranch, Leaf, ShieldQuestion } from 'lucide-react';
 import type { Language, MenuAnalysis, UserProfile } from '../../App';
 import { createTranslator } from '../../locales';
 import { buildMenuResultViewModel, CONFIDENCE_LABELS, getCautionProbabilities, localizeMenuText } from '../../results/resultViewModel';
@@ -16,26 +16,14 @@ export function CautionInsight({ menu, profile, language }: { menu: MenuAnalysis
         <span className="absolute inset-0 flex items-center justify-center text-sm font-extrabold tabular-nums text-status-caution-text">{ingredient.inclusionProbability}<small className="text-[9px]">%</small></span>
       </div><div className="min-w-0"><p className="break-words text-xs font-extrabold text-text-primary">{localizeMenuText(ingredient.name, language)}</p><p className="mt-1 text-[10px] leading-4 text-status-caution-text">{t('포함 가능성', 'May be included', 'احتمال وجوده')}</p></div>
     </div>)}</div> : <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-white/60 p-3 text-xs text-status-caution-text"><CircleHelp className="size-4 shrink-0" />{t('수치로 확인된 정보가 없어 확률은 표시하지 않아요.', 'No reliable numeric estimate is available.', 'لا يتوفر تقدير رقمي موثوق.')}</div>}
-    <p className="px-4 pb-3 pt-2 text-[10px] leading-4 text-status-caution-text">{menu.demoScenario ? t('시연용 고정 추정치 · 실제 분석값이 아니에요.', 'Fixed demo estimates · not real analysis.', 'تقديرات تجريبية ثابتة وليست تحليلاً فعلياً.') : t('재료 포함 추정치이며 직원 확인이 필요해요.', 'Ingredient estimates require staff confirmation.', 'تحتاج تقديرات المكونات إلى تأكيد الموظف.')} {t('섭취 안전 확률이 아니에요.', 'Not a probability of safe consumption.', 'ليست احتمال سلامة الاستهلاك.')}</p>
+    <p className="px-4 pb-3 pt-2 text-[10px] leading-4 text-status-caution-text">{t('재료 포함 추정치이며 직원 확인이 필요해요.', 'Ingredient estimates require staff confirmation.', 'تحتاج تقديرات المكونات إلى تأكيد الموظف.')} {t('섭취 안전 확률이 아니에요.', 'Not a probability of safe consumption.', 'ليست احتمال سلامة الاستهلاك.')}</p>
   </section>;
 }
 
 export function AnalysisEvidence({ menu, language }: { menu: MenuAnalysis; language: Language }) {
   const t = createTranslator(language);
   const vm = buildMenuResultViewModel(menu, language);
-  const kinds = {
-    menu: { icon: ScanLine, label: t('메뉴 읽기', 'Menu reading', 'قراءة القائمة') },
-    recipe: { icon: ChefHat, label: t('조리법 검토', 'Recipe review', 'مراجعة الوصفة') },
-    profile: { icon: Leaf, label: t('내 기준 대조', 'Profile match', 'مطابقة ملفي') },
-    'cross-contact': { icon: Utensils, label: t('조리 환경', 'Kitchen checks', 'بيئة التحضير') },
-  };
   return <div className="space-y-5 py-4" data-analysis-evidence="">
-    <div><p className="eyebrow text-brand-primary">BEHIND THE RESULT</p><h4 className="mt-1 text-base font-extrabold">{t('근거를 한눈에', 'Evidence, made clear', 'الأدلة بوضوح')}</h4><p className="mt-1 text-xs text-text-secondary">{t('확인된 사실과 아직 모르는 것을 구분했어요.', 'Facts, inferences and open questions—kept separate.', 'نميّز بين الحقائق والاستنتاجات وما يحتاج للتحقق.')}</p></div>
-    {!!menu.explainability?.checks?.length && <div className="grid grid-cols-2 gap-2">{menu.explainability.checks.map((check, index) => {
-      const kind = kinds[check.kind]; const Icon = kind.icon;
-      const state = check.status === 'observed' ? t('표기 확인', 'Observed', 'ظاهر') : check.status === 'inferred' ? t('추정', 'Inferred', 'استنتاج') : t('미확인', 'Unverified', 'غير متحقق');
-      return <div key={index} className="rounded-2xl border border-border-warm bg-surface-raised p-3"><div className="mb-3 flex items-center justify-between gap-1"><span className="flex size-8 items-center justify-center rounded-xl bg-brand-primary-soft text-brand-primary"><Icon className="size-4" /></span><span className="text-[10px] font-semibold text-text-tertiary">{state}</span></div><p className="text-xs font-extrabold">{kind.label}</p><p className="mt-1.5 text-xs leading-5 text-text-secondary">{localizeMenuText(check.finding, language)}</p></div>;
-    })}</div>}
     {vm.ingredients.length > 0 && <div className="rounded-2xl border border-border-warm bg-surface-raised p-3"><h5 className="mb-3 flex items-center gap-2 text-xs font-extrabold"><Leaf className="size-4 text-brand-primary" />{t('재료별 근거', 'Ingredient evidence', 'أدلة المكونات')}</h5><div className="space-y-3">{vm.ingredients.map((ingredient, index) => <div key={index} className="border-t border-border-warm pt-3 first:border-0 first:pt-0"><div className="flex flex-wrap items-center justify-between gap-2"><span className="text-sm font-bold">{ingredient.localizedName}</span>{ingredient.confidence && <span className="rounded-full bg-surface-subtle px-2 py-1 text-[10px] text-text-secondary">{t('근거', 'Evidence', 'الدليل')} · {localizeMenuText(CONFIDENCE_LABELS[ingredient.confidence], language)}</span>}</div>{ingredient.localizedSources.length > 0 && <p className="mt-1 text-[11px] text-text-tertiary">{ingredient.localizedSources.join(' · ')}</p>}{ingredient.sourcesConflict && <p className="mt-1 text-xs text-status-caution-text">{t('출처가 달라 직원 확인이 필요해요.', 'Sources disagree; ask staff.', 'المصادر متعارضة؛ اسأل الموظف.')}</p>}</div>)}</div></div>}
     {vm.profileRelatedItems.length > 0 && <div className="flex flex-wrap gap-2">{vm.profileRelatedItems.map(item => <span key={item} className="rounded-full bg-brand-primary-soft px-3 py-1 text-xs font-bold text-brand-primary">{item}</span>)}</div>}
     {vm.ingredients.filter(i => i.staffEvidence).map((i, index) => <div key={index} className="rounded-xl border border-border-warm bg-surface-raised p-3 text-xs"><p className="font-bold">{i.localizedName} · {t('직원 확인 기록', 'Staff records', 'سجلات الموظفين')}</p>{i.staffEvidence?.usedCount !== undefined && i.staffEvidence?.checkedCount !== undefined && <p className="mt-1">{t(`확인 ${i.staffEvidence.checkedCount}건 중 사용 ${i.staffEvidence.usedCount}건`, `Used in ${i.staffEvidence.usedCount} of ${i.staffEvidence.checkedCount} records`, `استُخدم في ${i.staffEvidence.usedCount} من ${i.staffEvidence.checkedCount} سجلاً`)}</p>}{i.staffEvidence?.sampleSufficient === false && <p className="mt-1 text-status-caution-text">{t('아직 확인 기록이 충분하지 않아요.', 'Confirmation records are still limited.', 'سجلات التأكيد لا تزال محدودة.')}</p>}</div>)}

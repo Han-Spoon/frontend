@@ -10,6 +10,7 @@ import logo from '../../assets/brand/han-spoon-logo.svg';
 import { BottomNav } from './BottomNav';
 import { ScanHistoryList } from './ScanHistoryList';
 import { uploadImage } from '../../api/upload';
+import { FIXED_SCAN_RESULTS_ENABLED } from '../results/filmingFixtures';
 import type { StoreCandidate } from '../../api/store';
 import { createTranslator } from '../locales';
 
@@ -220,7 +221,7 @@ export function ScanScreen({ language, onScan, onHistory, onMyPage, history, onD
       setIsUploading(true);
       setErrorMessage(null);
 
-      const uploaded = selectedImage.file && !demoMode ? await uploadImage(selectedImage.file) : null;
+      const uploaded = selectedImage.file && !demoMode && !FIXED_SCAN_RESULTS_ENABLED ? await uploadImage(selectedImage.file) : null;
       const imageForAnalysis: PendingMenuImage = uploaded
         ? {
             ...selectedImage,

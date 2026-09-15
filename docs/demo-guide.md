@@ -18,11 +18,11 @@ pnpm dev --host 127.0.0.1 --port 5173
 - `/curation?demo=1&lang=ko`: 사진 중심 큐레이션 22편.
 - `/history`: 저장한 기록 확인. 마이페이지에서 접근.
 
-촬영용 배포는 `.env`의 `VITE_DEMO_MODE=true`로 명시적으로 활성화하고 빌드한다. 일반 배포는 false. 개발 전용 results-preview 라우트는 프로덕션 빌드에 등록되지 않는다. 데모 URL의 demo=1은 개발 서버에서만 지원한다.
+홈/지도 전체를 가상 데이터로 실행할 때만 `VITE_DEMO_MODE=true`를 사용한다. 현재 새 스캔은 `FIXED_SCAN_RESULTS_ENABLED=true`로 일반 빌드에서도 고정 결과를 제공한다. 개발 전용 results-preview 라우트는 프로덕션 빌드에 등록되지 않는다. 데모 URL의 demo=1은 개발 서버에서만 지원한다.
 
 ## 추천 시연 순서
 
-스캔 결과 촬영은 [고정 분식 메뉴판 시나리오](scan-result-filming.md)를 따른다. 현재 개발 프리뷰/데모 스캔 결과는 비건+새우 프로필과 13개 분식 메뉴로 고정된다. 아래의 우유 82% 예시는 이전 회귀 fixture 설명이며 현재 촬영 화면이 아니다.
+스캔 결과 촬영은 [고정 분식 메뉴판 시나리오](scan-result-filming.md)를 따른다. 현재 모든 새 스캔 결과는 비건+새우 프로필과 13개 분식 메뉴로 고정된다. 아래의 우유 82% 예시는 이전 회귀 fixture 설명이며 현재 촬영 화면이 아니다.
 
 1. 영어 홈에서 5개 자동 캐러셀을 보고 성수→부산을 전환한다.
 2. 전체 지도에서 핀을 누르고, 입점/레시피 인증 배지와 같은 프로필 피드백 및 찜을 확인한다.
@@ -53,7 +53,7 @@ pnpm dev --host 127.0.0.1 --port 5173
 
 큐레이션 사진 22편 전체를 재검토했다. 부적절한 사진은 내장 이미지 생성 도구로 제작한 8개 장면으로 교체하고, 주제에 맞는 Wikimedia Commons 사진은 유지했다. [전체 사진 감사와 프롬프트](curation-image-audit.md)에 글별 선택 근거를 기록했다. Commons 유지 파일은 실제 배포 시 저작자·라이선스 조건에 맞춰 크레딧 화면을 제공해야 한다.
 
-랜딩 화면은 Unsplash의 [A table laden with Korean dishes and people dining](https://unsplash.com/photos/a-table-laden-with-korean-dishes-and-people-dining-wfa4EHNM_1k)(Anbinh Pho, Unsplash License) 실사 이미지를 URL로 불러온다. 한국 식당에서 여러 반찬과 음식을 함께 경험하는 장면이라 메뉴 이해·식단 확인·직원 소통이라는 랜딩 메시지와 연결된다. 로그인 화면은 Wikimedia Commons의 `Samgyeopsal table.jpg`(이동원, CC0)를 사용한다. 공개 전 이미지 크레딧과 각 라이선스 조건을 다시 확인한다.
+랜딩 화면은 Unsplash의 [Bibimbap with fried egg](https://unsplash.com/photos/-UUkXJIXgy4)(Deepthi Clicks, Unsplash License) 실사 URL을 사용한다. 정돈된 플레이팅·입체적인 조명·짙은 배경으로 음식 전문 촬영의 분위기를 표현한다. 로그인 화면은 Wikimedia Commons의 `Samgyeopsal table.jpg`(이동원, CC0)를 사용한다. 공개 전 이미지 크레딧과 각 라이선스 조건을 다시 확인한다.
 
 ## 유지보수
 

@@ -17,7 +17,7 @@ export const CONFIDENCE_LABELS: Record<EvidenceConfidence, LocalizedMenuText> = 
 };
 
 export const SOURCE_LABELS: Record<EvidenceSourceType, LocalizedMenuText> = {
-  'demo-recipe': { ko: '시연용 조리법 가정 · 매장 미확인', en: 'Demo recipe assumption · not verified by the restaurant', ar: 'افتراض وصفة تجريبية · لم يؤكده المطعم' },
+  'demo-recipe': { ko: '일반 조리법 참고 · 매장 미확인', en: 'Typical recipe · not verified by the restaurant', ar: 'وصفة شائعة · لم يؤكدها المطعم' },
   'menu-description': { ko: '메뉴판 설명', en: 'Menu description', ar: 'وصف القائمة', 'zh-CN': '菜单说明', ja: 'メニュー説明', 'zh-TW': '菜單說明', es: 'Descripción del menú' },
   'menu-context': { ko: '주변 메뉴 문맥', en: 'Nearby menu context', ar: 'سياق القائمة', 'zh-CN': '周边菜单语境', ja: '周辺メニューの文脈', 'zh-TW': '周邊菜單語境', es: 'Contexto del menú' },
   'trusted-cooking': { ko: '신뢰할 수 있는 조리 정보', en: 'Trusted cooking reference', ar: 'مرجع طهي موثوق', 'zh-CN': '可信烹饪资料', ja: '信頼できる調理情報', 'zh-TW': '可信烹飪資料', es: 'Referencia culinaria fiable' },

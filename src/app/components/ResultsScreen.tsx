@@ -168,7 +168,6 @@ export function ResultsScreen({ language, menus, userProfile: suppliedProfile, o
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
           {partnerRestaurantId && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-3 py-2 text-xs font-bold text-brand-primary"><ShieldCheck className="size-3.5" />{t('등록 레시피로 바로 확인', 'Directly from supplied recipes', 'مباشرة من الوصفات المسجلة')}</p>}
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
-          {menuList.some(menu => menu.demoScenario) && <p className="mt-2 text-[10px] text-text-tertiary">{t('시연용 결과 · 비건 + 새우 · 실제 레시피 및 알레르기 검증 아님', 'Demo results · vegan + shrimp · not verified recipes or allergy advice', 'نتائج تجريبية · نباتي صرف وروبيان · ليست وصفات أو إرشادات حساسية متحققة')}</p>}
           <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
               <ShieldCheck className="size-4 text-brand-primary" aria-hidden="true" />
