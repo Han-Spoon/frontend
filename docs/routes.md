@@ -5,7 +5,7 @@
 | `/` | 브랜드 랜딩·언어 선택 | `/login` |
 | `/login` | Google 전용 로그인·언어 선택 | 기존 사용자 home, 신규 onboarding, 뒤로 landing |
 | `/onboarding` | 식단 프로필 설정/수정 | home 또는 mypage |
-| `/home` | 동네 발견·지도 미리보기·조건별 랭킹·자동 캐러셀 | map, scan, curation |
+| `/home` | 동네 발견·지도 미리보기·사진 중심 식당 추천·자동 캐러셀 | map, scan, curation |
 | `/map` | 현재 위치 주변 지도·목록·검색 | 지역 선택, 식당 상세 시트 |
 | `/map?area=seongsu&restaurant=:id` | 지역 지도·식당 상세 시트 | 파트너 메뉴 또는 scan |
 | `/restaurants/map`, `/restaurant/map` | 이전 링크 호환 | 쿼리를 보존해 `/map`으로 replace 리다이렉트 |

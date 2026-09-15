@@ -6,13 +6,14 @@ import type { Language } from '../../App';
 import {
   AREA_CENTERS,
   AREAS,
-  RESTAURANTS,
   type DiscoverAreaId,
 } from '../../demo/restaurants';
 import { useStoreCandidates } from '../../hooks/useStoreCandidates';
 import { createTranslator } from '../../locales';
 import { localizeMenuText } from '../../results/resultViewModel';
 import { StoreMap } from './StoreMap';
+import { RestaurantRecommendations } from './RestaurantRecommendations';
+import { restaurantReferencePhoto } from './restaurantPhotos';
 
 const DEFAULT_AREA: DiscoverAreaId = 'seongsu';
 const [DEFAULT_LATITUDE, DEFAULT_LONGITUDE] = AREA_CENTERS[DEFAULT_AREA];
@@ -47,9 +48,6 @@ export function LiveHomeDiscovery({
     candidates.find((store) => store.storeId === selectedId) ??
     candidates[0] ??
     null;
-  const previewImage =
-    RESTAURANTS.find((restaurant) => restaurant.area === area)
-      ?.image ?? RESTAURANTS[0].image;
 
   const selectArea = (nextArea: DiscoverAreaId) => {
     const [latitude, longitude] = AREA_CENTERS[nextArea];
@@ -66,6 +64,7 @@ export function LiveHomeDiscovery({
   };
 
   return (
+    <>
     <section>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
@@ -132,7 +131,7 @@ export function LiveHomeDiscovery({
             className="absolute inset-x-3 bottom-3 flex min-h-[86px] items-center gap-3 rounded-[22px] border border-white/70 bg-rice-white/95 p-3 text-start shadow-[0_14px_38px_rgba(35,42,37,.16)] backdrop-blur"
           >
             <img
-              src={previewImage}
+              src={restaurantReferencePhoto(selected.categoryName)}
               alt=""
               className="size-16 shrink-0 rounded-2xl object-cover"
             />
@@ -172,6 +171,25 @@ export function LiveHomeDiscovery({
         )}
       </div>
     </section>
+    <RestaurantRecommendations
+      language={language}
+      areaName={localizeMenuText(AREAS.find(item => item.id === area)!, language)}
+      items={candidates.slice(0, 6).map(store => ({
+        id: String(store.storeId),
+        name: storeName(store),
+        category: store.categoryName ?? '',
+        address: store.roadAddress ?? '',
+        image: restaurantReferencePhoto(store.categoryName),
+      }))}
+      loading={isLoading}
+      error={error}
+      onRetry={() => selectArea(area)}
+      onSelect={id => {
+        const store = candidates.find(candidate => String(candidate.storeId) === id);
+        if (store) openMap(store);
+      }}
+    />
+    </>
   );
 }
 

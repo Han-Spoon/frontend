@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import type { Language } from '../App';
 import { isLanguage } from '../locales';
-import { RESULT_PREVIEW_MENUS, RESULT_PREVIEW_PROFILE } from '../results/resultFixtures';
+import { FILMING_MENUS as RESULT_PREVIEW_MENUS, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from '../results/filmingFixtures';
 import { ResultsScreen } from './ResultsScreen';
 
 interface DevResultsPreviewProps {
@@ -32,7 +32,7 @@ export function DevResultsPreview({ fallbackLanguage }: DevResultsPreviewProps) 
       menus={RESULT_PREVIEW_MENUS}
       userProfile={{ ...RESULT_PREVIEW_PROFILE, languageCode: language }}
       onBack={() => navigate('/home')}
-      onRescan={() => navigate('/home')}
+      onRescan={() => window.location.assign(`/scan?demo=1&lang=${language}`)}
     />
   );
 }

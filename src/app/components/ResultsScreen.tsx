@@ -4,7 +4,6 @@ import {
   ArrowLeft,
   ChevronDown,
   ChevronRight,
-  CircleHelp,
   Flame,
   Info,
   MessageSquareText,
@@ -32,13 +31,13 @@ import {
 } from './OwnerCommunicationSheet';
 import { ProfileCommunicationSheet } from './ProfileCommunicationSheet';
 import { CommunicationActions } from './results/CommunicationActions';
-import { EvidenceSection, RiskBadge, StatusGuidance } from './results/ResultEvidence';
+import { RiskBadge, StatusGuidance } from './results/ResultEvidence';
+import { AnalysisEvidence, CautionInsight } from './results/AnalysisInsights';
+import { FILMING_PROFILE } from '../results/filmingFixtures';
 import {
   buildMenuResultViewModel,
-  CONFIDENCE_LABELS,
   getProfileCommunicationItems,
   getProfileSummary,
-  getCautionProbabilities,
   localizeMenuText,
 } from '../results/resultViewModel';
 
@@ -74,17 +73,6 @@ function getDescription(menu: MenuAnalysis, language: Language) {
   return menu.descriptionEn ?? menu.description;
 }
 
-function formatStaffEvidence(language: Language, usedCount: number, checkedCount: number) {
-  switch (language) {
-    case 'ko': return `확인된 ${checkedCount}건 중 ${usedCount}건에서 사용됐어요`;
-    case 'ar': return `استُخدم في ${usedCount} من أصل ${checkedCount} سجلاً مؤكداً`;
-    case 'zh-CN': return `在 ${checkedCount} 条确认记录中，有 ${usedCount} 条使用了该食材`;
-    case 'ja': return `確認済み${checkedCount}件のうち${usedCount}件で使用されていました`;
-    case 'zh-TW': return `在 ${checkedCount} 筆確認紀錄中，有 ${usedCount} 筆使用了此食材`;
-    case 'es': return `Se utilizó en ${usedCount} de ${checkedCount} registros confirmados`;
-    default: return `Used in ${usedCount} of ${checkedCount} confirmed records`;
-  }
-}
 
 export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   const [resolvedImage, setResolvedImage] = useState<string | null>(menu.image ?? null);
@@ -107,7 +95,7 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
     return () => { mounted = false; };
   }, [menu.image, menu.menuName]);
 
-  if (resolvedImage) return <img src={resolvedImage} alt={translatedName} className="size-full object-cover" />;
+  if (resolvedImage) return <img src={resolvedImage} alt={translatedName} loading="lazy" onError={() => { setResolvedImage(null); setIsDefaultImage(true); }} className="size-full object-cover" style={{ objectPosition: menu.imagePosition ?? '50% 50%', transform: `scale(${menu.imageScale ?? 1})` }} />;
 
   return (
     <div className="flex size-full flex-col items-center justify-center gap-1.5 bg-surface-subtle text-text-tertiary">
@@ -117,7 +105,9 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   );
 }
 
-export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId, store }: ResultsScreenProps) {
+export function ResultsScreen({ language, menus, userProfile: suppliedProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId, store }: ResultsScreenProps) {
+  const userProfile = menus.some(menu => menu.demoScenario === 'bunsik-vegan-shrimp')
+    ? { ...FILMING_PROFILE, languageCode: language } : suppliedProfile;
   const navigate = useNavigate();
   const [filter, setFilter] = useState<FilterType>('all');
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
@@ -178,6 +168,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
           <h2 className="text-[27px] font-extrabold leading-tight tracking-[-0.03em]">{t('나를 위한 메뉴 가이드', 'Your menu, understood.', 'قائمتك، بكل وضوح.')}</h2>
           {partnerRestaurantId && <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-primary-soft px-3 py-2 text-xs font-bold text-brand-primary"><ShieldCheck className="size-3.5" />{t('등록 레시피로 바로 확인', 'Directly from supplied recipes', 'مباشرة من الوصفات المسجلة')}</p>}
           <p className="mt-2 text-sm text-text-secondary">{t(`메뉴 ${menuList.length}개를 내 식단 기준으로 살펴봤어요.`, `${menuList.length} dishes, checked against your dietary needs.`, `تم فحص ${menuList.length} أطباق حسب احتياجاتك الغذائية.`)}</p>
+          {menuList.some(menu => menu.demoScenario) && <p className="mt-2 text-[10px] text-text-tertiary">{t('시연용 결과 · 비건 + 새우 · 실제 레시피 및 알레르기 검증 아님', 'Demo results · vegan + shrimp · not verified recipes or allergy advice', 'نتائج تجريبية · نباتي صرف وروبيان · ليست وصفات أو إرشادات حساسية متحققة')}</p>}
           <div className="mt-4 rounded-xl border border-border-warm bg-surface-subtle px-3.5 py-3">
             <div className="mb-2 flex items-center gap-2 text-xs font-extrabold text-text-secondary">
               <ShieldCheck className="size-4 text-brand-primary" aria-hidden="true" />
@@ -226,7 +217,6 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
             const price = menuPrice(menu.price, language);
             const likeKey = menu.menuName.trim().toLocaleLowerCase();
             const liked = likedMenus.includes(likeKey);
-            const cautionIngredients = getCautionProbabilities(menu, userProfile).map(ingredient => ({ ...ingredient, localizedName: localizeMenuText(ingredient.name, language) }));
             const requestActions = [
               ...(menu.riskLevel !== 'safe' ? [{ id: 'request', label: t('빼고 요청', 'Request removal', 'طلب الإزالة'), onClick: () => openSheet(menu, 'request') }] : []),
               ...(isSpicy ? [{ id: 'less-spicy', label: t('덜 맵게 요청', 'Less spicy', 'أقل حدة'), onClick: () => openSheet(menu, 'lessSpicy') }] : []),
@@ -251,8 +241,8 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
                   </div>
 
                   <div className="space-y-3 p-4">
-                    {cautionIngredients.length > 0 && <div className="space-y-3 rounded-xl border border-status-caution-border bg-status-caution-surface p-3.5"><p className="text-[11px] font-bold text-status-caution-text">{t('내가 피하는 재료 · 포함 가능성', 'Ingredients I avoid · likelihood of inclusion', 'مكونات أتجنبها · احتمال وجودها')}</p>{cautionIngredients.map(ingredient => <div key={ingredient.localizedName}><div className="mb-1.5 flex items-baseline justify-between gap-3 text-sm font-bold text-status-caution-text"><span>{ingredient.localizedName}</span><span className="text-xl tabular-nums">{ingredient.inclusionProbability}%</span></div><div className="h-1.5 overflow-hidden rounded-full bg-status-caution-border/50" aria-hidden="true"><div className="h-full rounded-full bg-status-caution" style={{ width: `${ingredient.inclusionProbability}%` }} /></div></div>)}<p className="text-[11px] leading-5 text-status-caution-text">{t('재료가 들어갈 가능성이에요. 섭취 안전 확률은 아니며 직원 확인이 필요해요.', 'This estimates ingredient presence, not the probability of a safe meal. Check with staff.', 'هذا تقدير لوجود المكوّن وليس احتمال سلامة الطعام. تحقق مع الموظف.')}</p></div>}
-                    {viewModel.primaryReason && <div><p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">{t('가장 중요한 판정 이유', 'Key reason', 'السبب الرئيسي')}</p><p className="text-sm font-semibold leading-5.5 text-text-primary">{viewModel.primaryReason}</p></div>}
+                    {menu.riskLevel === 'caution' && <CautionInsight menu={menu} profile={userProfile} language={language} />}
+                    {menu.riskLevel !== 'caution' && viewModel.primaryReason && <div><p className="mb-1 text-[11px] font-extrabold uppercase tracking-[0.06em] text-text-tertiary">{t('가장 중요한 판정 이유', 'Key reason', 'السبب الرئيسي')}</p><p className="text-sm font-semibold leading-5.5 text-text-primary">{viewModel.primaryReason}</p></div>}
                     {(viewModel.ingredients.length > 0 || isSpicy) && (
                       <div className="flex flex-wrap gap-1.5">
                         {viewModel.ingredients.slice(0, 4).map((ingredient) => <span key={ingredient.localizedName} className="rounded-lg border border-border-warm bg-surface-subtle px-2.5 py-1.5 text-xs font-bold text-text-secondary">{ingredient.localizedName}</span>)}
@@ -271,36 +261,7 @@ export function ResultsScreen({ language, menus, userProfile, onBack, onRescan, 
                     </button>
                   </div>
 
-                  {expanded && (
-                    <div id={cardDetailsId} className="border-t border-border-warm bg-surface-subtle/60 px-4 pb-1 pt-4">
-                      <EvidenceSection title={t('내 식단 프로필 관련 항목', 'Related profile items', 'عناصر الملف ذات الصلة')}>
-                        {viewModel.profileRelatedItems.length > 0 ? <ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.profileRelatedItems.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul> : <p className="text-sm leading-6 text-text-tertiary">{profileSummary.join(' · ') || t('설정된 식단 조건이 없어요', 'No dietary conditions are set.', 'لا توجد شروط غذائية محددة.')}</p>}
-                      </EvidenceSection>
-
-                      <EvidenceSection title={t('재료별 판정 근거', 'Evidence by ingredient', 'أدلة القرار حسب المكوّن')}>
-                        {viewModel.ingredients.length > 0 ? (
-                          <div className="space-y-2">
-                            {viewModel.ingredients.map((ingredient) => (
-                              <div key={ingredient.localizedName} className="rounded-xl border border-border-warm bg-surface-raised p-3">
-                                <h5 className="text-sm font-extrabold">{ingredient.localizedName}</h5>
-                                <dl className="mt-2 space-y-1.5 text-xs leading-5 text-text-secondary">
-                                  {ingredient.confidence && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('근거 수준', 'Evidence level', 'مستوى الدليل')}</dt><dd className="font-bold text-text-primary">{localizeMenuText(CONFIDENCE_LABELS[ingredient.confidence], language)}</dd></div>}
-                                  {ingredient.localizedSources.length > 0 && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('출처', 'Sources', 'المصادر')}</dt><dd className="font-semibold text-text-primary">{ingredient.localizedSources.join(', ')}</dd></div>}
-                                  {ingredient.staffEvidence?.checkedCount !== undefined && ingredient.staffEvidence?.usedCount !== undefined && <div className="flex gap-2"><dt className="shrink-0 text-text-tertiary">{t('직원 확인 기록', 'Staff records', 'سجلات الموظفين')}</dt><dd>{formatStaffEvidence(language, ingredient.staffEvidence.usedCount, ingredient.staffEvidence.checkedCount)}</dd></div>}
-                                </dl>
-                                {ingredient.staffEvidence?.sampleSufficient === false && <p className="mt-2 text-xs font-semibold text-status-caution-text">{t('아직 확인 기록이 충분하지 않아요', 'There are not enough confirmation records yet.', 'لا توجد سجلات تأكيد كافية بعد.')}</p>}
-                                {ingredient.sourcesConflict && <p className="mt-2 text-xs font-semibold text-status-caution-text">{t('재료 정보가 서로 달라 직원 확인이 필요해요', 'Ingredient sources conflict, so staff confirmation is needed.', 'تتعارض معلومات المكونات، لذا يلزم تأكيد الموظف.')}</p>}
-                              </div>
-                            ))}
-                          </div>
-                        ) : <p className="text-sm text-text-tertiary">{t('표시할 재료 정보가 없어요.', 'No ingredient details are available.', 'لا تتوفر تفاصيل عن المكونات.')}</p>}
-                      </EvidenceSection>
-
-                      {viewModel.hiddenIngredientPaths.length > 0 && <EvidenceSection title={t('숨은 재료 추론 경로', 'Hidden ingredient path', 'مسار المكونات المخفية')}><div className="space-y-2">{viewModel.hiddenIngredientPaths.map((path) => <div key={path.join('-')} className="flex flex-wrap items-center gap-1.5 rounded-xl border border-border-warm bg-surface-raised p-3 text-sm font-semibold">{path.map((item, index) => <span key={`${item}-${index}`} className="inline-flex items-center gap-1.5"><span>{item}</span>{index < path.length - 1 && <ChevronRight className="size-4 text-text-tertiary rtl:rotate-180" />}</span>)}</div>)}</div></EvidenceSection>}
-
-                      {viewModel.uncertainties.length > 0 && <EvidenceSection title={t('추가 확인이 필요한 정보', 'Information to verify', 'معلومات تحتاج إلى تحقق')} icon={<CircleHelp className="size-4 text-status-caution" />}><ul className="space-y-1.5 text-sm text-text-secondary">{viewModel.uncertainties.map((item) => <li key={item} className="flex gap-2"><span aria-hidden="true">•</span><span>{item}</span></li>)}</ul></EvidenceSection>}
-                    </div>
-                  )}
+                  {expanded && <div id={cardDetailsId} className="border-t border-border-warm bg-surface-subtle/60 px-4"><AnalysisEvidence menu={menu} language={language} /></div>}
                 </article>
 
               </Fragment>

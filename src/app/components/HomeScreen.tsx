@@ -25,14 +25,14 @@ import { StoreMap } from './discovery/StoreMap';
 import { PartnershipBadge } from './discovery/PartnershipBadge';
 import { RestaurantPicker } from './discovery/RestaurantPicker';
 import { BottomNav } from './BottomNav';
-import { CommunityRanking } from './discovery/CommunityRanking';
+import { RestaurantRecommendations } from './discovery/RestaurantRecommendations';
+import { RESTAURANT_PHOTOS } from './discovery/restaurantPhotos';
 import { menuPrice } from '../demo/currency';
 import type { StoreCandidate } from '../../api/store';
 import { LiveHomeDiscovery } from './discovery/LiveHomeDiscovery';
 
 export function HomeScreen({
   language,
-  userProfile,
   demoMode,
   selectedStore,
   onSelectStore,
@@ -374,13 +374,22 @@ export function HomeScreen({
             />
           )}
 
-          <CommunityRanking
+          {demoMode && <RestaurantRecommendations
             language={language}
-            userProfile={userProfile}
-            onSelect={(restaurant) =>
-              demoMode ? openMap(restaurant) : navigate('/map')
-            }
-          />
+            areaName={localizeMenuText(AREAS.find(item => item.id === area)!, language)}
+            demo
+            items={restaurants.map((restaurant, index) => ({
+              id: restaurant.id,
+              name: localizeMenuText(restaurant.name, language),
+              category: localizeMenuText(restaurant.category, language),
+              address: '',
+              image: [RESTAURANT_PHOTOS.bibimbap, RESTAURANT_PHOTOS.korean, RESTAURANT_PHOTOS.dining][index % 3],
+            }))}
+            onSelect={id => {
+              const restaurant = restaurants.find(item => item.id === id);
+              if (restaurant) openMap(restaurant);
+            }}
+          />}
         </div>
       </main>
 

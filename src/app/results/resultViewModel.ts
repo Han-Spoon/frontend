@@ -17,6 +17,7 @@ export const CONFIDENCE_LABELS: Record<EvidenceConfidence, LocalizedMenuText> = 
 };
 
 export const SOURCE_LABELS: Record<EvidenceSourceType, LocalizedMenuText> = {
+  'demo-recipe': { ko: '시연용 조리법 가정 · 매장 미확인', en: 'Demo recipe assumption · not verified by the restaurant', ar: 'افتراض وصفة تجريبية · لم يؤكده المطعم' },
   'menu-description': { ko: '메뉴판 설명', en: 'Menu description', ar: 'وصف القائمة', 'zh-CN': '菜单说明', ja: 'メニュー説明', 'zh-TW': '菜單說明', es: 'Descripción del menú' },
   'menu-context': { ko: '주변 메뉴 문맥', en: 'Nearby menu context', ar: 'سياق القائمة', 'zh-CN': '周边菜单语境', ja: '周辺メニューの文脈', 'zh-TW': '周邊菜單語境', es: 'Contexto del menú' },
   'trusted-cooking': { ko: '신뢰할 수 있는 조리 정보', en: 'Trusted cooking reference', ar: 'مرجع طهي موثوق', 'zh-CN': '可信烹饪资料', ja: '信頼できる調理情報', 'zh-TW': '可信烹飪資料', es: 'Referencia culinaria fiable' },
@@ -118,13 +119,13 @@ const religionLabels: Record<string, LocalizedMenuText> = {
 };
 
 const noSpicyLabel: LocalizedMenuText = {
-  ko: '매운 음식 제외', en: 'No spicy food', ar: 'بدون طعام حار',
-  'zh-CN': '不吃辣', ja: '辛い料理を除外', 'zh-TW': '不吃辣', es: 'Sin comida picante',
+  ko: '매운 음식', en: 'Spicy food', ar: 'الطعام الحار',
+  'zh-CN': '辛辣食物', ja: '辛い料理', 'zh-TW': '辛辣食物', es: 'Comida picante',
 };
 
 const noAlcoholLabel: LocalizedMenuText = {
-  ko: '알코올 제외', en: 'No alcohol', ar: 'بدون كحول',
-  'zh-CN': '不含酒精', ja: 'アルコールを除外', 'zh-TW': '不含酒精', es: 'Sin alcohol',
+  ko: '알코올', en: 'Alcohol', ar: 'الكحول',
+  'zh-CN': '酒精', ja: 'アルコール', 'zh-TW': '酒精', es: 'Alcohol',
 };
 
 export type ProfileCommunicationKind = 'allergy' | 'diet' | 'spicy' | 'alcohol';

@@ -8,9 +8,9 @@ React 18 + TypeScript + React Router + Vite 6 + Tailwind 4. pnpm 10.12.1. 이 �
 | --- | --- |
 | `src/app/App.tsx` | 라우팅, 사용자/분석 상태, 서버 이력과 로컬 기록 통합 |
 | `src/api/` | 기존 인증·프로필·업로드·스캔·카드 어댑터 |
-| `src/app/components/HomeScreen.tsx` | 식당 발견, 지역과 랭킹, 식당 상세 |
+| `src/app/components/HomeScreen.tsx` | 식당 발견, 지역과 사진 중심 추천, 식당 상세 |
 | `src/app/components/ScanScreen.tsx` | 이전 홈의 촬영·파일 검증·업로드 |
-| `src/app/components/discovery/` | 지도, 접근 가능한 바텀시트, 식당 선택 |
+| `src/app/components/discovery/` | 지도, 접근 가능한 바텀시트, 식당 선택, 후보 기반 RestaurantRecommendations와 참고 사진 매핑 |
 | `src/app/components/results/` | 근거, 의사소통 행동, 기록 저장 |
 | `src/app/results/` | ViewModel, 확률 표시 필터, 고정 결과 fixture |
 | `src/app/demo/` | 가상 식당, 고정 환율, 로컬 저장소, 방문 레코드 |
