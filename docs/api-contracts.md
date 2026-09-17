@@ -27,6 +27,10 @@
 `storeMatchMethod`로 함께 전달한다. 가게 연결을 건너뛰면 두 필드를 모두 생략한다. 사용자 좌표는 후보 조회에만
 사용하고 프론트 상태나 스캔 요청에 보관하지 않는다.
 
+스캔 상세 응답의 `store`는 해당 분석이 시작될 때 확정된 가게 컨텍스트다. 프론트는 결과 저장 화면에서 이 값을
+브라우저의 데모 선택값보다 우선하며 변경·해제할 수 없게 표시한다. `store=null`인 스캔에만 저장 단계의 선택적
+가게 연결 UI를 제공한다.
+
 현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`.
 스캔 상세·이력의 `store`는 `{ storeId, name } | null`이다. 응답은 data 래핑이 있거나 직접 전달될 수 있다.
 `mapMenuResult`가 메뉴를 프론트 구조로 변환한다. 라이킷과 피드백은 아직 서버에 보내지 않는다.
