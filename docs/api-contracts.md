@@ -17,6 +17,8 @@
 | POST `/api/v1/uploads/sas` | 업로드 URL 요청 |
 | POST `/api/v1/scans` | `{ storageKey, source, storeId?, storeMatchMethod? }`로 분석 시작 |
 | GET `/api/v1/scans/:scanId` | 상태·최종 메뉴·재촬영 사유·실패 코드(`failureCode`) |
+| PUT `/api/v1/scans/:scanId/record` | 완료된 스캔의 가게 연결·선택형 피드백 멱등 저장 |
+| GET `/api/v1/scans/:scanId/record` | 저장된 스캔 기록 단건 조회 |
 | GET `/api/v1/scans?page=0&size=20` | 스캔 이력 |
 | PATCH/DELETE `/api/v1/scans/:scanId` | `{ title }` 변경/삭제 |
 | GET/POST `/api/v1/cards/saved` | 카드 목록/저장 |
@@ -31,9 +33,16 @@
 브라우저의 데모 선택값보다 우선하며 변경·해제할 수 없게 표시한다. `store=null`인 스캔에만 저장 단계의 선택적
 가게 연결 UI를 제공한다.
 
+실제 `scanId`가 있는 결과의 기록 저장은 `PUT /api/v1/scans/:scanId/record`만 사용한다. 스캔 시작 시 가게가
+확정됐다면 요청에는 `feedback`만 보내며, 가게 없이 시작한 스캔에 사후 연결할 때만 `storeId`와
+`storeMatchMethod`를 함께 보낸다. 응답은 `{ scanId, store, storeLocked, storeMatchMethod, feedback, savedAt }`이고,
+스캔 상세의 `record`에도 같은 구조가 선택적으로 포함된다. 저장 실패 시 로컬 성공으로 대체하지 않으며 사용자가
+같은 멱등 PUT을 다시 시도할 수 있게 한다. 서버 `scanId`가 없는 시연·파트너 결과와 기존 로컬 기록만 로컬 저장을 유지한다.
+
 현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`.
 스캔 상세·이력의 `store`는 `{ storeId, name } | null`이다. 응답은 data 래핑이 있거나 직접 전달될 수 있다.
-`mapMenuResult`가 메뉴를 프론트 구조로 변환한다. 라이킷과 피드백은 아직 서버에 보내지 않는다.
+`mapMenuResult`가 메뉴를 프론트 구조로 변환한다. 라이킷은 아직 서버에 보내지 않으며, 피드백은 기록 저장 시
+현재 프로필에 존재하는 항목만 서버에 보낸다.
 
 분석 상태는 pending/processing/analyzing → processing, completed/complete/done/succeeded → completed로 정규화한다. failed, needs_retake, unknown은 별도로 다룬다.
 `failed` 응답의 `failureCode`는 사용자 안내와 운영 추적에 사용한다. 동일 `storageKey`는 멱등 키이므로 terminal failed 이후 UI 재시도는 같은 요청을 반복하지 않고 새 이미지를 업로드해야 한다.
