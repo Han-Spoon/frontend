@@ -46,11 +46,30 @@ export interface ScanCreatedResponse {
   status: ScanStatus;
 }
 
+export type ScanFeedbackAnswer = 'yes' | 'no' | 'unknown';
+
+export interface ScanRecordResponse {
+  scanId: string;
+  store: StoreSummary | null;
+  storeLocked: boolean;
+  storeMatchMethod: StoreMatchMethod | null;
+  feedback: Record<string, ScanFeedbackAnswer>;
+  savedAt: string;
+}
+
+export interface SaveScanRecordPayload {
+  /** 스캔 시작 후 가게를 연결할 때만 storeId와 함께 전송한다. */
+  storeId?: number;
+  storeMatchMethod?: StoreMatchMethod;
+  feedback: Record<string, ScanFeedbackAnswer>;
+}
+
 export interface ScanResultResponse {
   scanId: string;
   status: ScanStatus;
   title?: string | null;
   store?: StoreSummary | null;
+  record?: ScanRecordResponse | null;
   menuCount?: number | null;
   riskyMenuCount?: number | null;
   scannedAt?: string | null;
@@ -104,6 +123,19 @@ export async function startScan(payload: StartScanPayload): Promise<ScanCreatedR
 export async function getScanResult(scanId: string): Promise<ScanResultResponse> {
   const response = await authFetch(`/api/v1/scans/${scanId}`, { method: 'GET' });
   return parse<ScanResultResponse>(response);
+}
+
+/** 완료된 스캔을 사용자 기록으로 멱등 저장한다. */
+export async function saveScanRecord(
+  scanId: string,
+  payload: SaveScanRecordPayload,
+): Promise<ScanRecordResponse> {
+  const response = await authFetch(`/api/v1/scans/${scanId}/record`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return parse<ScanRecordResponse>(response);
 }
 
 export function normalizeScanStatus(status?: string | null): NormalizedScanStatus {

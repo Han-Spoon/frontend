@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Check, ChevronRight, MapPin } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { saveScanRecord, type ScanRecordResponse } from '../../../api/scan';
+import type { StoreCandidate, StoreMatchMethod, StoreSummary } from '../../../api/store';
 import type { Language, MenuAnalysis, UserProfile } from '../../App';
 import { BottomSheet } from '../discovery/BottomSheet';
 import { RestaurantPicker } from '../discovery/RestaurantPicker';
@@ -20,6 +22,8 @@ export function SaveScanSheet({
   recordId,
   sourceScanId,
   restaurantId,
+  scanStore,
+  scanRecord,
   onClose,
   onSaved,
 }: {
@@ -29,8 +33,10 @@ export function SaveScanSheet({
   recordId: string;
   sourceScanId?: string;
   restaurantId: string | null;
+  scanStore?: StoreSummary | null;
+  scanRecord?: ScanRecordResponse | null;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (record?: ScanRecordResponse) => void;
 }) {
   const t = createTranslator(language);
   const navigate = useNavigate();
@@ -40,25 +46,123 @@ export function SaveScanSheet({
   const [selected, setSelected] = useState<string | null>(
     existing ? existing.restaurantId : restaurantId,
   );
+  const [selectedStore, setSelectedStore] = useState<{
+    storeId: number;
+    name: string;
+    matchMethod: StoreMatchMethod;
+  } | null>(() => {
+    if (scanRecord?.storeLocked || !scanRecord?.store || !scanRecord.storeMatchMethod) {
+      return null;
+    }
+    return {
+      storeId: scanRecord.store.storeId,
+      name: scanRecord.store.name,
+      matchMethod: scanRecord.storeMatchMethod,
+    };
+  });
   const [picker, setPicker] = useState(false);
   const [done, setDone] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<VisitRecord['feedback']>(
-    existing?.feedback ?? {},
+    scanRecord?.feedback ?? existing?.feedback ?? {},
   );
   const restaurant = RESTAURANTS.find((r) => r.id === selected);
+  // 기존 로컬 기록은 그대로 편집하고, 로컬 기록이 없는 실제 스캔만 서버에 저장한다.
+  const isServerRecord = sourceScanId !== undefined && existing === undefined;
+  const lockedStore = scanStore
+    ?? (scanRecord?.storeLocked ? scanRecord.store : null)
+    ?? null;
+  const hasRestaurant = lockedStore !== null
+    || selectedStore !== null
+    || restaurant !== undefined;
+  const savedRestaurantId = lockedStore
+    ? String(lockedStore.storeId)
+    : selected;
+  const restaurantName = lockedStore?.name
+    ?? selectedStore?.name
+    ?? (restaurant ? localizeMenuText(restaurant.name, language) : null);
   const items = getProfileCommunicationItems(profile);
+  const validFeedback = Object.fromEntries(
+    Object.entries(feedback).filter(([id]) =>
+      items.some((item) => item.id === id),
+    ),
+  );
+
+  const selectServerStore = (store: StoreCandidate | null) => {
+    setSelectedStore(store ? {
+      storeId: store.storeId,
+      name: store.branchName ? `${store.name} ${store.branchName}` : store.name,
+      matchMethod: store.matchMethod,
+    } : null);
+    setFeedback({});
+    setSaveError(null);
+    setPicker(false);
+  };
+
+  const handleSave = async () => {
+    setIsSaving(true);
+    setSaveError(null);
+
+    try {
+      if (isServerRecord && sourceScanId) {
+        const record = await saveScanRecord(sourceScanId, {
+          ...(!lockedStore && selectedStore ? {
+            storeId: selectedStore.storeId,
+            storeMatchMethod: selectedStore.matchMethod,
+          } : {}),
+          feedback: hasRestaurant ? validFeedback : {},
+        });
+        setDone(true);
+        onSaved(record);
+        return;
+      }
+
+      saveVisit({
+        id: recordId,
+        sourceScanId,
+        restaurantId: savedRestaurantId,
+        title: existing && existing.restaurantId === savedRestaurantId
+          ? existing.title
+          : restaurantName
+            ? restaurantName
+            : t('나의 메뉴 스캔', 'My menu scan', 'مسح قائمتي'),
+        date: existing?.date ?? new Date().toISOString(),
+        menuCount: menus.length,
+        dangerCount: menus.filter((m) => m.riskLevel === 'danger').length,
+        menus,
+        profileSnapshot: profile,
+        feedback: hasRestaurant ? validFeedback : {},
+      });
+      if (!lockedStore) writeDemo('selected-restaurant', selected);
+      setDone(true);
+      onSaved();
+    } catch (error) {
+      console.error('Unable to save scan record:', error);
+      setSaveError(t(
+        '기록을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.',
+        'Could not save this scan. Please try again shortly.',
+        'تعذر حفظ هذا المسح. يرجى المحاولة بعد قليل.',
+      ));
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (picker)
     return (
       <RestaurantPicker
         language={language}
-        demoMode
+        demoMode={!isServerRecord}
         selectedId={selected}
+        selectedStoreId={selectedStore?.storeId}
         onClose={() => setPicker(false)}
         onSelectDemo={(r) => {
           setSelected(r?.id ?? null);
           setFeedback({});
           setPicker(false);
         }}
+        onSelectStore={selectServerStore}
       />
     );
   return (
@@ -103,14 +207,16 @@ export function SaveScanSheet({
       ) : (
         <>
           <button
+            type="button"
             onClick={() => setPicker(true)}
+            disabled={lockedStore !== null}
             className="mb-4 flex min-h-20 w-full items-center gap-3 rounded-2xl border border-border-warm p-4 text-start"
           >
             <MapPin className="size-5 shrink-0 text-brand-primary" />
             <span className="flex-1">
               <span className="block text-sm font-bold">
-                {restaurant
-                  ? localizeMenuText(restaurant.name, language)
+                {restaurantName
+                  ? restaurantName
                   : t(
                       '식당 연결하기 · 선택',
                       'Add a restaurant · optional',
@@ -118,8 +224,20 @@ export function SaveScanSheet({
                     )}
               </span>
               <span className="mt-1 block text-xs text-text-secondary">
-                {restaurant
-                  ? restaurant.name.ko
+                {lockedStore
+                  ? t(
+                      '스캔할 때 선택한 식당',
+                      'Restaurant selected for this scan',
+                      'المطعم المحدد لهذا المسح',
+                    )
+                : selectedStore
+                  ? t(
+                      '분석 후 연결한 식당',
+                      'Restaurant linked after the scan',
+                      'مطعم تم ربطه بعد المسح',
+                    )
+                  : restaurant
+                    ? restaurant.name.ko
                   : t(
                       '연결하지 않아도 기록이 저장돼요',
                       'Your scan is saved even without a restaurant',
@@ -127,20 +245,24 @@ export function SaveScanSheet({
                     )}
               </span>
             </span>
-            <ChevronRight className="size-4 rtl:rotate-180" />
+            {!lockedStore && (
+              <ChevronRight className="size-4 rtl:rotate-180" />
+            )}
           </button>
-          {restaurant && (
+          {!lockedStore && (selectedStore || restaurant) && (
             <button
               onClick={() => {
                 setSelected(null);
+                setSelectedStore(null);
                 setFeedback({});
+                setSaveError(null);
               }}
               className="mb-4 min-h-11 text-xs font-semibold text-text-secondary underline"
             >
               {t('식당 연결 해제', 'Remove restaurant', 'إزالة المطعم')}
             </button>
           )}
-          {restaurant && items.length > 0 && (
+          {hasRestaurant && items.length > 0 && (
             <section className="mb-5">
               <h3 className="text-sm font-extrabold">
                 {t(
@@ -199,38 +321,20 @@ export function SaveScanSheet({
               ))}
             </section>
           )}
+          {saveError && (
+            <p role="alert" className="mb-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">
+              {saveError}
+            </p>
+          )}
           <button
-            onClick={() => {
-              saveVisit({
-                id: recordId,
-                sourceScanId,
-                restaurantId: selected,
-                title: existing && existing.restaurantId === selected
-                  ? existing.title
-                  : restaurant
-                    ? localizeMenuText(restaurant.name, language)
-                    : t('나의 메뉴 스캔', 'My menu scan', 'مسح قائمتي'),
-                date: existing?.date ?? new Date().toISOString(),
-                menuCount: menus.length,
-                dangerCount: menus.filter((m) => m.riskLevel === 'danger')
-                  .length,
-                menus,
-                profileSnapshot: profile,
-                feedback: restaurant
-                  ? Object.fromEntries(
-                      Object.entries(feedback).filter(([id]) =>
-                        items.some((item) => item.id === id),
-                      ),
-                    )
-                  : {},
-              });
-              writeDemo('selected-restaurant', selected);
-              setDone(true);
-              onSaved();
-            }}
-            className="min-h-12 w-full rounded-xl bg-brand-primary text-sm font-extrabold text-white"
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving}
+            className="min-h-12 w-full rounded-xl bg-brand-primary text-sm font-extrabold text-white disabled:cursor-wait disabled:opacity-60"
           >
-            {t('기록 저장하기', 'Save to my journal', 'احفظ في سجلي')}
+            {isSaving
+              ? t('저장하고 있어요…', 'Saving…', 'جارٍ الحفظ…')
+              : t('기록 저장하기', 'Save to my journal', 'احفظ في سجلي')}
           </button>
         </>
       )}

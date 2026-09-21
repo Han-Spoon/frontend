@@ -21,6 +21,7 @@ interface RestaurantPickerProps {
   demoMode: boolean;
   selectedId?: string | null;
   selectedStore?: StoreCandidate | null;
+  selectedStoreId?: number | null;
   onSelectDemo?: (restaurant: Restaurant | null) => void;
   onSelectStore?: (store: StoreCandidate | null) => void;
   onClose: () => void;
@@ -44,6 +45,7 @@ export function RestaurantPicker(props: RestaurantPickerProps) {
     <LiveRestaurantPicker
       language={props.language}
       selectedStore={props.selectedStore}
+      selectedStoreId={props.selectedStoreId}
       onSelect={props.onSelectStore ?? (() => {})}
       onClose={props.onClose}
       allowSkip={props.allowSkip}
@@ -210,17 +212,20 @@ function DemoRestaurantPicker({
 function LiveRestaurantPicker({
   language,
   selectedStore,
+  selectedStoreId,
   onSelect,
   onClose,
   allowSkip = true,
 }: {
   language: Language;
   selectedStore?: StoreCandidate | null;
+  selectedStoreId?: number | null;
   onSelect: (store: StoreCandidate | null) => void;
   onClose: () => void;
   allowSkip?: boolean;
 }) {
   const t = createTranslator(language);
+  const selectedId = selectedStore?.storeId ?? selectedStoreId ?? null;
   const [query, setQuery] = useState('');
   const [showMap, setShowMap] = useState(false);
   const { candidates, error, isLoading, location, locationStatus, retryLocation } = useStoreCandidates(query);
@@ -313,7 +318,7 @@ function LiveRestaurantPicker({
                   lng: store.longitude,
                 }))}
                 center={location ? { lat: location.latitude, lng: location.longitude } : undefined}
-                selectedId={selectedStore ? String(selectedStore.storeId) : null}
+                selectedId={selectedId === null ? null : String(selectedId)}
                 onSelect={(mapStore) => {
                   const picked = candidates.find((store) => String(store.storeId) === mapStore.id);
                   if (picked) onSelect(picked);
@@ -356,7 +361,7 @@ function LiveRestaurantPicker({
                     </span>
                     <span className="mt-1 block text-[11px] font-semibold text-brand-primary">{distance(store.distanceMeters)}</span>
                   </span>
-                  {selectedStore?.storeId === store.storeId && <Check className="size-5 shrink-0 text-brand-primary" />}
+                  {selectedId === store.storeId && <Check className="size-5 shrink-0 text-brand-primary" />}
                 </button>
               ))}
             </div>

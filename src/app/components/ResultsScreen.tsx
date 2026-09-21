@@ -17,6 +17,7 @@ import type { Language, MenuAnalysis, UserProfile } from '../App';
 import { createTranslator, translateText } from '../locales';
 import logo from '../../assets/brand/han-spoon-logo.svg';
 import { findMenuImageByName } from '../../api/image';
+import type { ScanRecordResponse } from '../../api/scan';
 import type { StoreSummary } from '../../api/store';
 import { getMenuPronunciation } from '../constants/menuNames';
 import { CURATION_ARTICLES } from '../constants/curation';
@@ -51,6 +52,7 @@ interface ResultsScreenProps {
   savedRecordId?: string;
   partnerRestaurantId?: string;
   store?: StoreSummary | null;
+  record?: ScanRecordResponse | null;
 }
 
 interface MenuImageProps {
@@ -112,7 +114,7 @@ export function MenuImage({ menu, translatedName, t }: MenuImageProps) {
   );
 }
 
-export function ResultsScreen({ language, menus, userProfile: suppliedProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId, store }: ResultsScreenProps) {
+export function ResultsScreen({ language, menus, userProfile: suppliedProfile, onBack, onRescan, sourceScanId, savedRecordId, partnerRestaurantId, store, record }: ResultsScreenProps) {
   const userProfile = menus.some(menu => menu.demoScenario === 'bunsik-vegan-shrimp')
     ? { ...FILMING_PROFILE, languageCode: language } : suppliedProfile;
   const navigate = useNavigate();
@@ -124,16 +126,25 @@ export function ResultsScreen({ language, menus, userProfile: suppliedProfile, o
   const [ownerResponses, setOwnerResponses] = useState<Record<string, OwnerResponseId>>({});
   const [likedMenus, setLikedMenus] = useDemoValue<string[]>('liked-menus', []);
   const [selectedRestaurantId] = useDemoValue<string | null>('selected-restaurant', null);
-  const restaurantId = partnerRestaurantId ?? selectedRestaurantId;
+  const isScanResult = sourceScanId !== undefined || store !== undefined;
+  const restaurantId = partnerRestaurantId ?? (isScanResult ? null : selectedRestaurantId);
   const [saveOpen, setSaveOpen] = useState(false);
-  const [saved, setSaved] = useState(Boolean(savedRecordId));
+  const [savedRecord, setSavedRecord] = useState<ScanRecordResponse | null>(record ?? null);
+  const [saved, setSaved] = useState(Boolean(savedRecordId || record));
   const [recordId] = useState(() => savedRecordId ?? (sourceScanId ? `local-${sourceScanId}` : `local-${crypto.randomUUID()}`));
   const restaurant = RESTAURANTS.find(r => r.id === restaurantId);
-  const storeName = store?.name ?? (restaurant ? localizeMenuText(restaurant.name, language) : null);
+  const storeName = store?.name
+    ?? savedRecord?.store?.name
+    ?? (restaurant ? localizeMenuText(restaurant.name, language) : null);
   const t = createTranslator(language);
   const menuList = Array.isArray(menus) ? menus : [];
   const profileSummary = getProfileSummary(userProfile, language);
   const profileCommunicationItems = getProfileCommunicationItems(userProfile);
+
+  useEffect(() => {
+    setSavedRecord(record ?? null);
+    setSaved(Boolean(savedRecordId || record));
+  }, [record, savedRecordId, sourceScanId]);
 
   const counts = useMemo(() => ({
     safe: menuList.filter((menu) => menu.riskLevel === 'safe').length,
@@ -292,7 +303,7 @@ export function ResultsScreen({ language, menus, userProfile: suppliedProfile, o
         <button disabled={menuList.length === 0} onClick={() => setSaveOpen(true)} className="flex min-h-12 items-center justify-center gap-2 rounded-xl bg-brand-primary px-3 text-sm font-extrabold text-white disabled:opacity-40"><Bookmark className="size-4" />{saved ? t('기록 수정', 'Edit record', 'تعديل السجل') : t('기록하기', 'Keep this scan', 'احفظ المسح')}</button>
       </footer>
 
-      {saveOpen && <SaveScanSheet language={language} menus={menuList} profile={userProfile} recordId={recordId} sourceScanId={sourceScanId} restaurantId={restaurantId} onClose={() => setSaveOpen(false)} onSaved={() => setSaved(true)} />}
+      {saveOpen && <SaveScanSheet language={language} menus={menuList} profile={userProfile} recordId={recordId} sourceScanId={sourceScanId} restaurantId={restaurantId} scanStore={store} scanRecord={savedRecord} onClose={() => setSaveOpen(false)} onSaved={(nextRecord) => { setSavedRecord(nextRecord ?? null); setSaved(true); }} />}
 
       {sheetType && selectedMenu && <OwnerCommunicationSheet menu={selectedMenu} type={sheetType} userProfile={userProfile} language={language} initialResponse={getStoredResponse(selectedMenu, sheetType)} onResponseSelect={handleOwnerResponseSelect} onClose={closeSheet} />}
       {profileSheetOpen && <ProfileCommunicationSheet items={profileCommunicationItems} language={language} onClose={() => setProfileSheetOpen(false)} />}

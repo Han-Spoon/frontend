@@ -20,6 +20,7 @@ import { CardsScreen } from './components/CardsScreen';
 import { ApiError, createProfile, getMe, getProfile, updateMe, updateProfile } from '../api/user';
 import type { CurrentUser, UserProfilePayload } from '../api/user';
 import { deleteScan, getScanHistory, getScanResult, mapMenuResult, updateScanTitle } from '../api/scan';
+import type { ScanRecordResponse } from '../api/scan';
 import type { StoreCandidate, StoreSummary } from '../api/store';
 import { isBackendLanguage, isLanguage, LANGUAGE_LOCALES, toBackendLanguage, translateText, type Language } from './locales';
 import { DevResultsPreview } from './components/DevResultsPreview';
@@ -216,6 +217,7 @@ export default function App() {
   const [activeRecordId, setActiveRecordId] = useState<string | undefined>();
   const [selectedStore, setSelectedStore] = useState<StoreCandidate | null>(null);
   const [activeScanStore, setActiveScanStore] = useState<StoreSummary | null>(null);
+  const [activeScanRecord, setActiveScanRecord] = useState<ScanRecordResponse | null>(null);
   const [historyProfile, setHistoryProfile] = useState<UserProfile | null | undefined>();
   const combinedHistory = [...localRecords, ...analysisHistory.filter(item => !localRecords.some(record => record.sourceScanId === item.id))];
 
@@ -295,6 +297,7 @@ export default function App() {
       setActiveScanId(local.sourceScanId);
       setHistoryProfile(local.profileSnapshot);
       setActiveScanStore(null);
+      setActiveScanRecord(null);
       writeDemo('selected-restaurant', local.restaurantId);
       navigate('/results');
       return;
@@ -307,6 +310,7 @@ export default function App() {
       setActiveRecordId(undefined);
       setHistoryProfile(undefined);
       setActiveScanStore(result.store ?? null);
+      setActiveScanRecord(result.record ?? null);
       writeDemo('selected-restaurant', null);
       navigate('/results');
     } catch (error) {
@@ -498,6 +502,7 @@ export default function App() {
                   setHistoryProfile(_scanId === null ? { ...RESULT_PREVIEW_PROFILE, languageCode: language } : undefined);
                   setCurrentAnalysis(menus);
                   setActiveScanStore(store);
+                  setActiveScanRecord(null);
                   if (analysisImage?.previewUrl.startsWith('blob:')) URL.revokeObjectURL(analysisImage.previewUrl);
                   setAnalysisImage(null);
                   navigate('/results');
@@ -526,6 +531,7 @@ export default function App() {
                 userProfile={historyProfile === undefined ? userProfile : historyProfile}
                 sourceScanId={activeScanId}
                 store={activeScanStore}
+                record={activeScanRecord}
                 savedRecordId={activeRecordId}
                 onBack={() => navigate('/home')}
                 onRescan={() => navigate('/scan')}
