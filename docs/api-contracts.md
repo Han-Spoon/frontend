@@ -2,7 +2,7 @@
 
 2026-09-15 기준. 아래 현재 API는 `src/api/`를 근거로 한다. 제안 구조는 서버 구현/합의가 완료되었다는 의미가 아니다.
 
-발표용 릴리스 예외: `FIXED_SCAN_RESULTS_ENABLED=true`인 현재 새 스캔은 모든 이미지에 고정 결과를 반환하므로 업로드 URL 발급/분석 시작을 호출하지 않는다. 인증·프로필·기록 조회는 기존 계약을 사용한다. 4분할 `checks` UI는 제거했다. 복구 절차는 `scan-result-filming.md` 참조.
+일반 스캔은 업로드 티켓 발급·S3 PUT·분석 시작·결과 폴링을 사용한다. 고정 결과는 명시적 데모 모드와 개발 전용 `/dev/results-preview`에만 남긴다. 4분할 `checks` UI는 제거했으며 상세 시연 계약은 `scan-result-filming.md`를 참조한다.
 
 ## 현재 API
 
@@ -39,7 +39,7 @@
 스캔 상세의 `record`에도 같은 구조가 선택적으로 포함된다. 저장 실패 시 로컬 성공으로 대체하지 않으며 사용자가
 같은 멱등 PUT을 다시 시도할 수 있게 한다. 서버 `scanId`가 없는 시연·파트너 결과와 기존 로컬 기록만 로컬 저장을 유지한다.
 
-현재 메뉴: `menuNameKo`, `menuNameEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`.
+현재 메뉴: `menuNameKo`, `menuNameEn?`, `descriptionKo?`, `descriptionEn?`, `priceText?`, `riskLevel`, `isSpicy?`, `hits?`, `message?`, `ownerCard?`. 음식 설명은 결과 카드 가격 아래, `message`는 판정 이유에 매핑한다.
 스캔 상세·이력의 `store`는 `{ storeId, name } | null`이다. 응답은 data 래핑이 있거나 직접 전달될 수 있다.
 `mapMenuResult`가 메뉴를 프론트 구조로 변환한다. 라이킷은 아직 서버에 보내지 않으며, 피드백은 기록 저장 시
 현재 프로필에 존재하는 항목만 서버에 보낸다.

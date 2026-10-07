@@ -10,7 +10,7 @@ import { ScanScreen } from './components/ScanScreen';
 import { ScanHistoryScreen } from './components/ScanHistoryScreen';
 import { useDemoValue, writeDemo } from './demo/storage';
 import type { VisitRecord } from './demo/records';
-import { FIXED_SCAN_RESULTS_ENABLED, FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
+import { FILMING_PROFILE as RESULT_PREVIEW_PROFILE } from './results/filmingFixtures';
 import { AnalyzingScreen } from './components/AnalyzingScreen';
 import { ResultsScreen } from './components/ResultsScreen';
 import { MyPageScreen } from './components/MyPageScreen';
@@ -495,7 +495,7 @@ export default function App() {
               <AnalyzingScreen
                 language={language}
                 image={analysisImage}
-                fixedResults={FIXED_SCAN_RESULTS_ENABLED || demoMode}
+                fixedResults={demoMode}
                 onComplete={(_scanId, menus, store) => {
                   setActiveScanId(_scanId ?? undefined);
                   setActiveRecordId(undefined);

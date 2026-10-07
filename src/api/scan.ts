@@ -33,6 +33,8 @@ export interface MenuResult {
   displayOrder?: number | null;
   menuNameKo: string;
   menuNameEn?: string | null;
+  descriptionKo?: string | null;
+  descriptionEn?: string | null;
   priceText?: string | null;
   isSpicy?: boolean | null;
   riskLevel: 'safe' | 'caution' | 'danger';
@@ -196,7 +198,8 @@ export function mapMenuResult(menu: MenuResult, index: number): MenuAnalysis {
     menuNameEn: menu.menuNameEn ?? menu.menuNameKo,
     menuNameAr: undefined,
     // message is dietary guidance, not a culinary description under the price.
-    description: '',
+    description: menu.descriptionKo ?? '',
+    descriptionEn: menu.descriptionEn ?? undefined,
     explainability: menu.message ? { decisionReason: {
       ko: menu.message.ko || menu.message.en || menu.message.ar || '',
       en: menu.message.en ?? undefined,

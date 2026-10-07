@@ -66,8 +66,9 @@ try {
   assert.equal(FILMING_MENUS.filter(m => m.riskLevel === 'caution').length, 5);
   assert.equal(FILMING_MENUS.filter(m => m.riskLevel === 'danger').length, 6);
   const { mapMenuResult } = await server.ssrLoadModule('/src/api/scan.ts');
-  const live = mapMenuResult({menuNameKo:'서버 메뉴', riskLevel:'caution', message:{ko:'서버 판정 이유'}, hits:['has_unclear_milk']}, 0);
-  assert.equal(live.description, '');
+  const live = mapMenuResult({menuNameKo:'서버 메뉴', descriptionKo:'실제 음식 설명', descriptionEn:'Real dish description', riskLevel:'caution', message:{ko:'서버 판정 이유'}, hits:['has_unclear_milk']}, 0);
+  assert.equal(live.description, '실제 음식 설명');
+  assert.equal(live.descriptionEn, 'Real dish description');
   assert.equal(live.explainability.decisionReason.ko, '서버 판정 이유');
   assert.equal(live.riskLevel, 'caution');
   assert.equal(live.demoScenario, undefined);

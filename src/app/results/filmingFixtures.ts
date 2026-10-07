@@ -2,9 +2,6 @@ import type { LocalizedMenuText, MenuAnalysis, MenuIngredientEvidence, UserProfi
 import { translateText } from '../locales';
 
 /** Fixed filming scenario only. No OCR, model inference, recipe verification or staff records. */
-// Current presentation release: every new scan uses the fixed scenario.
-export const FIXED_SCAN_RESULTS_ENABLED = true;
-
 export const FILMING_PROFILE: UserProfile = {
   nationality: 'ES', languageCode: 'ko', isFirstTime: false,
   isVegan: true, veganType: 'vegan', hasReligion: false, religionType: null,
